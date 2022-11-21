@@ -1,0 +1,108 @@
+
+  input Object{
+    key   : String!
+    value : String!
+  }
+
+  type KeyValuePair{
+    key   : String!
+    value : KeyValuePair!
+  }
+
+  type Struct{
+    uuid : String!
+    form_id : String!
+    values : [KeyValuePair!]! @relationship(type : "HAS_VALUE", direction : OUT)
+  }
+
+  type Form {
+    form_id          : String
+    form_name        : String
+    form_relation    : String
+    form_version     : String
+    form_to_populate : String
+    date_of_creation : Date
+    primary_key : [Field!]! @relationship(type : "HAS_PRIMARY_KEY", direction : OUT)
+    foreign_key : [Field!]! @relationship(type : "HAS_FOREIGN_KEY", direction : OUT)
+    next_form   : [Form!]!  @relationship(type : "NEXT_FORM", direction : OUT)
+  }
+
+  type Field {
+    label : String
+    description: String
+    name : String
+    type : String
+    regex : String
+    value : FormValue
+    set   : SampleSet
+    required : Boolean
+    component: String
+    conditionals: Conditional
+    placeholder: String
+    Next_Question : [Field!]! @relationship(type : "HAS_NEXT_QUESTION", direction : IN)
+    refrence_foreign_key  : [Form!]! @relationship(type : "HAS_FOREIGN_KEY", direction : IN)
+    refrence_primary_key  : [Form!]! @relationship(type : "HAS_FOREIGN_KEY", direction : IN)
+  }
+
+    # type Query {
+
+  #   NodeExist(form_id: String!, label : String! program_id : String!, submitter_donor_id : String!) : [Struct]
+  #   @cypher( statement: """ MATCH (p {program_id : $program_id , submitter_donor_id : $submitter_donor_id})-[:HAS_FORM]->(f {form_id : $form_id}) WHERE $label in labels(p) RETURN f """)
+
+
+  #   patient(label : String! program_id : String!, submitter_donor_id : String!) : Patient
+  #   @cypher( statement: """ MATCH (p) WHERE $label in labels(p) AND p.program_id=$program_id OR p.submitter_donor_id=$submitter_donor_id RETURN p """)
+
+  #   patientForm(form_id : String!, label : String! program_id : String!, submitter_donor_id : String!) : [Struct]
+  #   @cypher( statement: """ MATCH (p)-[:HAS_FORM]->(f {form_id : $form_id}) WHERE $label in labels(p) AND p.program_id=$program_id OR p.submitter_donor_id=$submitter_donor_id RETURN f""")
+
+
+  #   FormFeilds(form_id : String!, depth : Int!) : [Field]
+  #   @cypher( statement: """ 
+  #   MATCH (f:Form {form_id: $form_id})
+  #   CALL apoc.path.expandConfig(f, {
+  #     relationshipFilter: 'HAS_NEXT_QUESTION',
+  #     minLevel: 1,
+  #     maxLevel: $depth
+  #     })
+  #     YIELD path
+  #     RETURN nodes(path)[-1]""")
+
+  # }
+
+
+  # type Mutation {
+
+  #   CreateFormCopy(form_id                   : String!,
+  #                  program_id                : String!, 
+  #                  submitter_donor_id        : String!
+  #                  info                      : [Object]): Struct! @cypher( statement: """ 
+  #     MERGE  (p:Patient {program_id : $program_id, submitter_donor_id : $submitter_donor_id})
+  #     CREATE (p)-[:HAS_FORM]->(d:Struct { form_id : $form_id, uuid : apoc.create.uuid() } )
+  #            WITH d
+  #            UNWIND $info as object
+  #               CREATE (d)-[:HAS_VALUE]->(v:Value {key : object.key, value : object.value})
+  #            WITH d
+  #            RETURN d""")
+
+             
+  #   UpdateFormCopy( form_id                   : String!,
+  #                   uuid                      : String!
+  #                   program_id                : String!, 
+  #                   submitter_donor_id        : String!
+  #                   info                      : [Object]!): [Value] @cypher( statement: """ 
+  #     MATCH  (d:Struct { form_id : $form_id, uuid: $uuid } )
+  #     WITH d
+  #     UNWIND $info as object
+  #       MATCH (d)-[:HAS_VALUE]->(v:Value {key : object.key})
+  #       SET v.value = object.value
+  #     WITH v
+  #     RETURN v""")
+
+  #   deleteDataNode(label: String!, submitter_donor_id: String!, program_id : String! ): [Patient]!
+  #       @cypher( statement: """
+  #                MATCH (z {submitter_donor_id: $submitter_donor_id, program_id : $program_id})-[*]->(o)
+  #                WHERE $label in labels(z)
+  #                DETACH DELETE z, o 
+  #                """)
+  #   }
