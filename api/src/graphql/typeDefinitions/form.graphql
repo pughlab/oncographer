@@ -1,50 +1,71 @@
-
-  input Object{
+  input KeyValueObject{
     key   : String!
-    value : String!
+    value : FormValue!
   }
 
-  type KeyValuePair{
+  type FieldKeyValuePair{
     key   : String!
-    value : KeyValuePair!
+    value : FormValue!
   }
 
-  type Struct{
-    uuid : String!
-    form_id : String!
-    values : [KeyValuePair!]! @relationship(type : "HAS_VALUE", direction : OUT)
+  type Submitter{
+    uuid                  : String!
+    form                  : String!
+    primary_keys          : Parser
+    fields                : [FieldKeyValuePair!]! @relationship(type : "HAS_FIELD_VALUE", direction : OUT)
+    reference_foreign_key : [Submitter!]! @relationship(type : "REFERENCE_PRIMARY_KEY", direction : OUT)
+    reference_primary_key : [Submitter!]! @relationship(type : "REFERENCE_PRIMARY_KEY", direction : IN)
+     
   }
 
   type Form {
-    form_id          : String
-    form_name        : String
-    form_relation    : String
-    form_version     : String
-    form_to_populate : String
-    date_of_creation : Date
-    primary_key : [Field!]! @relationship(type : "HAS_PRIMARY_KEY", direction : OUT)
-    foreign_key : [Field!]! @relationship(type : "HAS_FOREIGN_KEY", direction : OUT)
-    next_form   : [Form!]!  @relationship(type : "NEXT_FORM", direction : OUT)
+    form_id           : String
+    form_name         : String
+    form_relation     : String
+    form_to_populate  : String
+    has_next_question : Field @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
+    next_form         : [Form!]!  @relationship(type : "NEXT_FORM", direction : OUT)
+    primary_key       : [Field!]! @relationship(type : "HAS_PRIMARY_KEY", direction : OUT)
+    foreign_key       : [Field!]! @relationship(type : "HAS_FOREIGN_KEY", properties : "reference", direction : OUT)
+    identifier        : [Field!]! @cypher(statement: """ MATCH (f:Form)-[:HAS_PRIMARY_KEY]->(pk)
+                                                         WHERE NOT ()-[:NEXT_FORM]->(f)
+                                                         RETURN pk 
+                                                     """ )
   }
 
   type Field {
-    label : String
-    description: String
-    name : String
-    type : String
-    regex : String
-    value : FormValue
-    set   : SampleSet
-    required : Boolean
-    component: String
-    conditionals: Conditional
-    placeholder: String
-    Next_Question : [Field!]! @relationship(type : "HAS_NEXT_QUESTION", direction : IN)
-    refrence_foreign_key  : [Form!]! @relationship(type : "HAS_FOREIGN_KEY", direction : IN)
-    refrence_primary_key  : [Form!]! @relationship(type : "HAS_FOREIGN_KEY", direction : IN)
+    label             : String
+    description       : String
+    name              : String
+    type              : String
+    regex             : String
+    value             : FormValue
+    set               : SampleSet
+    required          : Boolean
+    component         : String
+    conditionals      : Parser
+    placeholder       : String
+    filter            : Parser
+    has_next_question : Field @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
+    foreign_key_to    : [Form!]! @relationship(type : "HAS_FOREIGN_KEY",  direction : IN)
+    primary_key_to    : Form @relationship(type : "HAS_PRIMARY_KEY", direction : IN)
   }
 
-    # type Query {
+  interface reference @relationshipProperties {
+    constraint : FormValue
+    required   : Boolean
+  }
+
+
+  type Query {
+
+    PopulateForm(id : String!) : [Field]
+    @cypher( statement: """ 
+    MATCH (:Form {form_id : $id})-[:HAS_NEXT_QUESTION*]->(f:Field) RETURN f
+    """)
+
+    
+  }
 
   #   NodeExist(form_id: String!, label : String! program_id : String!, submitter_donor_id : String!) : [Struct]
   #   @cypher( statement: """ MATCH (p {program_id : $program_id , submitter_donor_id : $submitter_donor_id})-[:HAS_FORM]->(f {form_id : $form_id}) WHERE $label in labels(p) RETURN f """)
@@ -71,26 +92,26 @@
   # }
 
 
-  # type Mutation {
+  type Mutation {
 
-  #   CreateFormCopy(form_id                   : String!,
-  #                  program_id                : String!, 
-  #                  submitter_donor_id        : String!
-  #                  info                      : [Object]): Struct! @cypher( statement: """ 
-  #     MERGE  (p:Patient {program_id : $program_id, submitter_donor_id : $submitter_donor_id})
-  #     CREATE (p)-[:HAS_FORM]->(d:Struct { form_id : $form_id, uuid : apoc.create.uuid() } )
-  #            WITH d
-  #            UNWIND $info as object
-  #               CREATE (d)-[:HAS_VALUE]->(v:Value {key : object.key, value : object.value})
-  #            WITH d
-  #            RETURN d""")
+     Create_Form_Copy(uuid          : String!
+                      form          : String!,
+                      primary_keys  : Parser!,
+                      key_value_pair: [KeyValueObject!]!): Submitter @cypher( statement: """ 
+          MERGE (s:Submitter {uuid : $uuid, form : $form, primary_keys : $primary_keys})
+          WITH s
+              UNWIND $key_value_pair as object
+                 CREATE (s)-[:HAS_FIELD_VALUE]->(v:FieldKeyValuePair {key : object.key, value : object.value})
+          WITH s
+          RETURN s""")
 
-             
+  }
+
   #   UpdateFormCopy( form_id                   : String!,
   #                   uuid                      : String!
   #                   program_id                : String!, 
   #                   submitter_donor_id        : String!
-  #                   info                      : [Object]!): [Value] @cypher( statement: """ 
+  #                   info                      : [JSON]): [] @cypher( statement: """ 
   #     MATCH  (d:Struct { form_id : $form_id, uuid: $uuid } )
   #     WITH d
   #     UNWIND $info as object
