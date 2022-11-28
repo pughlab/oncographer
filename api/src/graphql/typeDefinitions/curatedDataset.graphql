@@ -1,0 +1,44 @@
+# type Subject {
+#     subjectID: ID! @id
+#     childID: ID!
+# }
+
+
+
+# type DataVariableDefinition {
+#     dataVariable: DataVariable! @relationship(type: "HAS_DEFINITION", direction: IN)
+#     dataVariableDefinitionID: ID! @id
+#     label: String!
+# }
+
+# type DataVariableSample {
+#     dataVariableSampleID: ID! @id
+#     # value: JSON
+#     currentValueState: DataVariableSampleState! @relationship(type: "HAS_DEFINITION", direction: IN)
+#     previousValueStates: [DataVariableSampleState!]! @relationship(type: "HAS_DEFINITION", direction: IN)
+# }
+
+# # For time versioning
+# type DataVariableSampleState {
+#     value: JSON
+# }
+
+type CuratedDataset {
+    curatedDatasetID: ID! @id
+    # createdAt: DateTime! @timestamp(operations: [CREATE])
+    # updatedAt: DateTime! @timestamp(operations: [UPDATE])
+    name: String!
+    description: String!
+    dataVariables: [DataVariable!]! @relationship(type: "HAS_DATA_VARIABLE", direction: OUT)
+
+    generatedByRawDataset: RawDataset! @relationship(type: "GENERATED_CURATED_DATASET", direction: IN)
+}
+
+type Mutation {
+    createCuratedDatasetFromCSVCodebook(rawDatasetID: ID!): Boolean!
+    createCuratedDatasetFromRawDataset(
+        name: String!
+        description: String!
+        rawDatasetID: ID!
+    ): CuratedDataset!
+}

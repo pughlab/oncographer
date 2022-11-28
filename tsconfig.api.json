@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "target": "es6",
+    "module": "commonjs",
+    "strict": false,
+    "sourceMap": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "declarationDir": "./dist",
+    "outDir": "./dist",
+    "typeRoots": ["node_modules/@types", "api/src/types"],
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "jsx": "react",
+
+    "resolveJsonModule": true
+  },
+  "include": ["api/src/**/*.ts"],
+  "exclude": ["node_modues"]
+}

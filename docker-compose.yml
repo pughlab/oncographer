@@ -1,0 +1,139 @@
+version: '3'
+
+services:
+  neo4j:
+    image: neo4j:4.4.7
+    ports:
+      - 7474:7474
+      - 7687:7687
+    environment:
+      - NEO4J_AUTH=neo4j/letmein
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_dbms_shell_enabled=true
+      - NEO4JLABS_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+    volumes:
+      - mcoder2_neo4j_volume:/var/lib/neo4j/data
+
+  api:
+    # For non-M1 machines: comment out arm64v8 and platform field
+    # image: arm64v8/node:16
+    # platform: linux/arm64/v8
+    image: node:16
+    working_dir: /usr/src/service
+    command: >
+      sh -c "node api/src/proxy_pass minio 9000 &
+             npm run start:api"
+    ports:
+      - 4001:4001
+      - 9231:9231
+    environment:
+      # - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - GRAPHQL_LISTEN_PORT=${GRAPHQL_SERVER_PORT}
+      - GRAPHQL_URI=${GRAPHQL_URI}
+      # Default is 2gb (garbage collection heap memory)
+      - NODE_OPTIONS=--max_old_space_size=4096
+    links:
+      - neo4j
+    depends_on:
+      - neo4j
+      - minio
+      - keycloak
+    
+    volumes:
+      - .:/usr/src/service
+      - mcoder2_api_volume:/mcoder2_data
+
+  ui:
+    # For non-M1 machines: comment out arm64v8 and platform field
+    image: node:16
+    # image: arm64v8/node:16
+    # platform: linux/arm64/v8
+    working_dir: /usr/src/service
+    command: >
+      sh -c "npm run start:ui"
+    ports:
+      - 3001:3001
+    environment:
+      - CI=true
+      - REACT_APP_GRAPHQL_URI=${GRAPHQL_SERVER_PATH}
+      - PROXY=${GRAPHQL_URI}
+      - NODE_OPTIONS=--max_old_space_size=4096
+    links:
+      - api
+    depends_on:
+      - api
+      - minio
+      - keycloak
+    volumes:
+      - .:/usr/src/service
+
+  minio:
+    image: minio/minio
+    ports:
+      - ${MINIO_API_PORT}:${MINIO_API_PORT}
+      - ${MINIO_CONSOLE_PORT}:${MINIO_CONSOLE_PORT}
+    volumes:
+      - mcoder2_minio_volume:/data
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":${MINIO_CONSOLE_PORT}"
+
+  keycloak:
+    # For non-M1 machines: use keycloak 11
+    image: jboss/keycloak:11.0.1
+    # image: wizzn/keycloak:12
+    # container_name: keycloak
+    expose: 
+      - 8443
+    ports:
+      - "8085:8443"
+      - "8080:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
+      - mcoder2_keycloak_volume:/opt/jboss/keycloak/standalone/data
+      - ./nginx/certs/bundle.crt:/etc/x509/https/tls.crt
+      - ./nginx/certs/bundle.key:/etc/x509/https/tls.key
+    environment:
+      - KEYCLOAK_USER=${KEYCLOAK_USER}
+      - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
+      - KEYCLOAK_IMPORT=/opt/jboss/keycloak/realm-export.json
+      - DB_VENDOR=h2
+
+  # nginx:
+  #   restart: ${RESTART}
+  #   build:
+  #     context: .
+  #   environment:
+  #     - NODE_ENV=production
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   depends_on:
+  #     - api
+  #     - minio
+  #     - neo4j
+  #     - keycloak
+  #   volumes:
+  #     - ./nginx/conf.d:/etc/nginx/conf.d
+  #     - ./nginx/certs:/etc/nginx/certs
+    # entrypoint: >
+    #   sh -c "while true; do sleep 1000; done"
+      
+
+volumes:
+  mcoder2_minio_volume:
+    external: true
+  mcoder2_keycloak_volume:
+    external: true
+  mcoder2_api_volume:
+    external: true
+  mcoder2_neo4j_volume:
+    external: true

@@ -1,0 +1,20 @@
+schema: "http://localhost:4001/graphql"
+documents: [
+    "./ui/src/graphql/*.tsx",
+  ]
+generates:
+  ./ui/src/types/types.tsx:
+    plugins:
+      - typescript
+      - typescript-operations
+      - typescript-react-apollo
+    config:
+      withHooks: true
+      avoidOptionals: true
+  ./api/src/types/types.tsx:
+    plugins:
+      - typescript
+      - typescript-resolvers
+    config:
+      contextType: ./models#MyContextType
+      withHooks: true

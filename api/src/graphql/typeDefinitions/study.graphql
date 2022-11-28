@@ -1,0 +1,8 @@
+type Study {
+  studyID: ID! @id
+  fullName: String!
+  shortName: String!
+  description: String!
+  rawDatasets: [RawDataset!]! @relationship(type: "HAS_RAW_DATASET", direction: OUT)
+  studySites: [GeographyCity!]! @relationship(type: "HAS_STUDY_SITE", direction: OUT)
+}

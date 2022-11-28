@@ -1,0 +1,11 @@
+scalar Email
+
+type KeycloakUser @exclude {
+  keycloakUserID: ID!
+  name: String!
+  email: Email!
+}
+
+type Mutation {
+    me: KeycloakUser @auth
+}

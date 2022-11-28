@@ -1,0 +1,15 @@
+{
+  "restartable": "rs",
+  "ignore": [".git", "node_modules/**/node_modules"],
+  "verbose": true,
+  "watch": [
+    "webpack.config.js",
+    "package.json",
+    "tsconfig.ui.json",
+    "nodemon.ui.json",
+    "ui/.env"],
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "ext": "js,json,ts,graphql"
+}

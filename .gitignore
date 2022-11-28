@@ -1,0 +1,11 @@
+node_modules
+ui/dist
+api/build
+keycloak/keycloak-db
+
+.env
+ui/.env
+ui/.DS_Store
+
+neo4j
+docker-compose.macbook.yml

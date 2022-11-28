@@ -1,0 +1,17 @@
+type GeographyCity {
+    # id not required with ! since some non-recorded cities may be queried
+    id: ID @id
+    cityID: ID!
+    city: String!
+    country: String!
+    latitude: Float!
+    longitude: Float!
+}
+
+type Query {
+    searchGeographyCities(name: String!): [GeographyCity!]!
+}
+
+type Mutation {
+    updateGeographyCityToStudy(cityID: ID!, studyID: ID!): GeographyCity!
+}

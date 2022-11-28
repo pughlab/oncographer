@@ -1,0 +1,5 @@
+type HarmonizedDataset {
+    harmonizedDatasetID: ID! @id
+    name: String!
+    rawDatasets: [RawDataset] @relationship(type: "CONTAINS_RAW_DATASETS", direction: OUT)
+}

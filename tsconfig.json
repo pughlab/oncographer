@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "target": "es6",
+    "module": "esNext",
+    "moduleResolution": "node",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "sourceMap": true,
+    "jsx": "react",
+    "strict": true,
+    "typeRoots": ["node_modules/@types", "ui/src/types", "api/src/types"],
+
+    "declaration": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "declarationDir": "./dist",
+  },
+  "include": ["ui/src", "api/src/**/*.ts"]
+}

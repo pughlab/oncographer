@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "target": "es6",
+    "module": "esNext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "sourceMap": true,
+    "jsx": "react",
+    "strict": true,
+    "allowSyntheticDefaultImports": true,
+    "typeRoots": ["node_modules/@types", "ui/src/types"],
+  },
+  "include": ["ui/src/**/*.ts", "tests/**/*.ts"],
+
+}

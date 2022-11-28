@@ -1,0 +1,20 @@
+type OntologyClass {
+  ontologyClassID: ID! @id
+  externalID: ID!
+  label: String!
+}
+
+type OntologyRelation {
+    ontologyRelationID: ID! @id
+    label: String!
+    from: OntologyClass! @relationship(type: "RELATES_ONTOLOGY_CLASS", direction: OUT)
+    to: OntologyClass! @relationship(type: "RELATES_ONTOLOGY_CLASS", direction: IN)
+}
+
+type Ontology {
+    ontologyID: ID! @id
+    externalID: ID!
+    name: String!
+    classes: [OntologyClass!]! @relationship(type: "HAS_ONTOLOGY_CLASS", direction: IN)
+    relations: [OntologyRelation!]! @relationship(type: "HAS_ONTOLOGY_RELATION", direction: IN)
+}

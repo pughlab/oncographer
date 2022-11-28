@@ -1,0 +1,9 @@
+schema: "http://localhost:4001/graphql"
+generates:
+  ./api/src/types/types.tsx:
+    plugins:
+      - typescript
+      - typescript-resolvers
+    config:
+      withHooks: true
+      avoidOptionals: true

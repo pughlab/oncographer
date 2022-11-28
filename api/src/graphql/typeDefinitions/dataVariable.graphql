@@ -1,0 +1,42 @@
+type DataVariable {
+    dataVariableID: ID! @id
+    # chromosome: String
+    # start: Int
+    # end: Int
+    # datavalue: Float
+    # Define fields you want to search over here, transformation script must map to this shape
+
+    # currentDefinition: DataVariableDefinition! @relationship(type: "HAS_DEFINITION", direction: OUT, properties: "HasDefinition")
+    # currentDefinition: DataVariableDefinition! @relationship(type: "HAS_DEFINITION", direction: OUT)
+    # previousDefinitions: [DataVariableDefinition!]! @relationship(type: "HAS_DEFINITION", direction: OUT)
+
+    fields: [DataVariableField!]! @relationship(type: "HAS_FIELD", direction: OUT)
+}
+
+type DataVariableField {
+    dataVariable: DataVariable! @relationship(type: "HAS_DEFINITION", direction: IN)
+    name: String!
+    # code: String!
+    # description: String!
+    # jsonSchema: JSON!
+    value: JSON!
+}
+
+# # This is a field
+# type DataVariableDefinition {
+#     dataVariable: DataVariable! @relationship(type: "HAS_DEFINITION", direction: IN)
+#     code: String!
+#     description: String!
+#     samples: DataVariableValue! @relationship(type: "HAS_VALUE", direction: OUT)
+# }
+
+# type DataVariableValue {
+#     jsonSchema: JSON!
+#     value: JSON!
+# }
+
+# interface HasDefinition @relationshipProperties {
+#     from: Date!
+#     # If 'to' is non-null then this definition has been changed and is not the current one
+#     to: Date
+# }
