@@ -46,19 +46,17 @@ export default function Portal () {
   return (
     <>
         <Sticky>
-      <Menu style={{margin: 0, borderRadius: 0}}>
+      <Menu borderless style={{margin: 0, borderRadius: 0}}>
         <Menu.Menu position='left'>
-          <Logo size='tiny' />
+          <Logo href="/" size='tiny' />
           <Menu.Item>
-            <Menu.Header as={Header} size='large'>
-              mCODER2
-            </Menu.Header>
-             App
+            <Header href="/" size='large'>
+              <strong >mCODER2</strong><strong style={{fontWeight: 100}}>App</strong>
+            </Header>
           </Menu.Item>
-          {/* <Header size='medium'> */}
-            {/* <strong>mCODER2</strong>App */}
-          {/* </Header> */}
+
         </Menu.Menu>
+
 
         <Menu.Menu position='right'>
 

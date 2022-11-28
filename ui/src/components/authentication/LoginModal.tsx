@@ -42,7 +42,7 @@ export default function LoginModal ({}) {
         />
       }
     >
-      {`Logged in as  `}<Label basic content={name} detail={email} />
+      {`Logged in as:  `}<Label basic content={name} detail={email} />
     </Popup>
     
     <Modal
