@@ -1,0 +1,787 @@
+
+Donor,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Donor,submitter_donor_id,Required,"Unique identifier of the donor, assigned by the data provider.",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,
+Donor,gender,Required,Description of the donor self-reported gender. Gender is described as the assemblage of properties that distinguish people on the basis of their societal roles.,Text,"Man
+Woman
+Non-binary
+",Statistics Canada,,gender,
+Donor,sex_at_birth,Required,Indicate donor's sex assigned at birth.,Text,"Male
+Female
+Other
+Unknown",,,,
+Donor,is_deceased,Required,Indicate if donor's last known status is deceased.,Boolean,"Yes
+No","mCODE 
+STU 1",Cancer Patient,Patient.deceased.boolean,"This field is required in order to submit ARGO's required ""vital_status"" field."
+Donor,cause_of_death,"Conditional
+Only required if ""is_deceased"" is ""Yes""",Indicate the cause of a donor's death.,Text,"Died of cancer
+Died of other reasons
+Unknown",ICGC ARGO,,cause_of_death, 
+Donor,date_of_birth,Required,Indicate donor's date of birth.,Integer,Format YYYY-MM,"mCODE 
+STU 1",Cancer Patient,Patient.birthDate,"This field is required in order to calculate ARGO's required ""age_at_diagnosis"" field, which is recorded in years."
+Donor,date_of_death,"Conditional
+Only required if ""is_deceased"" is ""Yes""",Indicate donor's date of death.,Integer,Format YYYY-MM,"mCODE 
+STU 1",Cancer Patient,Patient.deceased.dateTime,"This field is required in order to calculate ARGO's required ""survival_time"" field which is recorded in days."
+Donor,primary_site,Required,"The text term used to describe the primary site of disease, as categorized by the World Health Organization's (WHO) International Classification of Diseases for Oncology (ICD-O). This categorization groups cases into general categories.",Text,Accessory sinuses,ICGC ARGO,,primary_site,"To include multiple values, separate values with a pipe delimiter '|' within your file."
+Primary Diagnosis,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Primary Diagnosis,submitter_donor_id,Required,"Unique identifier for the donor, assigned by the data provider. ",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,
+Primary Diagnosis,submitter_primary_diagnosis_id,Required,Indicate the primary diagnosis event in the clinical timeline that this specimen acquisition was related to.,Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1","Primary Cancer Condition 
+or
+Secondary Cancer Condition","Condition.identifier (Primary Cancer Condition)
+or
+Condition.identifier (Secondary Cancer Condition)",
+Primary Diagnosis,date_of_diagnosis,Required,Date that the donor was first diagnosed with cancer. This date should be based on the earliest diagnosis.,Integer,Format YYYY-MM,"mCODE 
+STU 1","Primary Cancer Condition
+or
+Secondary Cancer Condition","Condition.extension:assertedDate (Primary Cancer Condition)
+or 
+Condition.extension:assertedDate (Secondary Cancer Condition)","This field is required in order to calculate the required ARGO ""age_at_diagnosis"" field which is recorded in years (ie. [date_of_diagnosis]-[date_of_birth])."
+Primary Diagnosis,cancer_type_code,Required,The code to represent the cancer type using the WHO ICD-10 code (https://icd.who.int/browse10/2019/en) classification.,Text,ICD-10 code,"mCODE 
+STU 1","Primary Cancer Condition 
+or
+Secondary Cancer Condition","Condition.code (Primary Cancer Condition) 
+or 
+Condition.code (Secondary Cancer Condition)
+ICD-10 codes from PrimaryOrUncertainBehaviorCancerDisorderVS
+or
+SecondaryCancerDisorderVS",
+Primary Diagnosis,basis_of_diagnosis,Required,"Indicate the most valid basis of how the primary diagnosis was identified. If more than one diagnosis technique was used, select the term that has the highest code number ",Text,"Clinical investigation
+Clinical
+Cytology
+Death certificate only
+Histology of a metastasis
+Histology of a primary tumour
+Specific tumour markers
+Unknown",IACR Standard for Basis of Diagnosis/ICGC ARGO,,basis_of_diagnosis,"IACR Definitions:
+Death certificate only: Information provided is from a death certificate. 
+Clinical: Diagnosis made before death.
+Clinical investigation: All diagnostic techniques, including X-ray, endoscopy, imaging, ultrasound, exploratory surgery (such as laparotomy), and autopsy, without a tissue diagnosis. 
+Specific tumour markers: Including biochemical and/or immunologic markers that are specific for a tumour site.
+Cytology: Examination of cells from a primary or secondary site, including fluids aspirated by endoscopy or needle; also includes the microscopic examination of peripheral blood and bone marrow aspirates. 
+Histology of a metastasis: Histologic examination of tissue from a metastasis, including autopsy specimens. 
+Histology of a primary tumour: Histologic examination of tissue from primary tumour, however obtained, including all cutting techniques and bone marrow biopsies; also includes autopsy specimens of primary tumour. 
+Unknown: No information on how the diagnosis has been made."
+Primary Diagnosis,lymph_nodes_examined_status,Required,"Indicate if lymph nodes were examined for metastases.
+",Text,"Cannot be determined
+No
+No lymph nodes found in resected specimen
+Not applicable
+Yes",ICGC ARGO,,lymph_nodes_examined_status,
+Primary Diagnosis,lymph_nodes_examined_method,"This field is only required if ""lymph_nodes_examined_status"" is ""Yes""",Indicate method used to examine lymph nodes.,Text,"Imaging
+Lymph node dissection/pathological exam
+Physical palpation of patient",,,,
+Primary Diagnosis,number_lymph_nodes_positive,"This field is only required if ""lymph_nodes_examined_status"" is ""Yes""",The number of regional lymph nodes reported as being positive for tumour metastases (Reference: NCI CDE ID: 6113694),Integer,,ICGC ARGO,,number_lymph_nodes_positive,
+Primary Diagnosis,clinical_tumour_staging_system,"Conditional
+This field is only required if pathological staging is not submitted.",Indicate the tumour staging system used to stage the cancer at the time of primary diagnosis (prior to treatment).,Text,"AJCC 8th edition
+AJCC 7th edition
+AJCC 6th edition
+Ann Arbor staging system
+Binet staging system
+Durie-Salmon staging system
+FIGO staging system
+Lugano staging system
+Rai staging system
+Revised International staging system (RISS)
+SEER staging system
+St Jude staging system",ICGC ARGO,,clinical_tumour_staging_system,Either the clinical or pathological staging must be submitted.
+Primary Diagnosis,clinical_t_category,"Conditional
+This field is required only if the selected clinical_tumour_staging_system is any edition of the AJCC cancer staging system","The code to represent the extent of the primary tumour (T) based on evidence obtained from clinical assessment parameters determined at time of primary diagnosis and prior to treatment, according to criteria based on multiple editions of the AJCC's Cancer Staging Manual.",Text,Click for drop-down list of AJCC T category values,"mCODE 
+STU 1",TNM Clinical Primary Tumor Category,"Observation.value[x]:valueCodeableConcept
+AJCC values from TNM Primary Tumor Category Value Set
+",
+Primary Diagnosis,clinical_n_category,"Conditional
+This field is required only if the selected clinical_tumour_staging_system is any edition of the AJCC cancer staging system","The code to represent the stage of cancer defined by the extent of the regional lymph node (N) involvement for the cancer based on evidence obtained from clinical assessment parameters determined at time of primary diagnosis and prior to treatment, according to criteria based on multiple editions of the AJCC's Cancer Staging Manual.",Text,Click for drop-down list of AJCC N category values,"mCODE 
+STU 1",TNM Clinical Regional Nodes Category,"Observation.value[x]:valueCodeableConcept
+AJCC values from TNM Regional Nodes Category Value Set",
+Primary Diagnosis,clinical_m_category,"Conditional
+This field is required only if the selected clinical_tumour_staging_system is any edition of the AJCC cancer staging system","The code to represent the stage of cancer defined by the extent of the distant metastasis (M) for the cancer based on evidence obtained from clinical assessment parameters determined at time of primary diagnosis and prior to treatment, according to criteria based on multiple editions of the AJCC's Cancer Staging Manual. MX is NOT a valid category and cannot be assigned.",Text,Click for drop-down list of AJCC M category values,"mCODE 
+STU 1",TNM Clinical Distant Metastases Category,"Observation.value[x]:valueCodeableConcept
+AJCC values from TNM Distant Metastases Category Value Set",
+Primary Diagnosis,clinical_stage_group,"Conditional
+This field is dependent on the selected clinical_tumour_staging_system. Please refer to the documentation for Tumour Staging Classifications: http://docs.icgc-argo.org/docs/submission/dictionary-overview#tumour-staging-classifications. ","Stage group of the tumour, as assigned by the reporting clinical_tumour_staging_system, that indicates the overall prognostic tumour stage (ie. Stage I, Stage II, Stage III etc.).",Text,Click for drop-down list of clinical stage groups,ICGC ARGO,,clinical_stage_group,"mCODE's TNM Stage Group Value Set only contains TNM stage groups, so for this reason the ARGO controlled terminology is suggested since it contains stage groups from non-TNM staging systems as well.
+
+"
+Specimen,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Specimen,submitter_donor_id,Required,"Unique identifier for the donor, assigned by the data provider. ",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,
+Specimen,submitter_specimen_id,Required,"Unique identifier of the specimen, assigned by the data provider.
+",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}}
+
+Examples:
+LAML_PO, 00445, THY_099-tumour","mCODE 
+STU 1",Genetic Specimen,Specimen.Identifier,
+Specimen,submitter_primary_diagnosis_id,Required,Indicate the primary diagnosis event in the clinical timeline that this specimen acquisition was related to,Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+LAML_PO, 00445, THY_099-tumour","mCODE 
+STU 1",Primary Cancer Condition,Condition.identifier,
+Specimen,specimen_tissue_source,Required,Tissue source of the biospecimen.,Text,"Amniotic fluid        
+Bile Fluid        
+Whole blood        
+Blood arterial        
+Cord blood        
+Blood venous        
+Bone        
+Serum, Convalescent        
+Cerebral spinal fluid        
+Cervical Mucus        
+Duodenal fluid        
+Blood, Fetal        
+Fluid, Abdomen        
+Genital vaginal        
+Fluid, Hydrocele        
+Fluid, Joint        
+Fluid, Kidney        
+Fluid, Lumbar Sac        
+Marrow        
+Pancreatic fluid        
+Fluid, Pericardial        
+Placenta        
+Pleural fluid (thoracentesis fluid)        
+Saliva        
+Skin        
+Seminal fluid        
+Fluid, synovial (Joint fluid)        
+Sputum        
+Tissue        
+Vitreous Fluid        
+Wound","mCODE 
+STU 1",Genetic Specimen,"Specimen.type
+mCODE Value Set:Genetic Specimen Type Value Set",
+Specimen,tumour_normal_designation,Required,Description of specimen's tumour/normal status for data processing.,Text,"Normal
+Tumour",ICGC ARGO,,tumour_normal_designation,
+Specimen,specimen_type,Required,Description of the kind of specimen that was collected with respect to tumour/normal tissue origin.,Text,"Cell line - derived from normal
+Cell line - derived from primary tumour
+Cell line - derived from metastatic tumour
+Cell line - derived from xenograft tumour
+Metastatic tumour - additional metastatic
+Metastatic tumour - metastasis local to lymph node
+Metastatic tumour - metastasis to distant location
+Metastatic tumour
+Normal - tissue adjacent to primary tumour
+Normal
+Primary tumour - additional new primary
+Primary tumour - adjacent to normal
+Primary tumour
+Recurrent tumour
+Xenograft - derived from primary tumour
+Xenograft - derived from metastatic tumour
+Xenograft - derived from tumour cell line",ICGC ARGO,,specimen_type,
+Specimen,sample_type,Required,"Description of the type of molecular sample used for testing.
+",Text,"Amplified DNA
+ctDNA
+Other DNA enrichments
+Other RNA fractions
+polyA+ RNA
+Protein
+rRNA-depleted RNA
+Total DNA
+Total RNA",ICGC ARGO,,sample_type,
+Specimen,pathological_tumour_staging_system,"Conditional
+This field is only required if the specimen is a tumour, and if clinical staging was not submitted. ",Specify the tumour staging system used to assess the cancer at the time the tumour specimen was resected. Pathological classification is based on the clinical stage information (acquired before treatment) and supplemented/modified by operative findings and pathological evaluation of the resected specimen.,Text,"AJCC 8th edition
+AJCC 7th edition
+AJCC 6th edition
+Ann Arbor staging system
+Binet staging system
+Durie-Salmon staging system
+FIGO staging system
+Lugano staging system
+Rai staging system
+Revised International staging system (RISS)
+SEER staging system
+St Jude staging system",ICGC ARGO,,pathological_tumour_staging_system,Either the clinical or pathological staging must be submitted.
+Specimen,pathological_t_category,"Conditional
+This field is required only if the selected pathological_tumour_staging_system is any edition of the AJCC cancer staging system","The code to represent the stage of cancer defined by the size or contiguous extension of the primary tumour (T), according to criteria based on multiple editions of the AJCC's Cancer Staging Manual.",Text,Click for drop-down list of AJCC T category values,"mCODE 
+STU 1",TNM Pathological Primary Tumor Category,"Observation.value[x]:valueCodeableConcept
+AJCC values from TNM Primary Tumor Category Value Set
+",
+Specimen,pathological_n_category,"Conditional
+This field is required only if the selected pathological_tumour_staging_system is any edition of the AJCC cancer staging system","The code to represent the stage of cancer defined by whether or not the cancer has reached nearby lymph nodes (N), according to criteria based on multiple editions of the AJCC's Cancer Staging Manual.",Text,Click for drop-down list of AJCC N category values,"mCODE 
+STU 1",TNM Pathological Regional Nodes Category,"Observation.value[x]:valueCodeableConcept
+AJCC values from TNM Regional Nodes Category Value Set",
+Specimen,pathological_m_category,"Conditional
+This field is required only if the selected pathological_tumour_staging_system is any edition of the AJCC cancer staging system","The code to represent the stage of cancer defined by whether there are distant metastases (M), meaning spread of cancer to other parts of the body, according to criteria based on multiple editions of the AJCC's Cancer Staging Manual.",Text,Click for drop-down list of AJCC M category values,"mCODE 
+STU 1",TNM Pathological Distant Metastases Category,"Observation.value[x]:valueCodeableConcept
+AJCC values from TNM Distant Metastases Category Value Set",
+Specimen,pathological_stage_group,"Conditional
+This field is only required if the specimen is a tumour, and if clinical staging was not submitted. ","Specify the tumour stage, based on pathological_tumour_staging_system, used to assess the cancer at the time the tumour specimen was resected.",Text,Click for drop-down list of pathological stage groups,ICGC ARGO,,pathological_stage_group,"mCODE's TNM Stage Group Value Set only contains TNM stage groups, so for this reason the ARGO controlled terminology is suggested since it contains stage groups from non-TNM staging systems as well.
+
+This field is dependent on the selected pathological_tumour_staging_system. Please refer to the documentation for Tumour Staging Classifications: http://docs.icgc-argo.org/docs/submission/dictionary-overview#tumour-staging-classifications. "
+Specimen,specimen_collection_date,Required,"Indicate the date when the specimen was collected from donor.
+",Text,Format YYYY-MM,"mCODE 
+STU 1",Genetic Specimen,Specimen.collection.collected.dateTime,"This field is required in order to calculate the required ARGO ""specimen_acquisition_interval"" field which is recorded in days.
+([specimen_collection_date] - [primary_diagnosis_date])"
+Specimen,specimen_storage,Required,Indicate the method of specimen storage for specimen that were not extracted freshly or immediately cultured.,Text,"Cut slide
+Frozen in -70 freezer
+Frozen in liquid nitrogen
+Frozen in vapour phase
+Not Applicable
+Other
+Paraffin block
+RNA later frozen
+Unknown",ICGC ARGO,,specimen_storage,
+Specimen,tumour_histological_type,"Conditional
+This field is only required if the specimen is a tumour.","The code to represent the histology (morphology) of neoplasms that is usually obtained from a pathology report, according to the International Classification of Diseases for Oncology, 3rd Edition (WHO ICD-O-3). Refer to the ICD-O-3 manual for guidelines at https://apps.who.int/iris/handle/10665/42344.",Text,"ICD-O-3 morphology codes
+
+Values must meet the regular expression
+^[8,9]{1}[0-9]{3}/[0,1,2,3,6,9]{1}[1-9]{0,1}$
+
+Examples:
+8260/3, 9691/36","mCODE 
+STU 1","Primary Cancer Condition 
+or
+Secondary Cancer Condition","Condition.extension:histologyMorphologyBehavior
+ICD-O-3 codes from Histology Morphology Behavior Value Set",
+Specimen,specimen_anatomic_location,"Conditional
+This field is only required if the specimen is a tumour.",Indicate the ICD-O-3 topography code for the anatomic location of a specimen when it was collected. Refer to the guidelines provided in the ICD-O-3 manual at https://apps.who.int/iris/handle/10665/42344,Text,"ICD-O-3 topography codes
+
+Values must meet the regular expression
+^[C][0-9]{2}(.[0-9]{1})?$
+
+Examples:
+C50.1, C18","mCODE 
+STU 1","Primary Cancer Condition 
+or
+Secondary Cancer Condition","Condition.bodySite
+ICD-O-3 topography codes from CancerBodyLocationVS ValueSet",
+Specimen,reference_pathology_confirmed_diagnosis,"Conditional
+This field is only required if the specimen is a tumour.",Indicate whether the pathological diagnosis was confirmed by a (central) reference pathologist.,Text,"Yes
+No
+Not done
+Unknown",ICGC ARGO,,reference_pathology_confirmed,
+Specimen,reference_pathology_confirmed_tumour_presence,"Conditional
+This field is only required if the specimen is a tumour.",Indicate whether the (central) reference pathologist confirmed the presence of tumour in the specimen.,Text,"Yes
+No
+Not done
+Unknown",,,,
+Specimen,tumour_grading_system,"Conditional
+This field is only required if the specimen is a tumour.",Specify the tumour grading system used to assess the description of a tumour based on how abnormal the tumour cells and the tumour tissue look under a microscope. Tumour grade is an indicator of how quickly a tumour is likely to grow.,Text,"FNCLCC grading system
+Four-tier grading system
+Gleason grade group system
+Grading system for GISTs
+Grading system for GNETs
+ISUP grading system
+Nuclear grading system for DCIS
+Scarff-Bloom-Richardson grading system
+Three-tier grading system
+Two-tier grading system
+WHO grading system for CNS tumours",ICGC ARGO,,tumour_grading_system,
+Specimen,tumour_grade,"Conditional
+This field depends on the selected tumour_grading_system, and is only required if the specimen is a tumour. ",Grade of the tumour as assigned by the reporting tumour_grading_system.,Text,"Low grade
+High grade
+GX
+G1
+G2
+G3
+G4
+Low
+High
+Grade I
+Grade II
+Grade III
+Grade IV
+Grade Group 1
+Grade Group 2
+Grade Group 3
+Grade Group 4
+Grade Group 5",ICGC ARGO,,tumour_grade,Please refer to the documentation for Tumour Grading Classifications: http://docs.icgc-argo.org/docs/submission/dictionary-overview#tumour-grading-classifications
+Specimen,percent_tumour_cells_range,"Conditional
+This field is only required if the specimen is a tumour.",Select the range representing the percent of tumour cells compared to the number of total cells in a specimen. (Reference: NCIt: C159484),Text,"0-19%
+20-50%
+51-100%",ICGC ARGO,,percent_tumour_cells,
+Specimen,percent_tumour_cells_measurement_method,"Conditional
+This field is only required if the specimen is a tumour.",Indicate method used to measure percent_tumour_cells.,Text,"Genomics
+Image analysis
+Pathology estimate by percent nuclei
+Unknown
+",,,,
+Treatment,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Treatment,submitter_donor_id,Required,"Unique identifier for the donor, assigned by the data provider. ",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,
+Treatment,submitter_treatment_id,Required,"Unique identifier of the treatment, assigned by the data provider.
+",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1","CancerRelatedRadiationProcedure
+or
+CancerRelatedMedicationStatement
+or
+CancerRelatedSurgicalStatement",Procedure.identifier,
+Treatment,submitter_primary_diagnosis_id,Required,Indicate the primary diagnosis event in the clinical timeline that this specimen acquisition was related to,Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1","Primary Cancer Condition
+or
+Secondary Cancer Condition",Condition.identifier,
+Treatment,treatment_type,Required,"Indicate the type of treatment regimen that the donor completed.
+",Text,"Ablation
+Bone marrow transplant
+Chemotherapy
+Endoscopic therapy
+Hormonal therapy
+Immunotherapy
+No treatment
+Other targeting molecular therapy
+Photodynamic therapy
+Radiation therapy
+Stem cell transplant
+Surgery",ICGC ARGO,,treatment_type,"Depending on the treatment_type(s) selected, additional treatment details may be required to be submitted. For example, if treatment_type includes 'Chemotherapy', the supplemental Chemotherapy treatment type file is required. To include multiple values, separate values with a pipe delimiter '|' within your file."
+Treatment,is_primary_treatment,Required,Indicate if the treatment was the primary treatment following the initial diagnosis.,Text,"Yes
+No
+Unknown",ICGC ARGO,,is_primary_treatment,
+Treatment,treatment_start_date,Required,Indicate the date treatment was initiated.,Integer,Format YYYY-MM,"mCODE 
+STU 1","If treatment_type = 'Radiation therapy' or 'Surgery':
+CancerRelatedRadiationProcedure
+or
+CancerRelatedSurgicalStatement
+Otherwise extend mCODE to use Procedure Profile
+
+
+","
+Procedure.performed.Period.start.dateTime (Radiation)
+or
+Procedure.performed.Period.start.dateTime (Surgery)
+or
+Procedure.performed.Period.start.dateTime (for all other treatment_types)","This field is required in order to calculate the ARGO required ""treatment_start_interval"" field which is recorded in days (ie. [treatment_start_date] - [date_of_diagnosis])"
+Treatment,treatment_end_date,Required,Indicate the date treatment ended.,,Format YYYY-MM,"mCODE 
+STU 1","If treatment_type = 'Radiation therapy' or 'Surgery':
+CancerRelatedRadiationProcedure
+or
+CancerRelatedSurgicalStatement
+Otherwise extend mCODE to use Procedure Profile
+
+
+","
+Procedure.performed.Period.end.dateTime (Radiation)
+or
+Procedure.performed.Period.end.dateTime (Surgery)
+or
+Procedure.performed.Period.end.dateTime (for all other treatment_types)","This field is required in order to calculate the ARGO required ""treatment_duration"" field which is recorded in days (ie. [treatment_end_date] - [treatment_start_date])"
+Treatment,treatment_setting,Required,"Indicate the treatment setting, which describes the treatment's purpose in relation to the primary treatment. (Reference: CDISC [NCIt code: C124308])",Text,"Adjuvant
+Advanced/Metastatic
+Neoadjuvant
+Not applicable",ICGC ARGO,,treatment_setting,
+Treatment,treatment_intent,Required,Indicate the intended disease outcome for which the treatment is given. (Reference: CDISC [NCIt code: C124307]),Text,"Curative
+Palliative","mCODE 
+STU 1","CancerRelatedRadiationProcedure
+or
+CancerRelatedMedicationStatement
+or
+CancerRelatedSurgicalStatement","extension:treatmentIntent
+mCODE Value Set: TreatmentIntentVS",
+Treatment,days_per_cycle,Optional,Indicate the number of days in a treatment cycle.,Integer,,ICGC ARGO,,days_per_cycle,
+Treatment,number_of_cycles,Optional,Indicate the number of treatment cycles.,Integer,,ICGC ARGO,,number_of_cycles,
+Treatment,response_to_treatment_criteria_method,Required,Indicate the criteria used to assess the donor's overall response to the applied treatment regimen. ,Text,Click for drop-down list of criteria methods,,,,
+Treatment, response_to_treatment,Required,"Indicate the donor's response to the applied treatment regimen as assigned by the reporting response_to_treatment_criteria_method.
+",Text,Click for drop-down list of response criteria terms,ICGC ARGO,, response_to_treatment,
+Chemotherapy,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Chemotherapy,submitter_donor_id,Required,"Unique identifier for the donor, assigned by the data provider. ",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,
+Chemotherapy,submitter_treatment_id,"The Chemotherapy file is only required if ""Chemotherapy"" is selected in ""treatment_type"" field","Unique identifier of the treatment, assigned by the data provider.
+",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}","mCODE 
+STU 1",Cancer Related Medication Statement,MedicationStatement.identifier ,
+Chemotherapy,drug_name,Required,"Name of agent or drug administered to patient as part of the treatment regimen.
+",Text,"This field uses standardized vocabulary from the RxNorm database (https://www.nlm.nih.gov/research/umls/rxnorm), provided by the NIH. ",ICGC ARGO,,drug_name,"You can search for RX Norm values through the web interface (https://mor.nlm.nih.gov/RxNav/) or API (https://lhncbc.nlm.nih.gov/RxNav/APIs/RxNormAPIs.html). 
+For example, to find the rxnormcui based on drug name, you can use: https://rxnav.nlm.nih.gov/REST/rxcui.json?name=leucovorin or https://mor.nlm.nih.gov/RxNav/search?searchBy=String&searchTerm=leucovorin"
+Chemotherapy,drug_rxnormcui,Required,The unique RxNormID assigned to the treatment regimen drug.,Text,"
+
+RxNorm CUI","mCODE 
+STU 1",Cancer Related Medication Statement,"MedicationStatement.medication[x]:medicationCodeableConcept
+RxNorm CUIs from US Core Medication Codes Value Set
+",This field is required in order to validate required ARGO 'drug_name' field
+Chemotherapy,chemotherapy_dosage_units,Required,"Indicate units used to record chemotherapy drug dosage.
+",Text,"mg/m2
+IU/m2
+ug/m2
+g/m2
+mg/kg",ICGC ARGO,,chemotherapy_dosage_units,
+Chemotherapy,cumulative_drug_dosage_prescribed,Optional,Indicate the total drug dose the donor was prescibed in the same units specified in the 'chemotherapy_dosage_units' field.,Number,,ICGC ARGO,,cumulative_drug_dosage,
+Chemotherapy,cumulative_drug_dosage_actual,Optional,"Indicate the actual total drug dose the donor received, in the same units specified in the 'chemotherapy_dosage_units' field.",Number,,ICGC ARGO,,cumulative_drug_dosage,
+Hormone Therapy,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Hormone Therapy,submitter_donor_id,"The Hormone Therapy file is only required if ""Hormonal Therapy"" is selected in ""treatment_type"" field","Unique identifier for the donor, assigned by the data provider. ",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,
+Hormone Therapy,submitter_treatment_id,Required,"Unique identifier of the treatment, assigned by the data provider.
+",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Related Medication Statement,MedicationStatement.identifier ,
+Hormone Therapy,drug_name,Required,"Name of agent or drug administered to patient as part of the treatment regimen.
+",Text,"This field uses standardized vocabulary from the RxNorm database (https://www.nlm.nih.gov/research/umls/rxnorm), provided by the NIH. ",ICGC ARGO,,drug_name,"You can search for RX Norm values through the web interface (https://mor.nlm.nih.gov/RxNav/) or API (https://lhncbc.nlm.nih.gov/RxNav/APIs/RxNormAPIs.html). 
+For example, to find the rxnormcui based on drug name, you can use: https://rxnav.nlm.nih.gov/REST/rxcui.json?name=leucovorin or https://mor.nlm.nih.gov/RxNav/search?searchBy=String&searchTerm=leucovorin"
+Hormone Therapy,drug_rxnormcui,Required,The unique RxNormID assigned to the treatment regimen drug.,Text,"
+
+RxNorm CUI","mCODE 
+STU 1",Cancer Related Medication Statement,"MedicationStatement.medication[x]:medicationCodeableConcept
+RxNorm CUIs from US Core Medication Codes Value Set
+",This field is required in order to validate required ARGO 'drug_name' field
+Hormone Therapy,hormone_drug_dosage_units,Required,"Indicate the units used to record hormone drug dosage.
+",Text,"mg/m2
+IU/m2
+ug/m2
+g/m2
+mg/kg",ICGC ARGO,,hormone_drug_dosage_units,
+Hormone Therapy,cumulative_drug_dosage_prescribed,Optional,Indicate the total drug dose the donor was prescibed in the same units specified in the 'hormone_drug_dosage_units' field.,Number,,ICGC ARGO,,cumulative_drug_dosage,
+Hormone Therapy,cumulative_drug_dosage_actual,Optional,"Indicate the actual total drug dose the donor received, in the same units specified in the 'hormone_drug_dosage_units' field.",Number,,ICGC ARGO,,cumulative_drug_dosage,
+Radiation,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Radiation,submitter_donor_id,"The Radiation file is only required if ""Radiation therapy"" is selected in ""treatment_type"" field","Unique identifier for the donor, assigned by the data provider. ",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,
+Radiation,submitter_treatment_id,Required,"Unique identifier of the treatment, assigned by the data provider.
+",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Related Radiation Procedure,Procedure.identifier,
+Radiation,radiation_therapy_modality,Required,"Indicate the method of radiation treatment or modality.
+",Text,"Megavoltage radiation therapy using photons (procedure)        
+Teleradiotherapy using electrons (procedure)        
+Teleradiotherapy protons (procedure)        
+Teleradiotherapy neutrons (procedure)        
+Brachytherapy (procedure)
+Other","mCODE 
+STU 1",Cancer Related Radiation Procedure,"Procedure.code
+mCODE Value Set: Radiation Procedure Value Set",
+Radiation,radiation_therapy_type,Required,"Indicate type of radiation therapy administered.
+",Text,"External
+Internal",ICGC ARGO,,radiation_therapy_type,
+Radiation,radiation_therapy_fractions,Required,"Indicate the total number of fractions delivered as part of treatment.
+",Integer,,"mCODE 
+STU 1",Cancer Related Radiation Procedure,RadiationFractionsDelivered,
+Radiation,radiation_therapy_dosage,Required,Indicate the total dose given in units of Gray (Gy).,Integer,,"mCODE 
+STU 1",Cancer Related Radiation Procedure,TotalRadiationDoseDelivered,
+Radiation,anatomical_site_irradiated ,Required,Indicate localization site where radiation therapy was administered.,Text,Value from Radiation Target Body Site Value Set,"mCODE 
+STU 1",Cancer Related Radiation Procedure,"Procedure.bodySite
+Radiation Target Body Site Value Set",
+Radiation,radiation_boost,Optional,"A radiation boost is an extra radiation treatment targeted at the tumor bed, given after the regular sessions of radiation is complete (Reference NCIt: C137812). Indicate if this radiation treatment was a radiation boost.",Text,"Yes
+No",,,,
+Radiation,reference_radiation_treatment_id,"Required/Conditional
+Only required if 
+'radiation_boost' = 'Yes'","If a radiation boost was given, indicate the 'submitter_treatment_id' of the primary radiation treatment the radiation boost treatment is linked to.",Text,,,,,
+Immunotherapy,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Immunotherapy,submitter_donor_id,"The Hormone Therapy file is only required if ""Hormonal Therapy"" is selected in ""treatment_type"" field","Unique identifier for the donor, assigned by the data provider. ",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,
+Immunotherapy,submitter_treatment_id,Required,"Unique identifier of the treatment, assigned by the data provider.
+",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Related Medication Statement,MedicationStatement.identifier ,
+Immunotherapy,immunotherapy_type,Required,"Indicate the type of immunotherapy administered to donor.
+",Text,"Cell-based
+Immune checkpoint inhibitors
+Monoclonal antibodies other than immune checkpoint inhibitors
+Other immunomodulatory substances",ICGC ARGO,,immunotherapy_type,
+Immunotherapy,drug_name,Required,"Name of agent or drug administered to patient as part of the treatment regimen.
+",Text,"This field uses standardized vocabulary from the RxNorm database (https://www.nlm.nih.gov/research/umls/rxnorm), provided by the NIH. ",ICGC ARGO,,drug_name,"You can search for RX Norm values through the web interface (https://mor.nlm.nih.gov/RxNav/) or API (https://lhncbc.nlm.nih.gov/RxNav/APIs/RxNormAPIs.html). 
+For example, to find the rxnormcui based on drug name, you can use: https://rxnav.nlm.nih.gov/REST/rxcui.json?name=leucovorin or https://mor.nlm.nih.gov/RxNav/search?searchBy=String&searchTerm=leucovorin"
+Immunotherapy,drug_rxnormcui,Required,The unique RxNormID assigned to the treatment regimen drug.,Text,"
+
+RxNorm CUI","mCODE 
+STU 1",Cancer Related Medication Statement,"MedicationStatement.medication[x]:medicationCodeableConcept
+RxNorm CUIs from US Core Medication Codes Value Set
+",This field is required in order to validate required ARGO 'drug_name' field
+Surgery,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Surgery,submitter_donor_id,"The Surgery file is only required if ""treatment_type"" = ""Surgery""","Unique identifier for the donor, assigned by the data provider. ",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,
+Surgery,submitter_specimen_id,,"Unique identifier of the specimen, assigned by the data provider.
+",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}}
+
+Examples:
+LAML_PO, 00445, THY_099-tumour","mCODE 
+STU 1",Genetic Specimen,Specimen.Identifier,Please refer to documentation for instructions on how to submit a specimen that was resected during surgery: https://docs.icgc-argo.org/docs/submission/submitting-clinical-data#submitting-data-in-surgery-file
+Surgery,submitter_treatment_id,Required,"Unique identifier of the treatment, assigned by the data provider.
+",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Related Radiation Procedure,Procedure.identifier,
+Surgery,surgery_type,Required,"Indicate the type of surgical procedure that was performed. (References: SNOMED, NCIt, UMLS)",Text,Click for drop-down list of surgery types,ICGC ARGO,,surgery_type,
+Surgery,surgery_site,"Conditional
+This field is not required if a specimen was resected during surgery (ie. if `submitter_specimen_id` is submitted) since type of specimen is collected in the Specimen table.","Indicate the ICD-O-3 topography code for the anatomic site where the surgical procedure was performed, according to the International Classification of Diseases for Oncology, 3rd Edition (WHO ICD-O-3)",Text,,ICGC ARGO,,surgery_site,
+Surgery,surgery_location,"Conditional
+This field is not required if a specimen was resected during surgery (ie. if `submitter_specimen_id` is submitted) since type of specimen is collected in the Specimen table.","Indicate whether the surgical procedure was done at the primary, local recurrence or metastatic location
+",Text,"Local recurrence
+Metastatic
+Primary",ICGC ARGO,,surgery_location,
+Surgery,tumour_length,Optional,"Indicate the length of the tumour, in millimetres (mm).
+",Number,,ICGC ARGO,,tumour_length,
+Surgery,tumour_width,Optional,"Indicate the length of the tumour, in millimetres (mm).
+",Number,,ICGC ARGO,,tumour_width,
+Surgery,greatest_dimension_tumour,Optional,"Indicate the greatest dimension or diameter of the tumour, in millimetres (mm). (Reference: NCIt C157135)",Number,,ICGC ARGO,,greatest_dimension_tumour,
+Surgery,tumour_focality,Optional,"Indicate the characterization of the location of the tumour. (Reference: NCIt: C157425)
+",Text,"Cannot be assessed
+Multifocal
+Not applicable
+Unifocal
+Unknown",ICGC ARGO,,tumour_focality,
+Surgery,residual_tumour_classification,Optional,Indicate the absence or presence of residual tumour after treatment. In some cases treated with surgery and/or with neoadjuvant therapy there will be residual tumour at the primary site after treatment because of incomplete resection or local and regional disease that extends beyond the limit of ability of resection. (Reference: AJCC 8th ed.),Text,"Not applicable
+RX
+R0
+R1
+R2
+Unknown",ICGC ARGO,,residual_tumour_classification,"RX (Presence of residual tumour cannot be assessed), 
+R0 (no residual tumour), 
+R1 (microscopic residual tumour), 
+R2 (macroscopic residual tumour)"
+Surgery,margin_types_involved,Optional,"Indicate the margin type(s) involved.
+",Text,"Circumferential resection margin
+Common bile duct margin
+Distal margin
+Not applicable
+Proximal margin
+Unknown",ICGC ARGO,,margin_types_involved,"To include multiple values, separate values with a pipe delimiter '|' within your file.
+"
+Surgery,margin_types_not_involved,Optional,"Indicate the margin type(s) not involved.
+",Text,"Circumferential resection margin
+Common bile duct margin
+Distal margin
+Not applicable
+Proximal margin
+Unknown",ICGC ARGO,,margin_types_not_involved,"To include multiple values, separate values with a pipe delimiter '|' within your file.
+"
+Surgery,margin_types_not_assessed,Optional,"Indicate the margin type(s) that cannot be assessed.
+",Text,"Circumferential resection margin
+Common bile duct margin
+Distal margin
+Not applicable
+Proximal margin
+Unknown",ICGC ARGO,,margin_types_not_assessed,"To include multiple values, separate values with a pipe delimiter '|' within your file.
+"
+Surgery,lymphovascular_invasion,Optional,"Indicate the absence or presence of lymphovascular invasion (LVI). LVI includes lymphatic invasion, vascular invasion and lymphovascular invasion. (Reference: AJCC 8th ed.)",Text,"Absent
+Both lymphatic and small vessel and venous (large vessel) invasion
+Lymphatic and small vessel invasion only
+Not applicable
+Present
+Venous (large vessel) invasion only
+Unknown",ICGC ARGO,,lymphovascular_invasion,
+Surgery,perineural_invasion,Optional,"A morphologic finding referring to a tumour that has spread along and infiltrated nerve fibers. Indicate the presence or absence of perineural invasion. (Reference: NCIt: C48260, ICCR)",Text,"Absent
+Cannot be assessed
+Not applicable
+Present
+Unknown",ICGC ARGO,,perineural_invasion,
+Follow Up,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Follow Up,submitter_donor_id,Required,"Unique identifier for the donor, assigned by the data provider. ",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,
+Follow Up,submitter_follow_up_id,Required,"Unique identifier for a follow-up event in a donor's clinical record, assigned by the data provider.",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90",ICGC ARGO,,submitter_follow_up_id,
+Follow Up,submitter_primary_diagnosis_id,Optional,Indicate if the follow-up is related to a specific primary diagnosis event in the clinical timeline.,Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1","Primary Cancer Condition 
+or
+Secondary Cancer Condition","Condition.identifier (Primary Cancer Condition)
+or
+Condition.identifier (Secondary Cancer Condition)",
+Follow Up,submitter_treatment_id,Optional,Indicate if the follow-up is related to a specific treatment event in the clinical timeline.,Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1","CancerRelatedRadiationProcedure
+or
+CancerRelatedMedicationStatement
+or
+CancerRelatedSurgicalStatement",Procedure.identifier,
+Follow Up,date_of_followup,Required,Date of follow-up date.,Integer,Format YYYY-MM,ICGC ARGO,,interval_of_followup,"This field is required in order to calculate the ARGO required ""interval_of_followup"" field which is recorded in days (ie. [date_of_followup - date_of_diagnosis])"
+Follow Up,lost_to_followup,Optional,Indicate if donor was confirmed lost to follow-up at the end of this follow up clinical event.,Text,"Yes
+No","caDSR CDE 7547299
+NCIt C61410",,,
+Follow Up,lost_to_followup_reason,Optional,Indicate reason the donor was lost to follow up.,Text,"Completed study
+Discharged to palliative care
+Lost contact
+Not applicable
+Unknown
+Withdrew from study",,,,
+Follow Up,disease_status_at_followup,Required,Indicate the donor's disease status at time of follow-up.,Text,"Complete remission
+Distant progression
+Loco-regional progression
+No evidence of disease
+Partial remission
+Progression NOS
+Relapse or recurrence
+Stable",ICGC ARGO,,disease_status_at_followup,
+Follow Up,relapse_type,"This field is required to be submitted if disease_status_at_followup indicates a state of progression, relapse, or recurrence.","Indicate the donor's relapse type.
+",Text,"Distant recurrence/metastasis
+Local recurrence
+Local recurrence and distant metastasis
+Progression (liquid tumours)
+Biochemical progression",ICGC ARGO,,relapse_type,
+Follow Up,date_of_relapse,"This field is required to be submitted if disease_status_at_followup indicates a state of progression, relapse, or recurrence.",Indicate the date when relapse occurred following a period of time after primary treatment when the patient was clinically disease free.,Integer,Format YYYY-MM,ICGC ARGO,,relapse_interval,"This field is required in order to calculate the required ARGO ""relapse_interval"" field which is recorded in days (ie. [date_of_relapse] - [date_of_diagnosis])"
+Follow Up,method_of_progression_status,"This field is required to be submitted if disease_status_at_followup indicates a state of progression, relapse, or recurrence. To include multiple values, separate values with a pipe delimiter '|' within your file.",Indicate the method(s) used to confirm the donor's progression or relapse or recurrence disease status. (Codelist reference: NCI CDE ID: 6161031),Text,"
+Imaging (procedure)
+Histopathology test (procedure)
+Assessment of symptom control (procedure)
+Physical examination procedure (procedure)
+Tumor marker measurement (procedure)  
+Laboratory data interpretation (procedure) ","mCODE 
+STU 1",Cancer Disease Status,"Observation.extension:evidenceType.value[x]:valueCodeableConcept
+mCODE Value Set: Cancer Disease Status Evidence",
+Follow Up,anatomic_site_progression_or_recurrence,"This field is required to be submitted if disease_status_at_followup indicates a state of progression, relapse, or recurrence.","Indicate the ICD-O-3 topography code for the anatomic site where disease progression, relapse or recurrence occurred, according to the International Classification of Diseases for Oncology, 3rd Edition (WHO ICD-O-3). Refer to the ICD-O-3 manual for guidelines at https://apps.who.int/iris/handle/10665/42344",Text,ICD-O-3 topography code,"mCODE 
+STU 1","Primary Cancer Condition 
+or
+ Secondary Cancer Condition","Condition.bodySite (Primary Cancer Condition)
+or
+Condition.bodySite (Secondary Cancer Condition)
+ICD-O-3 topography codes as mentioned in description of Cancer Body Location Value Set",
+Follow Up,recurrence_tumour_staging_system,Optional,Specify the tumour staging system used to stage the cancer at time of retreatment for recurrence or disease progression. This may be represented as rTNM in the medical report.,Text,"AJCC 8th edition
+AJCC 7th edition
+AJCC 6th edition
+Ann Arbor staging system
+Binet staging system
+Durie-Salmon staging system
+FIGO staging system
+Lugano staging system
+Rai staging system
+Revised International staging system (RISS)
+SEER staging system
+St Jude staging system",ICGC ARGO,,recurrence_tumour_staging_system,
+Follow Up,recurrence_t_category,Optional,"The code to represent the extent of the primary tumour (T) based on evidence obtained from clinical assessment parameters determined at the time of retreatment for a recurrence or disease progression, according to criteria based on multiple editions of the AJCC's Cancer Staging Manual.",Text,Click for drop-down list of AJCC T category values,"mCODE 
+STU 1","No mCODE Profile, only Value Set","Observation.value[x]:valueCodeableConcept
+AJCC values from TNM Primary Tumor Category Value Set
+",
+Follow Up,recurrence_n_category,Optional,"The code to represent the stage of cancer defined by the extent of the regional lymph node (N) involvement for the cancer based on evidence obtained from clinical assessment parameters determined at the time of retreatment for a recurrence or disease progression, according to criteria based on multiple editions of the AJCC's Cancer Staging Manual.",Text,Click for drop-down list of AJCC N category values,"mCODE 
+STU 1","No mCODE Profile, only Value Set","Observation.value[x]:valueCodeableConcept
+AJCC values from TNM Regional Nodes Category Value Set",
+Follow Up,recurrence_m_category,Optional,"The code to represent the stage of cancer defined by the extent of the distant metastasis (M) for the cancer based on evidence obtained from clinical assessment parameters determined at the time of retreatment for a recurrence or disease progression, according to criteria based on multiple editions of the AJCC's Cancer Staging Manual.",Text,Click for drop-down list of AJCC M category values,"mCODE 
+STU 1","No mCODE Profile, only Value Set","Observation.value[x]:valueCodeableConcept
+AJCC values from TNM Distant Metastases Category Value Set",
+Follow Up,recurrence_stage_group,Optional,"The code to represent the stage group of the tumour, as assigned by the reporting recurrence_tumour_staging_system, that indicates the overall prognostic tumour stage (ie. Stage I, Stage II, Stage III etc.) at the time of retreatment for a recurrence or disease progression.",Text,Click for drop-down list of recurrence stage groups,ICGC ARGO,,recurrence_stage_group,"mCODE's TNM Stage Group Value Set only contains TNM stage groups, so for this reason the ARGO controlled terminology is suggested since it contains stage groups from non-TNM staging systems as well.
+
+This field is dependent on the selected recurrence_tumour_staging_system. Please refer to the documentation for Tumour Staging Classifications: http://docs.icgc-argo.org/docs/submission/dictionary-overview#tumour-staging-classifications. "
+Biomarker,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Biomarker,submitter_donor_id,Required,"Unique identifier for the donor, assigned by the data provider. ",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,"Each row should include one or more biomarker test(s) associated with a particular clinical event (submitter_specimen_id, submitter_primary_diagnosis_id, submitter_treatment_id or submitter_follow_up_id field). If the biomarker test is not associated with a particular clinical event, then indicate the time interval at which the biomarker test was performed (test_interval field)."
+Biomarker,submitter_specimen_id,"Each row should include one or more biomarker test(s) associated with a particular clinical event , so only one of ['submitter_specimen_id', 'submitter_primary_diagnosis_id', 'submitter_treatment_id' or 'submitter_follow_up_id'] fields is required. If the biomarker test is not associated with a particular clinical event, then indicate the time interval at which the biomarker test was performed (test_interval field).","Unique identifier of the specimen, assigned by the data provider.
+",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}}
+
+Examples:
+LAML_PO, 00445, THY_099-tumour","mCODE 
+STU 1",Genetic Specimen,Specimen.Identifier,
+Biomarker,submitter_primary_diagnosis_id,"Each row should include one or more biomarker test(s) associated with a particular clinical event , so only one of ['submitter_specimen_id', 'submitter_primary_diagnosis_id', 'submitter_treatment_id' or 'submitter_follow_up_id'] fields is required. If the biomarker test is not associated with a particular clinical event, then indicate the time interval at which the biomarker test was performed (test_interval field).",Indicate the primary diagnosis event in the clinical timeline that this specimen acquisition was related to,Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+LAML_PO, 00445, THY_099-tumour","mCODE 
+STU 1",Primary Cancer Condition,Condition.identifier,
+Biomarker,submitter_treatment_id,"Each row should include one or more biomarker test(s) associated with a particular clinical event , so only one of ['submitter_specimen_id', 'submitter_primary_diagnosis_id', 'submitter_treatment_id' or 'submitter_follow_up_id'] fields is required. If the biomarker test is not associated with a particular clinical event, then indicate the time interval at which the biomarker test was performed (test_interval field).","Unique identifier of the treatment, assigned by the data provider.
+",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1","CancerRelatedRadiationProcedure
+or
+CancerRelatedMedicationStatement
+or
+CancerRelatedSurgicalStatement",Procedure.identifier,
+Biomarker,submitter_follow_up_id,"Each row should include one or more biomarker test(s) associated with a particular clinical event , so only one of ['submitter_specimen_id', 'submitter_primary_diagnosis_id', 'submitter_treatment_id' or 'submitter_follow_up_id'] fields is required. If the biomarker test is not associated with a particular clinical event, then indicate the time interval in the 'test_interval' field at which the biomarker test was performed.","Unique identifier for a follow-up event in a donor's clinical record, assigned by the data provider.",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90",ICGC ARGO,,submitter_follow_up_id,
+Biomarker,test_interval,"Each row should include one or more biomarker test(s) associated with a particular clinical event , so only one of ['submitter_specimen_id', 'submitter_primary_diagnosis_id', 'submitter_treatment_id' or 'submitter_follow_up_id'] fields is required. If the biomarker test is not associated with a particular clinical event, then indicate the time interval at which the biomarker test was performed (test_interval field).","If the biomarker test was not associated with a specific specimen or follow-up, primary diagnosis or treatment event, then indicate the interval of time since primary diagnosis that the biomarker test was performed at, in days.",Integer,,ICGC ARGO,,,
+Biomarker,psa_level,Optional,"A laboratory test that measures the amount of prostate-specific antigen (PSA) found in the blood. PSA is a protein made by the prostate gland. The amount of PSA may be higher in men who have prostate cancer, benign prostatic hyperplasia (BPH), or infection or inflammation of the prostate (Reference NCIt C17634). Indicate level of PSA in ng/mL.",Integer,,,,,
+Biomarker,ca125,Optional,"Indicate the amount of cancer antigen 125 present in a blood serum sample in U/ml (References: NCIt C141277, LOINC: 10334-1)",Integer,,,,,
+Biomarker,cea,Optional,"Indicate the amount of carcinoembryonic antigen present in a serum sample in ng/ml (References NCIt C157252, LOINC 2039-6).",Integer,,,,,
+Comorbidity,program_id,Required,Unique identifier of the program.,Text,,ICGC ARGO,,program_id,
+Comorbidity,submitter_donor_id,Required,"Unique identifier for the donor, assigned by the data provider. ",Text,"Values must meet the regular expression
+^[A-Za-z0-9\-\._]{1,64}
+
+Examples:
+90234, BLD_donor_89, AML-90","mCODE 
+STU 1",Cancer Patient,Patient.Identifier,
+Comorbidity,prior_malignancy,Optional,"Prior malignancy affecting donor.
+",Text,"Yes
+No
+Unknown",ICGC ARGO,,,
+Comorbidity,laterality_of_prior_malignancy,"Optional/Conditional
+This field should only be submitted if patient has been indicated to have a prior malignancy","If donor has history of prior malignancy, indicate laterality of previous diagnosis. (Reference: caDSR CDE ID 4122391)",Text,"Bilateral
+Left
+Midline
+Not applicable
+Right
+Unilateral, Side not specified
+Unknown",ICGC ARGO,,,
+Comorbidity,age_at_comorbidity_diagnosis,"Optional/Conditional
+This field should only be submitted if patient has been indicated to have a comorbidity.","Indicate the age of comorbidity diagnosis, in years.
+",Integer,,ICGC ARGO,,,
+Comorbidity,comorbidity_type_code,"Required/Conditional
+This field is required because it should have a cancer or non-cancer ICD-10 code. This field is marked 'Conditional' because it depends on the value of the `prior_malignancy` field. Both these fields will need to be consistent. If `prior_malignancy` is `Yes`, then an ICD-10 code related to cancer is expected in this field. If `prior_malignancy` is `No`, then an ICD-10 code related to a non-cancer condition is expected in this field.",Indicate the code for the comorbidity using the WHO ICD-10 code classification (https://icd.who.int/browse10/2019/en).,Text,"Values must meet the regular expression
+^[A-Z][0-9]{2}(.[0-9]{1,3}[A-Z]{0,1})?$
+
+Examples:
+E10, C50.1, I11, M06,",ICGC ARGO,,,
+Comorbidity,comorbidity_treatment_status,"Optional/Conditional
+This field should only be submitted if patient has been indicated to have a comorbidity.",Indicate if the patient is being treated for the comorbidity (this includes prior malignancies).,Text,"Yes
+No
+Unknown",ICGC ARGO,,,
+Comorbidity,comorbidity_treatment,"Optional/Conditional
+This field should only be submitted if patient has been indicated to have a comorbidity.",Indicate treatment details for the comorbidity (this includes prior malignancies).,Text,,ICGC ARGO,,,
