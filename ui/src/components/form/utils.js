@@ -44,7 +44,7 @@ query Query {
         set
         type
         value
-        form : primary_key_to {
+        primary_key_to {
           form_id
         }
         }
@@ -113,6 +113,19 @@ query Submitters($where: SubmitterWhere, $referencePrimary: SubmitterWhere) {
 }
 `
 
+export const CreateNode = gql`
+mutation Fields($input: [SubmitterCreateInput!]!) {
+  createSubmitters(input: $input) {
+    submitters {
+      fields {
+        key
+        value
+      }
+    }
+  }
+}`
+
+
 /**
  * naive validation 
  * @param {*} param0 
@@ -124,9 +137,9 @@ export function determineFieldValidation(field) {
 
 
 
-  const dateSchema = z.preprocess((arg) => {
-    if (typeof arg == "string" || arg instanceof Date) return new Date(arg);
-  }, z.date());
+  // const dateSchema = z.preprocess((arg) => {
+  //   if (typeof arg == "string" || arg instanceof Date) return new Date(arg);
+  // }, z.date());
 
 
   // if (type === "text"){
@@ -146,6 +159,12 @@ export function determineFieldValidation(field) {
   return schema
 }
 
+/**
+ * Given there is more then one error then populate all the errors
+ * that are thrown.
+ * @param {*} arr 
+ * @returns 
+ */
 export const ParseError = (arr) => {
   return arr.map((issue, index) => {
     if (arr.length === 1) return `${issue.message}`;
@@ -156,32 +175,33 @@ export const ParseError = (arr) => {
 }
 
 
-const ObjectInputType = (formState, fieldsMetaData) => {
-    let arr = []
-    let cond = {}
-  console.log(fieldsMetaData)
-    fieldsMetaData.forEach((value) => {
-        cond[value.name] = value.conditionals === null ? false : doesNotMeetAllConditions(value.conditionals, formState)
-    })
 
-    for (const prop in formState){
-      if (cond[prop]) continue
-      arr.push({ "node" : {key : prop, value : formState[prop] }}) // condition are met then set it to the value else set default value
-    }
-    return {"fields" : {"create" : arr} }
-}
-
-export const doesNotMeetAllConditions = (conditionals, gfs, ctx={}, check = []) => {
+/**
+ * 
+ * @param {*} conditionals (field condition) field metadata the contains info of what needs to be met to be used
+ * @param {*} gfs (global state form) An object type, intra connection 
+ * @param {*} ctx (context) An object type, which allows the form to handle inter connection to other form
+ * @returns (boolean) if there contains a false condition then some condition within the field is not met
+ */
+export const doesNotMeetAllConditions = (conditionals, gfs, ctx={}) => {
   // =====================
   // Conditional Handler
   // =====================
+
+  let check = []
+  // There are no conditions
+  // so return false given 
+  // there are no condition
+  // to be met.
+
+  console.log(check)
   if (conditionals === null) return false
+  
   Object.keys(conditionals).forEach((key) => {
-      if (conditionals[key] === gfs[key]) check.push(ctx[key] === conditionals[key] || conditionals[key] === gfs[key] ); 
-      else if (ctx[key] === undefined) return
-      else check.push(ctx[key] === conditionals[key] );
+      if (gfs[key] === undefined && ctx[key] === undefined) 
+           check.push(false)
+      else check.push(conditionals[key] === gfs[key] || ctx[key] === conditionals[key] ); 
     });
-    // if (ctx[key] === undefined) return true
 
   return check.includes(false);
 };
@@ -191,6 +211,10 @@ export const constructDropdown = (values, menu = []) => {
   // Construct Dropdown
   // =====================
   
+  // NOTE:
+  // this can be done within
+  // the back and and stored
+  // within the backend.
   values.forEach((value, index) => {
     menu.push({key: index, text: value, value: value });
   });
@@ -198,54 +222,11 @@ export const constructDropdown = (values, menu = []) => {
 };
 
 
-
-/**
-[
-    {
-      "primary_keys": {"Test_00" : "TEST"},
-      "form": "vivona_test",
-      "uuid": "vivona",
-      "fields": {
-        "create": [
-          {
-            "node": {
-              "key": "Hello",
-              "value": "world"
-            }
-          },
-          {
-            "node": {
-              "key": "Hello_00",
-              "value": "world_00"
-            }
-          },
-        ]
-      },
-      "reference_key": {
-        "connect": [
-          {
-            "where": {
-              "node": {
-                "OR": [
-                  {
-                    "primary_keys": {"program_id":"UHN","submitter_donor_id":"N0-00-02"}
-
-                  },
-                  {
-                    "primary_keys" : {"test_id":"TEST"}
-                  }
-                ]
-              }
-            }
-          }
-        ]
-      },
-    }
-  ]
- */
-
 export const getKeysValuePair = (keys, object) => {
   let tempObject = {} // initialize object
+
+  // look through the array of keys
+  // and store it in temp object.
   keys.forEach((key) => {
     tempObject[key] = object[key] // with the given keys assign key and value within that object
   })
@@ -260,9 +241,12 @@ export const sortForeignKeys = (feildState, fks) => {
   // loop through all the reference_key (foreign keys)
   // dump them within there own form bucked
   fks.forEach(fk => {
-    if (bucket[fk.node.form.form_id] === undefined) 
-      bucket[fk.node.form.form_id] = { "form" : fk.node.form.form_id, "primary_keys" : {}}
-    bucket[fk.node.form.form_id] = {...bucket[fk.node.form.form_id], "primary_keys" : {...bucket[fk.node.form.form_id].primaryKeys, ...getKeysValuePair([fk.node.name], feildState)}}    
+    console.log(fk)
+    if (bucket[fk.node.primary_key_to.form_id] === undefined) {
+      bucket[fk.node.primary_key_to.form_id] = { "form" : fk.node.primary_key_to.form_id, "primary_keys" : {}}
+    } else {
+      bucket[fk.node.primary_key_to.form_id] = {...bucket[fk.node.primary_key_to.form_id], "primary_keys" : {...bucket[fk.node.primary_key_to.form_id].primaryKeys, ...getKeysValuePair([fk.node.name], feildState)}}    
+    }
   })
 
   // [{
@@ -270,24 +254,22 @@ export const sortForeignKeys = (feildState, fks) => {
   //  primary_key : ... ,
   // },...]
   // return an array of all the referenced forms 
-  console.log(!Object.keys(bucket).length)
-  return !Object.keys(bucket).length ? [] : Object.keys(bucket).map(reference => bucket[reference])
+  
+  return !Object.keys(bucket).length ? [] : Object.keys(bucket).map(reference => (bucket[reference]))
 }
 
 export const ParseFormToGraphQL = (form, fields) => {
-  console.log(form, fields)
-  console.log(getKeysValuePair(fields.identifier.map(id => id.name), form.ids))
   return {"form": form.form_id,
           "uuid": uuidv4(),
           "primary_keys" : getKeysValuePair(fields.primaryKeys.map(pk => pk.name), form.ids),
           ...ObjectInputType(form.fields ,fields.formFields),
           ...fields.foreignKeys.concat(fields.identifier).length ? 
-          {"reference_key": 
+          {"reference_foreign_key": 
             { "connect": [ 
                             {"where": 
                               {"node": { "OR" : [
                                               ...sortForeignKeys(form.ids, fields.foreignKeys),
-                                              ...getKeysValuePair(fields.identifier.map(id => id.name), form.ids)
+                                              { "primary_keys" : getKeysValuePair(fields.identifier.map(id => id.name), form.ids)}
                                           ]
                                        }
                               } 
@@ -298,22 +280,25 @@ export const ParseFormToGraphQL = (form, fields) => {
          };
 }
 
-  /**{
-  "where": {
-    "primary_keys": {
-          "TEST": "OUTPUT 0"
-    }
-  },
-  "referencePrimary": {
-    "OR": [
-      { "form"   : "bbc",
-        "primary_keys" : { 
-        "TEST" : "OUTPUT 1"}},
-      { "form"         : "ccd" ,
-        "primary_keys" : {"TEST" : "OUTPUT 2"}},
-    ]
+/**
+ * 
+ * @param {*} formState 
+ * @param {*} fieldsMetaData 
+ * @returns 
+ */
+ const ObjectInputType = (formState, fieldsMetaData) => {
+  let arr = []
+  let cond = {}
+  fieldsMetaData.forEach((value) => {
+      cond[value.name] = value.conditionals === null ? false : doesNotMeetAllConditions(value.conditionals, formState)
+  })
+
+  for (const prop in formState){
+    if (cond[prop]) continue
+    arr.push({ "node" : {key : prop, value : formState[prop] }}) // condition are met then set it to the value else set default value
   }
-} */
+  return {"fields" : {"create" : arr} }
+}
 
 export const parseFormIDCTX = (fields,state) => {
   if (fields === null || state === {}) return {}
