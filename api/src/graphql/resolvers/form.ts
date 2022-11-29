@@ -25,7 +25,7 @@ function value(value) {
   
   function vSet(value) {
     var vtype = null;
-    console.log(typeof value, value)
+    // console.log(typeof value, value)
     switch(typeof value) {
       case "number":
         vtype = value
@@ -44,7 +44,7 @@ function value(value) {
   }
   
   function Parser(value) {
-    console.log(typeof value)
+    // console.log(typeof value)
     if (typeof value === "string"){
       return JSON.parse(value)
     } else if(typeof value === "object"){
