@@ -1,40 +1,56 @@
 import React, { useEffect, useState } from "react";
-import { Form } from "semantic-ui-react";
+import { Form, Divider, Header, Icon } from "semantic-ui-react";
 import { useQuery, useLazyQuery, useMutation } from "@apollo/client";
-import { z } from "zod";
+// import { z } from "zod";
 
 import {
   FieldData,
   NodeExist,
+  CreateNode,
   constructDropdown,
   ParseFormToGraphQL,
   doesNotMeetAllConditions,
   getKeysValuePair,
   parseFormIDCTX,
   NodeGetCTX
-} from "./utils.js";
+} from "./utils";
 
 import { TableTool } from "./table/FormTable";
 
-export function FormGenerator({ metadata }) {
-  // const formRef                               = useRef();
-  const [globalFormState, setGlobalFormState] = useState({});
-  const [validationObject, setValidationObject] = useState({});
-  const [uids, setUuids] = useState({});
-  const [option, setOption] = useState({});
-  const [nodeEvent, setNodeEvent] = useState("submit");
-  const [ctx, setCTX] = useState({})
-  const identifier = metadata.identifier.filter(
-    (fld) => !metadata.primary_key.map((fld) => fld.name).includes(fld.name)
-  );
-  const primaryKeys = metadata.primary_key.filter(
-    (field) =>
-      !identifier
-        .map((fld) => JSON.stringify(fld))
-        .includes(JSON.stringify(field))
-  );
-  const foreignKeys = metadata.foreign_key.edges;
 
+export function FormGenerator({ metadata }) {
+
+  console.log("FOREIGN KEYS")
+  console.log(metadata.foreign_keys)
+  // const [validationObject, setValidationObject] = useState({});
+  const [globalFormState, setGlobalFormState]      = useState({});      // Global State of the current form that holds all data inputs
+  const [uniqueIdsFormState, setUniqueIdFormState] = useState({});      // Contains all the form States unique IDs and there inputs within the current form
+  const [option, setOption]                        = useState({});      // Options of the Select Component fields **TODO: CHANGE AND STORE WITHIN BACKEND***
+
+  const [nodeEvent, setNodeEvent]                  = useState("submit");// Protocol State in which to handle the data within the form when it is submited 
+                                                                        // to be processed to the backend
+
+  const [ctx, setCTX]                              = useState({})       // Context (ctx) holds all the information of form that hold being refrenced by
+                                                                        // either the identifiers, and foreign keys
+
+  // identifier is a referance to root of the form directed acyclic graph in which all forms use there primary key
+  const identifier                                 = metadata.identifier.filter(
+                                                      (fld) => !metadata.primary_key.map((fld) => fld.name).includes(fld.name)
+                                                    );
+  // primary identifier of the current form. This allows us to be able to identify the node that will
+  // the backend later on
+  const primaryKeys                                = metadata.primary_key.filter(
+                                                      (field) =>
+                                                        !identifier
+                                                          .map((fld) => JSON.stringify(fld))
+                                                          .includes(JSON.stringify(field))
+                                                    );
+  // foreign identifier of the current form. This is the identifier that connects to other existing forms and there
+  // primary identifier
+  const foreignKeys                                = metadata.foreign_key.edges;
+
+
+  // (Populate Form Fields GraphQL Query) that loads all field data within the form
   const {
     loading: loadFieldData,
     error: errorFields,
@@ -44,16 +60,30 @@ export function FormGenerator({ metadata }) {
   });
 
 
-  const [getNodeExist, { loading, error }] = useLazyQuery(NodeExist, {
+  // (Populated Sumbitter Node Exist Query) 
+  const [getNodeExist] = useLazyQuery(NodeExist, {
     fetchPolicy: "network-only",
   });
 
-  // const [CreateNode] = useMutation();
+  // (Context GraphQL Query) given there is a foreign or an identifier
+  // give inter connection context to the form allowing form to have inter
+  // connected conditions
+  const {
+    data: FormFieldsCTX,
+  } = useQuery(NodeGetCTX, {
+    variables: parseFormIDCTX({identifier, foreignKeys}, uniqueIdsFormState),
+  });
 
+  const [createNode] = useMutation(CreateNode);
+
+  // On First Component Render 
+  // make sure all states are wiped from
+  // any changes like for example a change from
+  // one form to another.
   useEffect(() => {
-    setUuids({});
+    // setValidationObject({})
+    setUniqueIdFormState({});
     setGlobalFormState({});
-    setValidationObject({})
     setOption({})
 
     // populate form foreign keys, primary keys, identifier
@@ -63,21 +93,14 @@ export function FormGenerator({ metadata }) {
       ...foreignKeys.map((fk) => fk.node),
     ];
     ids.map((field) =>
-      setUuids((id) => ({
+      setUniqueIdFormState((id) => ({
         ...id,
         [field.name]: field.value,
       }))
     );
 
     // eslint-disable-next-line
-  }, []);
-
-    const {
-      data: FormFieldsCTX,
-    } = useQuery(NodeGetCTX, {
-      variables: parseFormIDCTX({identifier, foreignKeys}, uids),
-    });
-
+  }, [metadata]);
   
   useEffect(() => {
 
@@ -89,7 +112,6 @@ export function FormGenerator({ metadata }) {
     if (typeof FormFieldsCTX === "object" && FormFieldsCTX.ctx.length > 0){
       if (Object.keys(ctx).length > 0) setCTX({});
       FormFieldsCTX.ctx[0].fields.forEach((fld) => {
-        console.log({[fld["key"]] : fld["value"],})
         setCTX((ctx) => ({
           ...ctx,
           [fld["key"]] : fld["value"],
@@ -98,7 +120,6 @@ export function FormGenerator({ metadata }) {
 
      FormFieldsCTX.ctx[0].references.forEach((form) => {
         form.fields.forEach((fld)=> {  
-          console.log({[fld["key"]] : fld["value"],})
           setCTX((ctx) => ({
             ...ctx,
             [fld["key"]] : fld["value"],
@@ -108,8 +129,12 @@ export function FormGenerator({ metadata }) {
 
 
     }
+
+  // eslint-disable-next-line
   },[FormFieldsCTX])
 
+
+  
   const onFormComplete = async (event) => {
     // Validate Form
     //...
@@ -117,8 +142,13 @@ export function FormGenerator({ metadata }) {
     // if there are foreign keys then need
     // to check if it is consistent
 
+    // if there exist a fogien key 
+    // check with the context state (ctx) 
+    // if the form exist with in the
+
+    // create the muation variables to populate the neo4j... 
     const formCreateSchema = ParseFormToGraphQL(
-        { ids: uids, fields: globalFormState, form_id: metadata.form_id },
+        { ids: uniqueIdsFormState, fields: globalFormState, form_id: metadata.form_id },
         {
           identifier,
           primaryKeys,
@@ -126,30 +156,46 @@ export function FormGenerator({ metadata }) {
           formFields: formFields.PopulateForm,
         });
 
-    console.log(formCreateSchema)
+    // console.log(JSON.stringify(formCreateSchema))
 
     // given if the node exist then do not populate the backend
     // alert the user in anyway...
-    const doseNodeExist = await getNodeExist({
-      variables: {
-        where: {
-          form: metadata.form_id,
-          primary_keys: formCreateSchema.primary_keys,
-        },
-      },
-    });
+    // const doseNodeExist = await getNodeExist({
+    //   variables: {
+    //     where: {
+    //       form: metadata.form_id,
+    //       primary_keys: formCreateSchema.primary_keys,
+    //     },
+    //   },
+    // });
 
-    if (doseNodeExist.data.exist.length) {
-      alert("Node exists");
+    // if (doseNodeExist.data.exist.length) {
+    //   alert("Node exists");
+    //   return;
+    // } // do nothing
+
+
+    if (nodeEvent === "submit"){
+      createNode({variables  : { "input" : [formCreateSchema]}})
+      alert("submit")
+    } else {
+      alert("Update Do Nothing... Right now");
       return;
-    } // do nothing
+    }
   }
 
 
+  // when data is recived then update global form state and as well populate the option necessary
+  // for the select components
   useEffect(() => {
     if (formFields !== undefined) {
-
       // populate form other fields
+      if(Object.keys(globalFormState).length > 0){
+        setGlobalFormState({})
+        setOption({})
+
+      }
+
       formFields.PopulateForm.forEach((field) => {
         
         if (field.component === "Select") {
@@ -164,21 +210,25 @@ export function FormGenerator({ metadata }) {
           [field.name]: field.value,
         }));
 
-        
-
-        setValidationObject((fld) => (z.object({
-          ...fld,
-          [field.name] : null,
-        })))
+        // UNCOMMENT WHEN FINISHED 
+        // =================================
+        // CURRENT STATE: (**Not Finished**)
+        // =================================
+        // setValidationObject((fld) => (z.object({
+        //   ...fld,
+        //   [field.name] : null,
+        // })))
 
       });
     }
     // eslint-disable-next-line
   }, [formFields]);
 
+  //  not return anything to the DOM if the data is not loaded
   if (loadFieldData) return <></>;
-  if (errorFields) return `Somthing went wrong within the backend ${errorFields}`;
+  else if (errorFields) return `Somthing went wrong within the backend ${errorFields}`;
   
+  console.log(globalFormState)
   return (
     <div
       key={metadata.form_name}
@@ -191,15 +241,21 @@ export function FormGenerator({ metadata }) {
           onFormComplete(event);
         }}
       >
+        <Divider horizontal>
+          <Header as='h4'>
+            <Icon name='info' />
+            IDs
+          </Header>
+        </Divider>
         <Form.Group widths={"equal"}>
           {identifier.map((fld) => (
             <Form.Input
             name={fld.name}
-            value={uids[fld.name]}
+            value={uniqueIdsFormState[fld.name]}
             type={fld.type}
             label={fld.label}
             placeholder={fld.placeholder}
-            onChange={(e) => {setUuids((f) => ({...f, [e.target.name] : e.target.value}))}}
+            onChange={(e) => {setUniqueIdFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
           />
           ))}
         </Form.Group>
@@ -208,35 +264,42 @@ export function FormGenerator({ metadata }) {
           {primaryKeys.map((fld) => (
             <Form.Input
             name={fld.name}
-            value={uids[fld.name]}
+            value={uniqueIdsFormState[fld.name]}
             type={fld.type}
             label={fld.label}
             placeholder={fld.placeholder}
-            onChange={(e) => {setUuids((f) => ({...f, [e.target.name] : e.target.value}))}}
+            onChange={(e) => {setUniqueIdFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
           />
           ))}
         </Form.Group>
 
         <TableTool form={metadata.form_id}
                    searchBy={identifier.length}
-                   identifier={getKeysValuePair(identifier.length ? identifier.map(id => id.name) : primaryKeys.map(pk => pk.name), uids)}/>
+                   identifier={getKeysValuePair(identifier.length ? identifier.map(id => id.name) : primaryKeys.map(pk => pk.name), uniqueIdsFormState)}/>
 
         <Form.Group widths={"equal"}>
           {foreignKeys.map((fld) => {
            return ( <Form.Input
             name={fld.node.name}
-            value={uids[fld.node.name]}
+            value={uniqueIdsFormState[fld.node.name]}
             type={fld.node.type}
             label={fld.node.label}
             placeholder={fld.node.placeholder}
-            onChange={(e) => {setUuids((f) => ({...f, [e.target.name] : e.target.value}))}}
+            onChange={(e) => {setUniqueIdFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
           />)
           })}
         </Form.Group>
+        <Divider horizontal>
+          <Header as='h4'>
+            <Icon name='database' />
+            Data
+          </Header>
+        </Divider>
 
         {option && formFields.PopulateForm.map((fld) => {
           var comp = <></>;
 
+          // add new components here - e.g. if for >5 then Button Select and also change field type in Neo4j for that field
           switch (fld.component) {
             case "Input":
               comp = (
@@ -255,8 +318,6 @@ export function FormGenerator({ metadata }) {
             
               if (option[fld.name] === undefined) break; 
               
-            
-              // console.log( globalFormState[Object.keys(fld.filter)[0]] === "" ? option[fld.name] : option.map(value => fld.filter[Object.keys(fld.filter)[0]][globalFormState[Object.keys(fld.filter)[0]]].includes(value.text)))
               comp = (
                 <Form.Select
                 key={fld.name}
@@ -270,8 +331,7 @@ export function FormGenerator({ metadata }) {
                 onChange={(e, { name, value }) => setGlobalFormState((feilds) => ({ ...feilds, ...{ [name]: value } }))}
                 clearable
                 disabled={fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
-              />
-              );
+              />);
               break;
             default:
               break;
@@ -279,21 +339,24 @@ export function FormGenerator({ metadata }) {
           return comp;
         })}
 
-        <Form.Group size="small" widths={"two"}>
+        <Form.Group size="small" widths={"equal"}>
           <Form.Button
+            size='huge'
             content="Submit"
-            color="blue"
+            fluid
+            color='teal' 
+            // style={{ backgroundColor: '#01859d'}}            
             onClick={() => {
               setNodeEvent("submit");
             }}
           ></Form.Button>
-          <Form.Button
+          {/* <Form.Button
             content="Update"
             color="blue"
             onClick={() => {
               setNodeEvent("update");
             }}
-          ></Form.Button>
+          ></Form.Button> */}
         </Form.Group>
       </Form>
     </div>

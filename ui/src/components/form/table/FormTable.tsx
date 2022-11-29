@@ -1,7 +1,6 @@
-import { Loader, Table } from "semantic-ui-react";
+import { Table } from "semantic-ui-react";
 import { useQuery, gql } from "@apollo/client";
-import * as React from 'react'
-
+import React from "React"
 
 const patientForm = gql`
 query($where: SubmitterWhere, $reference: SubmitterWhere) {
@@ -30,6 +29,7 @@ query($where: SubmitterWhere) {
   }
 }`
 
+const keyToLabel = (str) => str.split("_").map(val => { return val.charAt(0).toUpperCase() + val.substring(1); }).join(" ")
 
 // **REFACTOR**
 export const TableTool = ({
@@ -37,7 +37,7 @@ export const TableTool = ({
   searchBy,
   identifier,
 }) => {
- console.log( JSON.stringify({ ...!searchBy ? {} : {"reference" : { form: form }}, "where": { primary_keys : identifier } }))
+//  console.log( JSON.stringify({ ...!searchBy ? {} : {"reference" : { form: form }}, "where": { primary_keys : identifier } }))
 
   const { loading, data, error } = useQuery(!searchBy ? root : patientForm, {
     variables: { ...!searchBy ? {} : {"reference" : { form: form }}, "where": { primary_keys : identifier } },
@@ -47,18 +47,16 @@ export const TableTool = ({
   if (loading) return (<></>);
   if (error) return `Somthing has occured... ${error}`
 
-  // console.log(data)
-
+  // console.log(data, searchBy !== 0, data.submitters[0].reference_primary_key !== undefined)
   return (
     <>
-    {(searchBy !== 0 && data.submitters.length > 0) &&
+    {(searchBy !== 0 && data.submitters.length > 0 && data.submitters[0].reference_primary_key !== undefined && data.submitters[0].reference_primary_key.length > 0) &&
         <Table celled padded fixed selectable>
         <Table.Header>
+
           <Table.Row>
-              {data.submitters[0].reference_primary_key.map((p) => {
-                return p.fields.map((fld) => {
-                        return <Table.HeaderCell>{fld.key}</Table.HeaderCell>;
-                  })
+              {data.submitters[0].reference_primary_key[0].fields.map((p) => {
+                    return <Table.HeaderCell>{ keyToLabel(p.key) }</Table.HeaderCell>;
                 })}
           </Table.Row>
         </Table.Header>
@@ -84,7 +82,7 @@ export const TableTool = ({
         <Table.Row>
             {data.submitters.map((p) => {
               return p.fields.map((fld) => {
-                      return <Table.HeaderCell>{fld.key}</Table.HeaderCell>;
+                      return <Table.HeaderCell>{keyToLabel(fld.key)}</Table.HeaderCell>;
                 })})}
         </Table.Row>
       </Table.Header>
