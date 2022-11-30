@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Form, Divider, Header, Icon } from "semantic-ui-react";
+import { Form, Divider, Header, Icon, Button, Radio, Label } from "semantic-ui-react";
 import { useQuery, useLazyQuery, useMutation } from "@apollo/client";
 // import { z } from "zod";
+import * as R from "remeda" 
 
 import {
   FieldData,
@@ -18,10 +19,10 @@ import {
 import { TableTool } from "./table/FormTable";
 
 
-export function FormGenerator({ metadata }) {
+export function FormGenerator({ metadata, patientIdentifier }) {
 
-  console.log("FOREIGN KEYS")
-  console.log(metadata.foreign_keys)
+  console.log("identifier KEYS")
+  console.log(metadata.identifier)
   // const [validationObject, setValidationObject] = useState({});
   const [globalFormState, setGlobalFormState]      = useState({});      // Global State of the current form that holds all data inputs
   const [uniqueIdsFormState, setUniqueIdFormState] = useState({});      // Contains all the form States unique IDs and there inputs within the current form
@@ -84,7 +85,7 @@ export function FormGenerator({ metadata }) {
     // setValidationObject({})
     setUniqueIdFormState({});
     setGlobalFormState({});
-    setOption({})
+    // setOption({})
 
     // populate form foreign keys, primary keys, identifier
     const ids = [
@@ -92,15 +93,20 @@ export function FormGenerator({ metadata }) {
       ...primaryKeys,
       ...foreignKeys.map((fk) => fk.node),
     ];
-    ids.map((field) =>
-      setUniqueIdFormState((id) => ({
-        ...id,
-        [field.name]: field.value,
-      }))
-    );
+    // ids.map((field) =>
+    //   setUniqueIdFormState((id) => ({
+    //     ...id,
+    //     [field.name]: field.value,
+    //   }))
+    // );
+
+    setUniqueIdFormState({
+      ... (R.mapToObj(ids, field => [field.name, field.value])),
+      submitter_donor_id: patientIdentifier.submitter_donor_id, program_id: patientIdentifier.program_id
+    })
 
     // eslint-disable-next-line
-  }, [metadata]);
+  }, [metadata, patientIdentifier]);
   
   useEffect(() => {
 
@@ -133,9 +139,10 @@ export function FormGenerator({ metadata }) {
   // eslint-disable-next-line
   },[FormFieldsCTX])
 
+  console.log(uniqueIdsFormState)
 
   
-  const onFormComplete = async (event) => {
+  const onFormComplete = async () => {
     // Validate Form
     //...
     //...
@@ -147,6 +154,8 @@ export function FormGenerator({ metadata }) {
     // if the form exist with in the
 
     // create the muation variables to populate the neo4j... 
+    
+    console.log(uniqueIdsFormState)
     const formCreateSchema = ParseFormToGraphQL(
         { ids: uniqueIdsFormState, fields: globalFormState, form_id: metadata.form_id },
         {
@@ -175,13 +184,15 @@ export function FormGenerator({ metadata }) {
     // } // do nothing
 
 
-    if (nodeEvent === "submit"){
-      createNode({variables  : { "input" : [formCreateSchema]}})
-      alert("submit")
-    } else {
-      alert("Update Do Nothing... Right now");
-      return;
-    }
+    console.log(formCreateSchema)
+    createNode({variables  : { "input" : [formCreateSchema]}})
+    // if (nodeEvent === "submit"){
+    //   createNode({variables  : { "input" : [formCreateSchema]}})
+    //   alert("submit")
+    // } else {
+    //   alert("Update Do Nothing... Right now");
+    //   return;
+    // }
   }
 
 
@@ -222,7 +233,7 @@ export function FormGenerator({ metadata }) {
       });
     }
     // eslint-disable-next-line
-  }, [formFields]);
+  }, [formFields, patientIdentifier]);
 
   //  not return anything to the DOM if the data is not loaded
   if (loadFieldData) return <></>;
@@ -237,13 +248,12 @@ export function FormGenerator({ metadata }) {
       <Form
         size="small"
         onSubmit={(event) => {
-          setNodeEvent("submit");
-          onFormComplete(event);
+          event.preventDefault()
         }}
       >
         <Divider horizontal>
           <Header as='h4'>
-            <Icon name='info' />
+            <Icon name='id card' />
             IDs
           </Header>
         </Divider>
@@ -273,10 +283,6 @@ export function FormGenerator({ metadata }) {
           ))}
         </Form.Group>
 
-        <TableTool form={metadata.form_id}
-                   searchBy={identifier.length}
-                   identifier={getKeysValuePair(identifier.length ? identifier.map(id => id.name) : primaryKeys.map(pk => pk.name), uniqueIdsFormState)}/>
-
         <Form.Group widths={"equal"}>
           {foreignKeys.map((fld) => {
            return ( <Form.Input
@@ -289,12 +295,20 @@ export function FormGenerator({ metadata }) {
           />)
           })}
         </Form.Group>
+        <Divider hidden/>
         <Divider horizontal>
           <Header as='h4'>
-            <Icon name='database' />
-            Data
+            <Icon name='folder open' />
+            DATA
           </Header>
         </Divider>
+        <TableTool form={metadata.form_id}
+                   searchBy={!identifier.length}
+                   identifier={getKeysValuePair(identifier.map(id => id.name), uniqueIdsFormState)}
+                   primaryKeys={getKeysValuePair(primaryKeys.map(pk => pk.name), uniqueIdsFormState)}
+                   updateUniqueIdsFormState={setUniqueIdFormState}
+                   updateGlobalFormState={setGlobalFormState}/>
+
 
         {option && formFields.PopulateForm.map((fld) => {
           var comp = <></>;
@@ -317,21 +331,49 @@ export function FormGenerator({ metadata }) {
             case "Select":
             
               if (option[fld.name] === undefined) break; 
-              
+
+              if (option[fld.name].length <=4) {
+                comp = (
+
+                  <>
+                    <Form.Field label={fld.label}></Form.Field>
+
+                    <Form.Group widths={option[fld.name].length} >
+
+                      
+
+                        {R.map(
+                          option[fld.name],
+                          selectOption => 
+                            <Form.Field 
+                            control={Radio} 
+                            checked={globalFormState[fld.name] === selectOption.value} 
+                            label={selectOption.text} 
+                            onChange={(e) => setGlobalFormState((fields) => ({ ...fields, ...{ [fld.name]: selectOption.value } }))}
+                            disabled={fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
+                            />
+                          
+                        )}         
+                    </Form.Group>
+                    </>
+                )
+              } else {
               comp = (
                 <Form.Select
                 key={fld.name}
-                search={option[fld.name].length > 8}
+                // search={option[fld.name].length > 8}
+                search
                 name={fld.name}
-                value={setGlobalFormState[fld.name]}
+                value={globalFormState[fld.name]}
                 multiple={fld.type === "mutiple"}
                 placeholder={fld.placeholder}
                 label={fld.label}
                 options={option[fld.name]} 
-                onChange={(e, { name, value }) => setGlobalFormState((feilds) => ({ ...feilds, ...{ [name]: value } }))}
+                onChange={(e, { name, value }) => setGlobalFormState((fields) => ({ ...fields, ...{ [name]: value } }))}
                 clearable
                 disabled={fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
               />);
+              }
               break;
             default:
               break;
@@ -339,25 +381,33 @@ export function FormGenerator({ metadata }) {
           return comp;
         })}
 
-        <Form.Group size="small" widths={"equal"}>
-          <Form.Button
+        <Button.Group size="large" fluid>
+          <Button
+            icon='send'
             size='huge'
-            content="Submit"
-            fluid
+            content="SUBMIT"
             color='teal' 
             // style={{ backgroundColor: '#01859d'}}            
             onClick={() => {
-              setNodeEvent("submit");
+              // setNodeEvent("submit");
+              // setNodeEvent("submit");
+              onFormComplete();
+              // createNode({variables  : { "input" : [formCreateSchema]}})
             }}
-          ></Form.Button>
-          {/* <Form.Button
-            content="Update"
-            color="blue"
+          ></Button>
+          <Button.Or/>
+          <Button
+            icon='sync alternate'
+            content="UPDATE"
+            color="black"
+            style={{ backgroundColor: '#01859d'}}            
+            disabled
             onClick={() => {
               setNodeEvent("update");
+              // console.log(uniqueIdsFormState)
             }}
-          ></Form.Button> */}
-        </Form.Group>
+          ></Button>
+        </Button.Group>
       </Form>
     </div>
   );
