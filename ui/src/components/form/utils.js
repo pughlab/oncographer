@@ -244,9 +244,8 @@ export const sortForeignKeys = (feildState, fks) => {
     console.log(fk)
     if (bucket[fk.node.primary_key_to.form_id] === undefined) {
       bucket[fk.node.primary_key_to.form_id] = { "form" : fk.node.primary_key_to.form_id, "primary_keys" : {}}
-    } else {
-      bucket[fk.node.primary_key_to.form_id] = {...bucket[fk.node.primary_key_to.form_id], "primary_keys" : {...bucket[fk.node.primary_key_to.form_id].primaryKeys, ...getKeysValuePair([fk.node.name], feildState)}}    
     }
+    bucket[fk.node.primary_key_to.form_id] = {...bucket[fk.node.primary_key_to.form_id], "primary_keys" : {...bucket[fk.node.primary_key_to.form_id].primaryKeys, ...getKeysValuePair([fk.node.name], feildState)}}    
   })
 
   // [{
