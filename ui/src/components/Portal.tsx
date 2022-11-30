@@ -1,4 +1,4 @@
-import * as React from 'react'
+import React, { useState } from "react";
 import { Sticky, Menu, Image, Divider, Container, Segment, Label, Popup, Header } from 'semantic-ui-react'
 import useKeycloakMeMutation from '../hooks/useKeycloakMeMutation'
 import {Routes, Route, Outlet, useNavigate, useLocation, matchPath, Link} from 'react-router-dom'
@@ -20,6 +20,8 @@ export default function Portal () {
   const {navigate, location, isActivePathElement} = useRouter()
   console.log(location)
   const [meMutationState] = useKeycloakMeMutation()
+
+  const [patientIdentifier, setPatientIdentifier] = useState({submitter_donor_id: '', program_id: ''})
   const DocsLink = () => {
     return (
     <>
@@ -76,10 +78,10 @@ export default function Portal () {
 
     <Divider horizontal />
     <div style={{padding: '1em'}}>
-      <PatientSearchForm />
+      <PatientSearchForm patientIdentifier={patientIdentifier} setPatientIdentifier={setPatientIdentifier}/>
       <Divider horizontal />
 
-      <FormFactory />
+      <FormFactory patientIdentifier={patientIdentifier}/>
     </div>
     </>
   )
