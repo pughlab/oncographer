@@ -1,6 +1,6 @@
 import { Table, Segment, Image, Message } from "semantic-ui-react";
 import { useQuery, gql } from "@apollo/client";
-import React from "React"
+import React from "react"
 import logo from '../../logos/logo.png'
 import "./table.css"
 
