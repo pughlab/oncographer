@@ -307,7 +307,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
           </Header>
         </Divider>
         <TableTool form={metadata.form_id}
-                   searchBy={!globalIdentifierKeys.length}
+                   searchForRootForm={!globalIdentifierKeys.length}
                    globalIdentifierKeys={getKeysValuePair(globalIdentifierKeys.map(id => id.name), uniqueIdsFormState)}
                    formPrimaryIdentifierKeys={getKeysValuePair(formPrimaryIdentifierKeys.map(pk => pk.name), uniqueIdsFormState)}
                    updateUniqueIdsFormState={setUniqueIdFormState}
@@ -329,7 +329,8 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                       selected={globalFormState[fld.name]}
                       placeholderText={fld.placeholder}
                       onChange={(date) => {
-                        setGlobalFormState((f) => ({...f, [fld.name] : new Date(date)})) }}
+                        console.log(date)
+                        setGlobalFormState((f) => ({...f, [fld.name] : date === null ? date : new Date(date)})) }}
                       dateFormat="MM/yyyy"
                       isClearable
                       showMonthYearPicker

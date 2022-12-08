@@ -44,7 +44,7 @@ const keyToLabel = (str) => str.split("_").map(val => { return val.charAt(0).toU
 // THIS NEEDS TO REFACTORED
 export const TableTool = ({
   form,
-  searchBy,
+  searchForRootForm,
   globalIdentifierKeys,
   formPrimaryIdentifierKeys,
   updateUniqueIdsFormState,
@@ -52,8 +52,8 @@ export const TableTool = ({
 }) => {
 
 
-  const { loading, data, error } = useQuery(searchBy ? getRootOfFormDirectedGraphFormFields : getCurrentFormAssociatedToIdentifier, {
-    variables: { ...searchBy ? {} : {"reference" : { form: form }}, "where": { primary_keys :  searchBy ? formPrimaryIdentifierKeys : globalIdentifierKeys } },
+  const { loading, data, error } = useQuery(searchForRootForm ? getRootOfFormDirectedGraphFormFields : getCurrentFormAssociatedToIdentifier, {
+    variables: { ...searchForRootForm ? {} : {"reference" : { form: form }}, "where": { primary_keys :  searchForRootForm ? formPrimaryIdentifierKeys : globalIdentifierKeys } },
     fetchPolicy: "network-only",
   });
 
@@ -82,7 +82,6 @@ export const TableTool = ({
   )
   }
 
-
   const sortHeadersForTableTool = (form) => {
     let reference = form.reference_foreign_key.reduce(
       (accumulatedFields, currentField) => ({...accumulatedFields, ...currentField.primary_keys}), {}
@@ -107,17 +106,17 @@ export const TableTool = ({
     
     // regular expression to collect the dates and convert them to Date object
     const re = /\d{4}-\d{2}-\d{2}/g // FIX ME: Make more specific to YYYY-MM-DD
-    
+
     // check if any of the fields is Date parsable 
     // if so change it to a Date Object
     // Reason is react-Datepicker only takes null or a Date Object
     Object.keys(fields).forEach((key)=>{
-      console.log( typeof (+fields[key]) === "string", +fields[key], fields[key])
+
+      // TODO: improve filter to find the dates fields
+      // check if the value can Date parse, not a Integer/Float/Number and meets the regular expression
       if(!isNaN(Date.parse(fields[key])) && isNaN(+fields[key]) && re.exec(fields[key]) !== null){
         fields[key] = new Date(fields[key])
       }
-      console.log(fields[key])
-
     })
 
     // change the global state form
@@ -127,10 +126,9 @@ export const TableTool = ({
 
   }
 
-
   return (
     <>
-    {(searchBy === false && data.submitters[0].reference_primary_key !== undefined && data.submitters[0].reference_primary_key.length > 0 ) &&
+    {(searchForRootForm === false && data.submitters[0].reference_primary_key !== undefined && data.submitters[0].reference_primary_key.length > 0 ) &&
         <Table fixed selectable aria-labelledby="header">
         <Table.Header>
           <Table.Row>
@@ -140,7 +138,7 @@ export const TableTool = ({
           </Table.Row>
         </Table.Header>
         
-
+        {/* FIX ME WHEN THE FIELD IS A DATE DISPLAY ONLY YYYY-MMM */}
         <Table.Body>
               {data.submitters[0].reference_primary_key.map((form) => {
                 let {values , references, primaryFormIdentifier} = sortFormFieldsDataForTableTool(form)
@@ -159,7 +157,7 @@ export const TableTool = ({
       </Table>
     }
 
-    {searchBy === true  &&
+    {searchForRootForm === true  &&
     <Table fixed selectable aria-labelledby="header">
       <Table.Header>
         <Table.Row>
@@ -170,6 +168,7 @@ export const TableTool = ({
       </Table.Header>
       
 
+      {/* FIX ME WHEN THE FIELD IS A DATE DISPLAY ONLY YYYY-MMM */}
       <Table.Body>
             {data.submitters.map((p) => {
               let {values , references, primaryFormIdentifier} = sortFormFieldsDataForTableTool(p)
