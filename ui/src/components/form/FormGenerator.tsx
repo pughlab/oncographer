@@ -341,15 +341,18 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                     <Form.Group widths={option[fld.name].length} >
                         {R.map(
                           option[fld.name],
-                          selectOption => 
-                            <Form.Button
+                          selectOption => {
+                            const isActive = globalFormState[fld.name] === selectOption.value
+                            return <Form.Button
                             fluid
-                            active={globalFormState[fld.name] === selectOption.value}
-                            color={globalFormState[fld.name] === selectOption.value ? 'black' : undefined}
+                            basic={!isActive}
+                            active={isActive}
+                            color={isActive ? 'teal' : undefined}
                             onClick={(e) => setGlobalFormState((fields) => ({ ...fields, ...{ [fld.name]: selectOption.value } }))}
                             disabled={fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
                             >{selectOption.text}
                             </Form.Button>
+                          }
                         )}         
                     </Form.Group>
                     </>
