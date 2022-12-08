@@ -111,12 +111,13 @@ export const TableTool = ({
     // if so change it to a Date Object
     // Reason is react-Datepicker only takes null or a Date Object
     Object.keys(fields).forEach((key)=>{
-
+      // console.log(!isNaN(Date.parse(fields[key])) && isNaN(+fields[key]) && re.exec(fields[key]) !== null)
       // TODO: improve filter to find the dates fields
       // check if the value can Date parse, not a Integer/Float/Number and meets the regular expression
-      if(!isNaN(Date.parse(fields[key])) && isNaN(+fields[key]) && re.exec(fields[key]) !== null){
+      if(re.exec(fields[key]) !== null){
         fields[key] = new Date(fields[key])
       }
+
     })
 
     // change the global state form
