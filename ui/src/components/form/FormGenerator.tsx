@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Form, Divider, Header, Icon, Button, Radio, Label } from "semantic-ui-react";
 import { useQuery, useLazyQuery, useMutation } from "@apollo/client";
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+
 // import { z } from "zod";
 import * as R from "remeda" 
 
@@ -21,8 +24,7 @@ import { TableTool } from "./table/FormTable";
 
 export function FormGenerator({ metadata, patientIdentifier }) {
 
-  console.log("identifier KEYS")
-  console.log(metadata.identifier)
+
   // const [validationObject, setValidationObject] = useState({});
   const [globalFormState, setGlobalFormState]      = useState({});      // Global State of the current form that holds all data inputs
   const [uniqueIdsFormState, setUniqueIdFormState] = useState({});      // Contains all the form States unique IDs and there inputs within the current form
@@ -31,24 +33,26 @@ export function FormGenerator({ metadata, patientIdentifier }) {
   const [nodeEvent, setNodeEvent]                  = useState("submit");// Protocol State in which to handle the data within the form when it is submited 
                                                                         // to be processed to the backend
 
-  const [ctx, setCTX]                              = useState({})       // Context (ctx) holds all the information of form that hold being refrenced by
+  const [ctx, setContext]                          = useState({})       // Context (ctx) holds all the information of form that hold being refrenced by
                                                                         // either the identifiers, and foreign keys
 
-  // identifier is a referance to root of the form directed acyclic graph in which all forms use there primary key
-  const identifier                                 = metadata.identifier.filter(
+  //  is a referance to root of the form directed acyclic graph in which all forms use there primary key
+  // 
+  const globalIdentifierKeys                       = metadata.identifier.filter(
                                                       (fld) => !metadata.primary_key.map((fld) => fld.name).includes(fld.name)
                                                     );
   // primary identifier of the current form. This allows us to be able to identify the node that will
   // the backend later on
-  const primaryKeys                                = metadata.primary_key.filter(
+  // formPrimaryIdentifierKeys
+  const formPrimaryIdentifierKeys                  = metadata.primary_key.filter(
                                                       (field) =>
-                                                        !identifier
+                                                        !globalIdentifierKeys
                                                           .map((fld) => JSON.stringify(fld))
                                                           .includes(JSON.stringify(field))
                                                     );
   // foreign identifier of the current form. This is the identifier that connects to other existing forms and there
   // primary identifier
-  const foreignKeys                                = metadata.foreign_key.edges;
+  const formReferenceKeys                          = metadata.foreign_key.edges;
 
 
   // (Populate Form Fields GraphQL Query) that loads all field data within the form
@@ -72,7 +76,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
   const {
     data: FormFieldsCTX,
   } = useQuery(NodeGetCTX, {
-    variables: parseFormIDCTX({identifier, foreignKeys}, uniqueIdsFormState),
+    variables: parseFormIDCTX({globalIdentifierKeys, formReferenceKeys}, uniqueIdsFormState),
   });
 
   const [createNode] = useMutation(CreateNode);
@@ -87,11 +91,11 @@ export function FormGenerator({ metadata, patientIdentifier }) {
     setGlobalFormState({});
     // setOption({})
 
-    // populate form foreign keys, primary keys, identifier
+    // populate form foreign keys, primary keys, globalIdentifierKeys
     const ids = [
-      ...identifier,
-      ...primaryKeys,
-      ...foreignKeys.map((fk) => fk.node),
+      ...globalIdentifierKeys,
+      ...formPrimaryIdentifierKeys,
+      ...formReferenceKeys.map((fk) => fk.node),
     ];
     // ids.map((field) =>
     //   setUniqueIdFormState((id) => ({
@@ -116,9 +120,9 @@ export function FormGenerator({ metadata, patientIdentifier }) {
     // - assign ctx to form it comes from to be able deal with forms
     //   that might contain the same field name
     if (typeof FormFieldsCTX === "object" && FormFieldsCTX.ctx.length > 0){
-      if (Object.keys(ctx).length > 0) setCTX({});
+      if (Object.keys(ctx).length > 0) setContext({});
       FormFieldsCTX.ctx[0].fields.forEach((fld) => {
-        setCTX((ctx) => ({
+        setContext((ctx) => ({
           ...ctx,
           [fld["key"]] : fld["value"],
         }))
@@ -126,7 +130,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
 
      FormFieldsCTX.ctx[0].references.forEach((form) => {
         form.fields.forEach((fld)=> {  
-          setCTX((ctx) => ({
+          setContext((ctx) => ({
             ...ctx,
             [fld["key"]] : fld["value"],
           }))
@@ -159,9 +163,9 @@ export function FormGenerator({ metadata, patientIdentifier }) {
     const formCreateSchema = ParseFormToGraphQL(
         { ids: uniqueIdsFormState, fields: globalFormState, form_id: metadata.form_id },
         {
-          identifier,
-          primaryKeys,
-          foreignKeys,
+          globalIdentifierKeys,
+          formPrimaryIdentifierKeys,
+          formReferenceKeys,
           formFields: formFields.PopulateForm,
         });
 
@@ -215,10 +219,10 @@ export function FormGenerator({ metadata, patientIdentifier }) {
             ...{ [`${field.name}`]: constructDropdown(field.set) },
           }));
         }
-        
+
         setGlobalFormState((fld) => ({
           ...fld,
-          [field.name]: field.value,
+          [field.name] : field.value,
         }));
 
         // UNCOMMENT WHEN FINISHED 
@@ -258,7 +262,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
           </Header>
         </Divider>
         <Form.Group widths={"equal"}>
-          {identifier.map((fld) => (
+          {globalIdentifierKeys.map((fld) => (
             <Form.Input
             name={fld.name}
             value={uniqueIdsFormState[fld.name]}
@@ -271,7 +275,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
         </Form.Group>
 
         <Form.Group widths={"equal"}>
-          {primaryKeys.map((fld) => (
+          {formPrimaryIdentifierKeys.map((fld) => (
             <Form.Input
             name={fld.name}
             value={uniqueIdsFormState[fld.name]}
@@ -284,7 +288,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
         </Form.Group>
 
         <Form.Group widths={"equal"}>
-          {foreignKeys.map((fld) => {
+          {formReferenceKeys.map((fld) => {
            return ( <Form.Input
             name={fld.node.name}
             value={uniqueIdsFormState[fld.node.name]}
@@ -303,9 +307,9 @@ export function FormGenerator({ metadata, patientIdentifier }) {
           </Header>
         </Divider>
         <TableTool form={metadata.form_id}
-                   searchBy={!identifier.length}
-                   identifier={getKeysValuePair(identifier.map(id => id.name), uniqueIdsFormState)}
-                   primaryKeys={getKeysValuePair(primaryKeys.map(pk => pk.name), uniqueIdsFormState)}
+                   searchBy={!globalIdentifierKeys.length}
+                   globalIdentifierKeys={getKeysValuePair(globalIdentifierKeys.map(id => id.name), uniqueIdsFormState)}
+                   formPrimaryIdentifierKeys={getKeysValuePair(formPrimaryIdentifierKeys.map(pk => pk.name), uniqueIdsFormState)}
                    updateUniqueIdsFormState={setUniqueIdFormState}
                    updateGlobalFormState={setGlobalFormState}/>
 
@@ -316,20 +320,42 @@ export function FormGenerator({ metadata, patientIdentifier }) {
           // add new components here - e.g. if for >5 then Button Select and also change field type in Neo4j for that field
           switch (fld.component) {
             case "Input":
-              comp = (
-                <Form.Input
-                name={fld.name}
-                value={globalFormState[fld.name]}
-                type={fld.type}
-                label={fld.label}
-                placeholder={fld.placeholder}
-                onChange={(e) => {setGlobalFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
-                disabled={fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
-              />
-              );
+                if(fld.type === "month"){
+                  const disabled = fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)
+                  console.log(globalFormState[fld.name])
+                  comp = (  
+                  <Form.Field>
+                    <label>{fld.label}</label>
+                    <DatePicker
+                      selected={globalFormState[fld.name]}
+                      style={disabled ? {"opacity" : "0.5"} : {}}
+                      placeholderText={fld.placeholder}
+                      onChange={(date) => setGlobalFormState((f) => ({...f, [fld.name] : date}))}
+                      dateFormat="MM/yyyy"
+                      disabled={disabled}
+                      isClearable
+                      showMonthYearPicker
+                      showFullMonthYearPicker
+                      showFourColumnMonthYearPicker
+                    />
+                  </Form.Field>)
+                } else {
+                comp = (
+                  <Form.Input
+                  name={fld.name}
+                  value={globalFormState[fld.name]}
+                  type={fld.type}
+                  label={fld.label}
+                  placeholder={fld.placeholder}
+                  onChange={(e) => {setGlobalFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
+                  disabled={fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
+                />
+                );
+              } 
               break;
             case "Select":
             
+              // check of the option is undefined under the field name if so do not populate the selects ...
               if (option[fld.name] === undefined) break; 
 
               if (option[fld.name].length <=4) {
@@ -339,8 +365,6 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                     <Form.Field label={fld.label}></Form.Field>
 
                     <Form.Group widths={option[fld.name].length} >
-
-                      
 
                         {R.map(
                           option[fld.name],
@@ -361,7 +385,6 @@ export function FormGenerator({ metadata, patientIdentifier }) {
               comp = (
                 <Form.Select
                 key={fld.name}
-                // search={option[fld.name].length > 8}
                 search
                 name={fld.name}
                 value={globalFormState[fld.name]}
@@ -387,12 +410,10 @@ export function FormGenerator({ metadata, patientIdentifier }) {
             size='huge'
             content="SUBMIT"
             color='teal' 
-            // style={{ backgroundColor: '#01859d'}}            
             onClick={() => {
               // setNodeEvent("submit");
               // setNodeEvent("submit");
               onFormComplete();
-              // createNode({variables  : { "input" : [formCreateSchema]}})
             }}
           ></Button>
           <Button.Or/>

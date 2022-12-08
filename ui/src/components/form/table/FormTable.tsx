@@ -2,9 +2,8 @@ import { Table, Segment, Image, Message } from "semantic-ui-react";
 import { useQuery, gql } from "@apollo/client";
 import React from "react"
 import logo from '../../logos/logo.png'
-import "./table.css"
 
-const patientForm = gql`
+const getCurrentFormAssociatedToIdentifier  = gql`
 query($where: SubmitterWhere, $reference: SubmitterWhere) {
   submitters(where: $where) {
     reference_primary_key(where: $reference) {
@@ -22,7 +21,7 @@ query($where: SubmitterWhere, $reference: SubmitterWhere) {
   }
 }`;
 
-const root = gql`
+const getRootOfFormDirectedGraphFormFields = gql`
 query($where: SubmitterWhere) {
   submitters(where: $where) {
     form
@@ -46,23 +45,19 @@ const keyToLabel = (str) => str.split("_").map(val => { return val.charAt(0).toU
 export const TableTool = ({
   form,
   searchBy,
-  identifier,
-  primaryKeys,
+  globalIdentifierKeys,
+  formPrimaryIdentifierKeys,
   updateUniqueIdsFormState,
   updateGlobalFormState,
 }) => {
 
-  console.log("SEARCH BY")
-  console.log(searchBy)
-  const { loading, data, error } = useQuery(searchBy ? root : patientForm, {
-    variables: { ...searchBy ? {} : {"reference" : { form: form }}, "where": { primary_keys :  searchBy ? primaryKeys : identifier } },
+
+  const { loading, data, error } = useQuery(searchBy ? getRootOfFormDirectedGraphFormFields : getCurrentFormAssociatedToIdentifier, {
+    variables: { ...searchBy ? {} : {"reference" : { form: form }}, "where": { primary_keys :  searchBy ? formPrimaryIdentifierKeys : globalIdentifierKeys } },
     fetchPolicy: "network-only",
   });
 
-  // if (loading || data.submitters.length === 0) return (<></>);
-  // if (error) return `Somthing has occured... ${error}`
-
-  if (loading ) {
+  if (loading) {
     return (
     <>
     <Segment loading style={{height: '100%'}}>
@@ -72,7 +67,7 @@ export const TableTool = ({
   )
   }
 
-  console.log(data)
+  // checks if the query shows up empty if so do not return anythng
   if (data.submitters.length === 0) return (<></>);
 
 
@@ -87,6 +82,7 @@ export const TableTool = ({
   )
   }
 
+
   const sortHeadersForTableTool = (form) => {
     let reference = form.reference_foreign_key.reduce(
       (accumulatedFields, currentField) => ({...accumulatedFields, ...currentField.primary_keys}), {}
@@ -100,14 +96,14 @@ export const TableTool = ({
         (accumulatedFields, currentField) => ({...accumulatedFields, [currentField.key] : currentField.value }), {})
 
     
-    let referencesOfOtherFormPrimaryKeysUsedWithinTheCurrentForm =  form.reference_foreign_key.reduce(
+    let referencesOfOtherFormPrimaryKeysUsedWithinCurrentForm =  form.reference_foreign_key.reduce(
       (accumulatedFields, currentField) => ({...accumulatedFields, ...currentField.primary_keys}), {}
       )
     
-    return { values : keyValueSortedObject, references :  referencesOfOtherFormPrimaryKeysUsedWithinTheCurrentForm, primaryFormIdentifier : form.primary_keys}
+    return { values : keyValueSortedObject, references :  referencesOfOtherFormPrimaryKeysUsedWithinCurrentForm, primaryFormIdentifier : form.primary_keys}
   }
 
-  const onClickRow = (fields, keys) => {
+  const onTableToolRowClicked = (fields, keys) => {
     // change the global state form
     updateGlobalFormState(fields)
     // change Unique Ids within the Form State
@@ -115,8 +111,6 @@ export const TableTool = ({
 
   }
 
-
-console.log(data)
 
   return (
     <>
@@ -137,7 +131,7 @@ console.log(data)
                 let sortedFields = {...primaryFormIdentifier, ...references, ...values}
                 return (
                   <Table.Row onClick={() => {
-                      onClickRow(values, {...primaryFormIdentifier, ...references})
+                    onTableToolRowClicked(values, {...primaryFormIdentifier, ...references})
                   }}>
                     {sortHeadersForTableTool(data.submitters[0].reference_primary_key[0]).map((fld) => {
                       return <Table.Cell>{sortedFields[fld]}</Table.Cell>;
@@ -166,7 +160,7 @@ console.log(data)
               let sortedFields = {...primaryFormIdentifier, ...references, ...values}
               return (
                 <Table.Row onClick={() => {
-                  onClickRow(values, {...primaryFormIdentifier, ...references})
+                  onTableToolRowClicked(values, {...primaryFormIdentifier, ...references})
                 }}>
                   {sortHeadersForTableTool(data.submitters[0]).map((fld) => {
                     return <Table.Cell>{sortedFields[fld]}</Table.Cell>;

@@ -302,10 +302,10 @@ export const ParseFormToGraphQL = (form, fields) => {
 export const parseFormIDCTX = (fields,state) => {
   if (fields === null || state === {}) return {}
   return { "where" :
-           {"primary_keys" :  fields.identifier.length === 0 ? null :  getKeysValuePair(fields.identifier.map(id => id.name), state) },
+           {"primary_keys" :  fields.globalIdentifierKeys.length === 0 ? null :  getKeysValuePair(fields.globalIdentifierKeys.map(id => id.name), state) },
            "referencePrimary": {
             "OR": [
-              ...sortForeignKeys(state, fields.foreignKeys)
+              ...sortForeignKeys(state, fields.formReferenceKeys)
             ],
             }
   }
