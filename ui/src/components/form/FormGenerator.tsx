@@ -311,7 +311,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
 
 
         {option && formFields.PopulateForm.map((fld) => {
-          var comp = <></>;
+          let comp = <></>;
 
           // add new components here - e.g. if for >5 then Button Select and also change field type in Neo4j for that field
           switch (fld.component) {
@@ -329,7 +329,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
               );
               break;
             case "Select":
-            
+
               if (option[fld.name] === undefined) break; 
 
               if (option[fld.name].length <=4) {
@@ -339,20 +339,17 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                     <Form.Field label={fld.label}></Form.Field>
 
                     <Form.Group widths={option[fld.name].length} >
-
-                      
-
                         {R.map(
                           option[fld.name],
                           selectOption => 
-                            <Form.Field 
-                            control={Radio} 
-                            checked={globalFormState[fld.name] === selectOption.value} 
-                            label={selectOption.text} 
-                            onChange={(e) => setGlobalFormState((fields) => ({ ...fields, ...{ [fld.name]: selectOption.value } }))}
+                            <Form.Button
+                            fluid
+                            active={globalFormState[fld.name] === selectOption.value}
+                            color={globalFormState[fld.name] === selectOption.value ? 'black' : undefined}
+                            onClick={(e) => setGlobalFormState((fields) => ({ ...fields, ...{ [fld.name]: selectOption.value } }))}
                             disabled={fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
-                            />
-                          
+                            >{selectOption.text}
+                            </Form.Button>
                         )}         
                     </Form.Group>
                     </>
