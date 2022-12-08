@@ -13,9 +13,9 @@ import {
   CreateNode,
   constructDropdown,
   ParseFormToGraphQL,
-  doesNotMeetAllConditions,
+  doesFieldNotMeetAllConditions,
   getKeysValuePair,
-  parseFormIDCTX,
+  parseFormFieldsToQueryContext,
   NodeGetCTX
 } from "./utils";
 
@@ -76,7 +76,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
   const {
     data: FormFieldsCTX,
   } = useQuery(NodeGetCTX, {
-    variables: parseFormIDCTX({globalIdentifierKeys, formReferenceKeys}, uniqueIdsFormState),
+    variables: parseFormFieldsToQueryContext({globalIdentifierKeys, formReferenceKeys}, uniqueIdsFormState),
   });
 
   const [createNode] = useMutation(CreateNode);
@@ -321,19 +321,16 @@ export function FormGenerator({ metadata, patientIdentifier }) {
           switch (fld.component) {
             case "Input":
                 if(fld.type === "month"){
-                  const disabled = fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)
                   console.log(typeof globalFormState[fld.name], globalFormState[fld.name])
                   comp = (  
-                  <Form.Field>
+                  <Form.Field disabled={fld.conditionals === null ? false : doesFieldNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}>
                     <label>{fld.label}</label>
                     <DatePicker
                       selected={globalFormState[fld.name]}
-                      style={disabled ? {"opacity" : "0.5"} : {}}
                       placeholderText={fld.placeholder}
                       onChange={(date) => {
                         setGlobalFormState((f) => ({...f, [fld.name] : new Date(date)})) }}
                       dateFormat="MM/yyyy"
-                      disabled={disabled}
                       isClearable
                       showMonthYearPicker
                       showFullMonthYearPicker
@@ -349,7 +346,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                   label={fld.label}
                   placeholder={fld.placeholder}
                   onChange={(e) => {setGlobalFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
-                  disabled={fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
+                  disabled={fld.conditionals === null ? false : doesFieldNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
                 />
                 );
               } 
@@ -361,27 +358,26 @@ export function FormGenerator({ metadata, patientIdentifier }) {
 
               if (option[fld.name].length <=4) {
                 comp = (
-
-                  <>
-                    <Form.Field label={fld.label}></Form.Field>
-
-                    <Form.Group widths={option[fld.name].length} >
-
-                        {R.map(
-                          option[fld.name],
-                          selectOption => 
-                            <Form.Field 
-                            control={Radio} 
-                            checked={globalFormState[fld.name] === selectOption.value} 
-                            label={selectOption.text} 
-                            onChange={(e) => setGlobalFormState((fields) => ({ ...fields, ...{ [fld.name]: selectOption.value } }))}
-                            disabled={fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
-                            />
-                          
-                        )}         
-                    </Form.Group>
-                    </>
-                )
+                  <Form.Field disabled={fld.conditionals === null ? false : doesFieldNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}>
+                  <label>{fld.label}</label>
+                  <Form.Group widths={option[fld.name].length} >
+                      {R.map(
+                        option[fld.name],
+                        selectOption => {
+                          const isActive = globalFormState[fld.name] === selectOption.value
+                          return <Form.Button
+                          fluid
+                          basic={!isActive}
+                          active={isActive}
+                          color={isActive ? 'teal' : undefined}
+                          onClick={(e) => setGlobalFormState((fields) => ({ ...fields, ...{ [fld.name]: selectOption.value } }))}
+                          >{selectOption.text}
+                          </Form.Button>
+                        }
+                      )}         
+                  </Form.Group>
+                  </Form.Field>
+                 )
               } else {
               comp = (
                 <Form.Select
@@ -395,7 +391,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                 options={option[fld.name]} 
                 onChange={(e, { name, value }) => setGlobalFormState((fields) => ({ ...fields, ...{ [name]: value } }))}
                 clearable
-                disabled={fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
+                disabled={fld.conditionals === null ? false : doesFieldNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
               />);
               }
               break;

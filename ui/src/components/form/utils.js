@@ -183,7 +183,7 @@ export const ParseError = (arr) => {
  * @param {*} ctx (context) An object type, which allows the form to handle inter connection to other form
  * @returns (boolean) if there contains a false condition then some condition within the field is not met
  */
-export const doesNotMeetAllConditions = (conditionals, gfs, ctx={}) => {
+export const doesFieldNotMeetAllConditions = (conditionals, gfs, ctx={}) => {
   // =====================
   // Conditional Handler
   // =====================
@@ -289,7 +289,7 @@ export const ParseFormToGraphQL = (form, fields) => {
   let arr = []
   let cond = {}
   fieldsMetaData.forEach((value) => {
-      cond[value.name] = value.conditionals === null ? false : doesNotMeetAllConditions(value.conditionals, formState)
+      cond[value.name] = value.conditionals === null ? false : doesFieldNotMeetAllConditions(value.conditionals, formState)
   })
 
   for (const prop in formState){
@@ -299,7 +299,7 @@ export const ParseFormToGraphQL = (form, fields) => {
   return {"fields" : {"create" : arr} }
 }
 
-export const parseFormIDCTX = (fields,state) => {
+export const parseFormFieldsToQueryContext = (fields,state) => {
   if (fields === null || state === {}) return {}
   return { "where" :
            {"primary_keys" :  fields.globalIdentifierKeys.length === 0 ? null :  getKeysValuePair(fields.globalIdentifierKeys.map(id => id.name), state) },

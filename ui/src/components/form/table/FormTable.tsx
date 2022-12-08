@@ -105,13 +105,19 @@ export const TableTool = ({
 
   const onTableToolRowClicked = (fields, keys) => {
     
+    // regular expression to collect the dates and convert them to Date object
+    const re = /\d{4}-\d{2}-\d{2}/g // FIX ME: Make more specific to YYYY-MM-DD
+    
     // check if any of the fields is Date parsable 
     // if so change it to a Date Object
     // Reason is react-Datepicker only takes null or a Date Object
     Object.keys(fields).forEach((key)=>{
-      if(!isNaN(Date.parse(fields[key]))){
+      console.log( typeof (+fields[key]) === "string", +fields[key], fields[key])
+      if(!isNaN(Date.parse(fields[key])) && isNaN(+fields[key]) && re.exec(fields[key]) !== null){
         fields[key] = new Date(fields[key])
       }
+      console.log(fields[key])
+
     })
 
     // change the global state form
