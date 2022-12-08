@@ -104,6 +104,16 @@ export const TableTool = ({
   }
 
   const onTableToolRowClicked = (fields, keys) => {
+    
+    // check if any of the fields is Date parsable 
+    // if so change it to a Date Object
+    // Reason is react-Datepicker only takes null or a Date Object
+    Object.keys(fields).forEach((key)=>{
+      if(!isNaN(Date.parse(fields[key]))){
+        fields[key] = new Date(fields[key])
+      }
+    })
+
     // change the global state form
     updateGlobalFormState(fields)
     // change Unique Ids within the Form State

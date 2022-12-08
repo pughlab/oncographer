@@ -3,12 +3,13 @@ import { GraphQLScalarType, Kind, GraphQLError } from 'graphql'
 
 function value(value) {
   var vtype = null;
+  
   switch(typeof value) {
     case "number":
       vtype = value
       break;
     case "string":
-      vtype = value
+      vtype = value 
       break;
     case "boolean":
         vtype = value

@@ -322,7 +322,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
             case "Input":
                 if(fld.type === "month"){
                   const disabled = fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)
-                  console.log(globalFormState[fld.name])
+                  console.log(typeof globalFormState[fld.name], globalFormState[fld.name])
                   comp = (  
                   <Form.Field>
                     <label>{fld.label}</label>
@@ -330,7 +330,8 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                       selected={globalFormState[fld.name]}
                       style={disabled ? {"opacity" : "0.5"} : {}}
                       placeholderText={fld.placeholder}
-                      onChange={(date) => setGlobalFormState((f) => ({...f, [fld.name] : date}))}
+                      onChange={(date) => {
+                        setGlobalFormState((f) => ({...f, [fld.name] : new Date(date)})) }}
                       dateFormat="MM/yyyy"
                       disabled={disabled}
                       isClearable
