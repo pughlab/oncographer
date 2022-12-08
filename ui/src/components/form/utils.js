@@ -260,15 +260,15 @@ export const sortForeignKeys = (feildState, fks) => {
 export const ParseFormToGraphQL = (form, fields) => {
   return {"form": form.form_id,
           "uuid": uuidv4(),
-          "primary_keys" : getKeysValuePair(fields.primaryKeys.map(pk => pk.name), form.ids),
+          "primary_keys" : getKeysValuePair(fields.formPrimaryIdentifierKeys.map(pk => pk.name), form.ids),
           ...ObjectInputType(form.fields ,fields.formFields),
-          ...fields.foreignKeys.concat(fields.identifier).length ? 
+          ...fields.formReferenceKeys.concat(fields.globalIdentifierKeys).length ? 
           {"reference_foreign_key": 
             { "connect": [ 
                             {"where": 
                               {"node": { "OR" : [
-                                              ...sortForeignKeys(form.ids, fields.foreignKeys),
-                                              { "primary_keys" : getKeysValuePair(fields.identifier.map(id => id.name), form.ids)}
+                                              ...sortForeignKeys(form.ids, fields.formReferenceKeys),
+                                              { "primary_keys" : getKeysValuePair(fields.globalIdentifierKeys.map(id => id.name), form.ids)}
                                           ]
                                        }
                               } 
