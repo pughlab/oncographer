@@ -101,7 +101,7 @@ query Submitters($where: SubmitterWhere, $referencePrimary: SubmitterWhere) {
       key
       value
     }
-    references : reference_primary_key(where: $referencePrimary) {
+    reference_primary_key(where: $referencePrimary) {
       form
       primary_keys
       fields {

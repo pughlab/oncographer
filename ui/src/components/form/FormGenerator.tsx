@@ -78,7 +78,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
   } = useQuery(NodeGetCTX, {
     variables: parseFormFieldsToQueryContext({globalIdentifierKeys, formReferenceKeys}, uniqueIdsFormState),
   });
-
+  console.log("HERE" , FormFieldsCTX, JSON.stringify(parseFormFieldsToQueryContext({globalIdentifierKeys, formReferenceKeys}, uniqueIdsFormState)))
   const [createNode] = useMutation(CreateNode);
 
   // On First Component Render 
@@ -128,7 +128,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
         }))
       })
 
-     FormFieldsCTX.ctx[0].references.forEach((form) => {
+     FormFieldsCTX.ctx[0].reference_primary_key.forEach((form) => {
         form.fields.forEach((fld)=> {  
           setContext((ctx) => ({
             ...ctx,
