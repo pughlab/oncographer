@@ -336,9 +336,13 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                 comp = (
 
                   <>
-                    <Form.Field label={fld.label}></Form.Field>
-
-                    <Form.Group widths={option[fld.name].length} >
+                    <Form.Field disabled={
+                      fld.conditionals === null ? false : doesNotMeetAllConditions(
+                        fld.conditionals, globalFormState, ctx
+                      )
+                    }>
+                      <label>{fld.label}</label>
+                      <Form.Group widths={option[fld.name].length} >
                         {R.map(
                           option[fld.name],
                           selectOption => {
@@ -348,13 +352,16 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                             basic={!isActive}
                             active={isActive}
                             color={isActive ? 'teal' : undefined}
-                            onClick={(e) => setGlobalFormState((fields) => ({ ...fields, ...{ [fld.name]: selectOption.value } }))}
-                            disabled={fld.conditionals === null ? false : doesNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
-                            >{selectOption.text}
+                            onClick={(e) => setGlobalFormState(
+                              (fields) => ({ ...fields, ...{ [fld.name]: selectOption.value } })
+                            )}>
+                              {selectOption.text}
                             </Form.Button>
                           }
                         )}         
-                    </Form.Group>
+                      </Form.Group>
+                    </Form.Field>
+
                     </>
                 )
               } else {
