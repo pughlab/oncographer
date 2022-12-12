@@ -121,32 +121,33 @@ console.log(data)
   return (
     <>
     {(searchBy === false && data.submitters[0].reference_primary_key !== undefined && data.submitters[0].reference_primary_key.length > 0 ) &&
-        <Table fixed selectable aria-labelledby="header">
-        <Table.Header>
-          <Table.Row>
+      <div style={{overflowX: 'auto'}}>
+        <Table selectable aria-labelledby="header">
+          <Table.Header>
+            <Table.Row>
               {sortHeadersForTableTool(data.submitters[0].reference_primary_key[0]).map((p) => {
                     return <Table.HeaderCell>{ keyToLabel(p) }</Table.HeaderCell>;
                 })}
-          </Table.Row>
-        </Table.Header>
-        
+            </Table.Row>
+          </Table.Header>
 
-        <Table.Body>
-              {data.submitters[0].reference_primary_key.map((form) => {
-                let {values , references, primaryFormIdentifier} = sortFormFieldsDataForTableTool(form)
-                let sortedFields = {...primaryFormIdentifier, ...references, ...values}
-                return (
-                  <Table.Row onClick={() => {
-                      onClickRow(values, {...primaryFormIdentifier, ...references})
-                  }}>
-                    {sortHeadersForTableTool(data.submitters[0].reference_primary_key[0]).map((fld) => {
-                      return <Table.Cell>{sortedFields[fld]}</Table.Cell>;
-                    })}
-                  </Table.Row>
-                );
-              })}       
-        </Table.Body>
-      </Table>
+          <Table.Body>
+            {data.submitters[0].reference_primary_key.map((form) => {
+              let {values , references, primaryFormIdentifier} = sortFormFieldsDataForTableTool(form)
+              let sortedFields = {...primaryFormIdentifier, ...references, ...values}
+              return (
+                <Table.Row onClick={() => {
+                    onClickRow(values, {...primaryFormIdentifier, ...references})
+                }}>
+                  {sortHeadersForTableTool(data.submitters[0].reference_primary_key[0]).map((fld) => {
+                    return <Table.Cell>{sortedFields[fld]}</Table.Cell>;
+                  })}
+                </Table.Row>
+              );
+            })}       
+          </Table.Body>
+        </Table>
+      </div>
     }
 
     {searchBy === true  &&
