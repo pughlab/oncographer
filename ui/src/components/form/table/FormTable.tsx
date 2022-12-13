@@ -121,13 +121,13 @@ console.log(data)
   return (
     <>
     {(searchBy === false && data.submitters[0].reference_primary_key !== undefined && data.submitters[0].reference_primary_key.length > 0 ) &&
-      <div style={{overflowX: 'auto'}}>
+      <Segment style={{overflowX: 'auto'}}>
         <Table selectable aria-labelledby="header">
           <Table.Header>
             <Table.Row>
               {sortHeadersForTableTool(data.submitters[0].reference_primary_key[0]).map((p) => {
-                    return <Table.HeaderCell>{ keyToLabel(p) }</Table.HeaderCell>;
-                })}
+                return <Table.HeaderCell>{ keyToLabel(p) }</Table.HeaderCell>;
+              })}
             </Table.Row>
           </Table.Header>
 
@@ -147,21 +147,21 @@ console.log(data)
             })}       
           </Table.Body>
         </Table>
-      </div>
+      </Segment>
     }
 
     {searchBy === true  &&
-    <Table fixed selectable aria-labelledby="header">
-      <Table.Header>
-        <Table.Row>
-            {sortHeadersForTableTool(data.submitters[0]).map((p) => {
-                      return <Table.HeaderCell>{keyToLabel(p)}</Table.HeaderCell>;
-                })}
-        </Table.Row>
-      </Table.Header>
-      
+      <Segment style={{overflowX: 'auto'}}>
+        <Table selectable aria-labelledby="header">
+          <Table.Header>
+            <Table.Row>
+              {sortHeadersForTableTool(data.submitters[0]).map((p) => {
+                return <Table.HeaderCell>{keyToLabel(p)}</Table.HeaderCell>;
+              })}
+            </Table.Row>
+          </Table.Header>
 
-      <Table.Body>
+          <Table.Body>
             {data.submitters.map((p) => {
               let {values , references, primaryFormIdentifier} = sortFormFieldsDataForTableTool(p)
               let sortedFields = {...primaryFormIdentifier, ...references, ...values}
@@ -175,8 +175,9 @@ console.log(data)
                 </Table.Row>
               );
             })}
-      </Table.Body>
-    </Table>
+          </Table.Body>
+        </Table>
+      </Segment>
     }
     </>
   );
