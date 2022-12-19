@@ -1,180 +1,4 @@
-import { gql } from "@apollo/client";
 import { v4 as uuidv4 } from "uuid";
-import {z} from 'zod'
-
-
-export const GET_FORMS = gql`
-query Query {
-  forms {
-    form_id
-    form_name
-    identifier {
-      description
-      label
-      name
-      placeholder
-      value
-      type
-    }
-    primary_key {
-      component
-      conditionals
-      description
-      label
-      name
-      placeholder
-      regex
-      required
-      set
-      type
-      value
-    }
-    foreign_key : foreign_keyConnection {
-      edges {
-        constraint
-        node {
-        component
-        conditionals
-        description
-        label
-        name
-        placeholder
-        regex
-        required
-        set
-        type
-        value
-        primary_key_to {
-          form_id
-        }
-        }
-      }
-    }  
-  }
-}`;
-
-export const FieldData = gql`
-query PopulateForm($id: String!) {
-  PopulateForm(id: $id) {
-    component
-    conditionals
-    description
-    label
-    name
-    regex
-    required
-    set
-    type
-    value
-    filter
-  }
-}
-`;
-
-export const CopyFormMutation = gql`
-mutation Create_Form_Copy($form: String!, $primary_keys: Conditional!, $key_value_pair: [Object!]!) {
-  Create_Form_Copy(form: $form, primary_keys: $primary_keys, key_value_pair: $key_value_pair){
-    values {
-      key
-      value
-    }
-  }
-}
-`;
-
-
-export const NodeExist = gql`
-query($where: SubmitterWhere) {
-  exist : submitters(where: $where) {
-    uuid
-    form
-    primary_keys
-  }
-}`;
-
-export const NodeGetCTX = gql`
-query Submitters($where: SubmitterWhere, $referencePrimary: SubmitterWhere) {
-  ctx : submitters(where: $where) {
-    primary_keys
-    form
-    fields {
-      key
-      value
-    }
-    reference_primary_key(where: $referencePrimary) {
-      form
-      primary_keys
-      fields {
-        key
-        value
-      }
-    }
-  }
-}
-`
-
-export const CreateNode = gql`
-mutation Fields($input: [SubmitterCreateInput!]!) {
-  createSubmitters(input: $input) {
-    submitters {
-      fields {
-        key
-        value
-      }
-    }
-  }
-}`
-
-
-/**
- * naive validation 
- * @param {*} param0 
- * @returns 
- */
-export function determineFieldValidation(field) {
-  // console.log(type, regex, required)
-  let schema = z
-
-
-
-  // const dateSchema = z.preprocess((arg) => {
-  //   if (typeof arg == "string" || arg instanceof Date) return new Date(arg);
-  // }, z.date());
-
-
-  // if (type === "text"){
-  //   schema = regex !== "" ? schema.string().regex(new RegExp(regex), { message : "The text you have filled in does not match the standard expression"}).min(2) : schema.string().min(2)
-  // } else if ( type === "number"){
-  //   schema = schema.number()
-  // } else if (type === "date"){
-  //   // fix later 
-  //   // schema = schema.string().regex(new RegExp(regex)).min(2)
-  //   schema = schema.date()
-  // }
-
-  // if (!required){
-  //   schema = schema.optional()
-  // }
-
-  return schema
-}
-
-/**
- * Given there is more then one error then populate all the errors
- * that are thrown.
- * @param {*} arr 
- * @returns 
- */
-export const ParseError = (arr) => {
-  return arr.map((issue, index) => {
-    if (arr.length === 1) return `${issue.message}`;
-    return index === arr.length - 1
-      ? `and ${issue.message}`
-      : `${issue.message}, `;
-  });
-}
-
-
 
 /**
  * 
@@ -194,7 +18,6 @@ export const doesFieldNotMeetAllConditions = (conditionals, gfs, ctx={}) => {
   // there are no condition
   // to be met.
 
-  console.log(check)
   if (conditionals === null) return false
   
   Object.keys(conditionals).forEach((key) => {
@@ -241,7 +64,6 @@ export const sortForeignKeys = (feildState, fks) => {
   // loop through all the reference_key (foreign keys)
   // dump them within there own form bucked
   fks.forEach(fk => {
-    console.log(fk)
     if (bucket[fk.node.primary_key_to.form_id] === undefined) {
       bucket[fk.node.primary_key_to.form_id] = { "form" : fk.node.primary_key_to.form_id, "primary_keys" : {}}
     }
@@ -304,9 +126,9 @@ export const parseFormFieldsToQueryContext = (fields,state) => {
   return { "where" :
            {"primary_keys" :  fields.globalIdentifierKeys.length === 0 ? null :  getKeysValuePair(fields.globalIdentifierKeys.map(id => id.name), state) },
            "referencePrimary": {
-            "OR": [
+           ...!fields.formReferenceKeys.length ? {} : {"OR": [
               ...sortForeignKeys(state, fields.formReferenceKeys)
-            ],
+            ]},
             }
   }
 }

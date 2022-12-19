@@ -1,5 +1,5 @@
 import { useQuery } from "@apollo/client";
-import { GET_FORMS } from "../form/utils.js";
+import { getForms } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { Segment, Tab, Message, Image } from "semantic-ui-react";
 import * as React from 'react'
@@ -9,7 +9,7 @@ import * as R from 'remeda'
 
 
 export default function FormFactory({patientIdentifier}) {
-  const { loading, error, data } = useQuery(GET_FORMS);
+  const { loading, error, data } = useQuery(getForms);
   if (loading) {
     return (
     <>

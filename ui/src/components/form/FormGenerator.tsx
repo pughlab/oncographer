@@ -1,23 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Form, Divider, Header, Icon, Button, Radio, Label } from "semantic-ui-react";
+import { Form, Divider, Header, Icon, Button } from "semantic-ui-react";
 import { useQuery, useLazyQuery, useMutation } from "@apollo/client";
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 
-// import { z } from "zod";
 import * as R from "remeda" 
 
 import {
-  FieldData,
-  NodeExist,
-  CreateNode,
   constructDropdown,
   ParseFormToGraphQL,
   doesFieldNotMeetAllConditions,
   getKeysValuePair,
   parseFormFieldsToQueryContext,
-  NodeGetCTX
 } from "./utils";
+
+import { zodifiyField, ParseError } from "./validate/validator";
+import { FieldData, NodeExist, CreateNode, NodeGetContext } from "./queries/query";
 
 import { TableTool } from "./table/FormTable";
 
@@ -25,15 +23,17 @@ import { TableTool } from "./table/FormTable";
 export function FormGenerator({ metadata, patientIdentifier }) {
 
 
-  // const [validationObject, setValidationObject] = useState({});
+  const [validationObject, setValidationObject]    = useState({});
+  const [errordisplay, setErrorDisplay]            = useState({});
   const [globalFormState, setGlobalFormState]      = useState({});      // Global State of the current form that holds all data inputs
   const [uniqueIdsFormState, setUniqueIdFormState] = useState({});      // Contains all the form States unique IDs and there inputs within the current form
+  const [conditionalsFields, setConditionalsFields]= useState({});
   const [option, setOption]                        = useState({});      // Options of the Select Component fields **TODO: CHANGE AND STORE WITHIN BACKEND***
 
   const [nodeEvent, setNodeEvent]                  = useState("submit");// Protocol State in which to handle the data within the form when it is submited 
                                                                         // to be processed to the backend
 
-  const [ctx, setContext]                          = useState({})       // Context (ctx) holds all the information of form that hold being refrenced by
+  const [context, setContext]                      = useState({})   // Context holds all the information of form that hold being refrenced by
                                                                         // either the identifiers, and foreign keys
 
   //  is a referance to root of the form directed acyclic graph in which all forms use there primary key
@@ -74,11 +74,12 @@ export function FormGenerator({ metadata, patientIdentifier }) {
   // give inter connection context to the form allowing form to have inter
   // connected conditions
   const {
-    data: FormFieldsCTX,
-  } = useQuery(NodeGetCTX, {
+    data: formFieldsContext,
+  } = useQuery(NodeGetContext, {
     variables: parseFormFieldsToQueryContext({globalIdentifierKeys, formReferenceKeys}, uniqueIdsFormState),
   });
-  console.log("HERE" , FormFieldsCTX, JSON.stringify(parseFormFieldsToQueryContext({globalIdentifierKeys, formReferenceKeys}, uniqueIdsFormState)))
+
+  console.log(JSON.stringify(parseFormFieldsToQueryContext({globalIdentifierKeys, formReferenceKeys}, uniqueIdsFormState)))
   const [createNode] = useMutation(CreateNode);
 
   // On First Component Render 
@@ -86,27 +87,33 @@ export function FormGenerator({ metadata, patientIdentifier }) {
   // any changes like for example a change from
   // one form to another.
   useEffect(() => {
-    // setValidationObject({})
+    setValidationObject({})
     setUniqueIdFormState({});
     setGlobalFormState({});
-    // setOption({})
 
     // populate form foreign keys, primary keys, globalIdentifierKeys
     const ids = [
       ...globalIdentifierKeys,
       ...formPrimaryIdentifierKeys,
-      ...formReferenceKeys.map((fk) => fk.node),
+      ...formReferenceKeys.map((fk) => {
+        const node = {...fk.node} // shallow copy node object
+        if (fk.override){
+          Object.keys(fk.override).forEach((key) => 
+            node[key] = fk.override[key] 
+          )
+        }
+        return node
+      }),
     ];
-    // ids.map((field) =>
-    //   setUniqueIdFormState((id) => ({
-    //     ...id,
-    //     [field.name]: field.value,
-    //   }))
-    // );
 
+  
     setUniqueIdFormState({
       ... (R.mapToObj(ids, field => [field.name, field.value])),
       submitter_donor_id: patientIdentifier.submitter_donor_id, program_id: patientIdentifier.program_id
+    })
+
+    setValidationObject({
+      ... (R.mapToObj(ids, field => [field.name, zodifiyField(field)]))
     })
 
     // eslint-disable-next-line
@@ -114,52 +121,73 @@ export function FormGenerator({ metadata, patientIdentifier }) {
   
   useEffect(() => {
 
+    if (!formReferenceKeys.length) return
     // this conceptual works if all keys within each form are diffrent
     // fixes that might be done at a later time
+    
     // NOTE (For Later...): 
-    // - assign ctx to form it comes from to be able deal with forms
+    // - assign context to form it comes from to be able deal with forms
     //   that might contain the same field name
-    if (typeof FormFieldsCTX === "object" && FormFieldsCTX.ctx.length > 0){
-      if (Object.keys(ctx).length > 0) setContext({});
-      FormFieldsCTX.ctx[0].fields.forEach((fld) => {
-        setContext((ctx) => ({
-          ...ctx,
+    if (typeof formFieldsContext === "object" && formFieldsContext.submitters.length > 0){
+      if (Object.keys(context).length > 0) setContext({});
+
+      formFieldsContext.submitters[0].fields.forEach((fld) => {
+        setContext((context) => ({
+          ...context,
           [fld["key"]] : fld["value"],
         }))
       })
 
-     FormFieldsCTX.ctx[0].reference_primary_key.forEach((form) => {
+     console.log(formFieldsContext.submitters[0].reference_primary_key)
+     formFieldsContext.submitters[0].reference_primary_key.forEach((form) => {
         form.fields.forEach((fld)=> {  
-          setContext((ctx) => ({
-            ...ctx,
+          setContext((context) => ({
+            ...context,
             [fld["key"]] : fld["value"],
           }))
         })
       })
-
-
     }
 
   // eslint-disable-next-line
-  },[FormFieldsCTX])
-
-  console.log(uniqueIdsFormState)
-
+  },[formFieldsContext])
   
   const onFormComplete = async () => {
     // Validate Form
     //...
     //...
+    const form = {...uniqueIdsFormState , ...globalFormState} 
+    
+
+    let stopPopulatingProcess : boolean = false;
+    for (const key in validationObject){
+      if (conditionalsFields[key] && doesFieldNotMeetAllConditions(conditionalsFields[key], globalFormState, context)){
+        continue
+      }
+
+      const validate = validationObject[key].safeParse(form[key]);
+
+      if (!validate.success){
+        stopPopulatingProcess = true;
+        setErrorDisplay((err) => ({...err, [key] : ParseError(validate.error.issues)}))
+      } else if (errordisplay[key] !== null) {
+        setErrorDisplay((err) => ({...err, [key] : null}))
+      }
+    }
+
+
+    console.log("1-process-stop:", stopPopulatingProcess)
+    if (stopPopulatingProcess) return
+    
     // if there are foreign keys then need
     // to check if it is consistent
 
     // if there exist a fogien key 
-    // check with the context state (ctx) 
+    // check with the context state (context) 
     // if the form exist with in the
 
     // create the muation variables to populate the neo4j... 
     
-    console.log(uniqueIdsFormState)
     const formCreateSchema = ParseFormToGraphQL(
         { ids: uniqueIdsFormState, fields: globalFormState, form_id: metadata.form_id },
         {
@@ -187,9 +215,8 @@ export function FormGenerator({ metadata, patientIdentifier }) {
     //   return;
     // } // do nothing
 
-
-    console.log(formCreateSchema)
     createNode({variables  : { "input" : [formCreateSchema]}})
+    
     // if (nodeEvent === "submit"){
     //   createNode({variables  : { "input" : [formCreateSchema]}})
     //   alert("submit")
@@ -199,6 +226,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
     // }
   }
 
+  console.log("context : ", context)
 
   // when data is recived then update global form state and as well populate the option necessary
   // for the select components
@@ -208,11 +236,20 @@ export function FormGenerator({ metadata, patientIdentifier }) {
       if(Object.keys(globalFormState).length > 0){
         setGlobalFormState({})
         setOption({})
-
+        setErrorDisplay({})
+        setConditionalsFields({})
       }
 
       formFields.PopulateForm.forEach((field) => {
         
+
+        if (field.conditionals){
+          setConditionalsFields((cond) => ({
+            ...cond,
+            [`${field.name}`] : field.conditionals
+          }))
+        }
+
         if (field.component === "Select") {
           setOption((opt) => ({
             ...opt,
@@ -220,30 +257,30 @@ export function FormGenerator({ metadata, patientIdentifier }) {
           }));
         }
 
+        setErrorDisplay((err) => ({
+          ...err,
+          [`${field.name}`] : null
+        }))
+
         setGlobalFormState((fld) => ({
           ...fld,
           [field.name] : field.value,
         }));
 
-        // UNCOMMENT WHEN FINISHED 
-        // =================================
-        // CURRENT STATE: (**Not Finished**)
-        // =================================
-        // setValidationObject((fld) => (z.object({
-        //   ...fld,
-        //   [field.name] : null,
-        // })))
+        setValidationObject((fld) => ({
+          ...fld,
+          [field.name] : zodifiyField(field),
+          }))
 
       });
     }
     // eslint-disable-next-line
   }, [formFields, patientIdentifier]);
 
-  //  not return anything to the DOM if the data is not loaded
+  //  do not return anything to the DOM if the data is not loaded
   if (loadFieldData) return <></>;
   else if (errorFields) return `Somthing went wrong within the backend ${errorFields}`;
   
-  console.log(globalFormState)
   return (
     <div
       key={metadata.form_name}
@@ -269,7 +306,13 @@ export function FormGenerator({ metadata, patientIdentifier }) {
             type={fld.type}
             label={fld.label}
             placeholder={fld.placeholder}
-            onChange={(e) => {setUniqueIdFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
+            onChange={(e) => {
+              const recheckValueValidation = validationObject[fld.name].safeParse(e.target.value)
+              if (recheckValueValidation.success){
+               setErrorDisplay((err) =>({ ...err, [fld.name] : null}))
+              }
+              setUniqueIdFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
+            error={errordisplay[fld.name]}
           />
           ))}
         </Form.Group>
@@ -282,7 +325,13 @@ export function FormGenerator({ metadata, patientIdentifier }) {
             type={fld.type}
             label={fld.label}
             placeholder={fld.placeholder}
-            onChange={(e) => {setUniqueIdFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
+            onChange={(e) => {
+              const recheckValueValidation = validationObject[fld.name].safeParse(e.target.value)
+              if (recheckValueValidation.success){
+               setErrorDisplay((err) =>({ ...err, [fld.name] : null}))
+              }
+              setUniqueIdFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
+            error={errordisplay[fld.name]}
           />
           ))}
         </Form.Group>
@@ -295,7 +344,13 @@ export function FormGenerator({ metadata, patientIdentifier }) {
             type={fld.node.type}
             label={fld.node.label}
             placeholder={fld.node.placeholder}
-            onChange={(e) => {setUniqueIdFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
+            onChange={(e) => {
+              // const recheckValueValidation = validationObject[fld.name].safeParse(e.target.value)
+              // if (recheckValueValidation.success){
+              //  setErrorDisplay((err) =>({ ...err, [fld.name] : null}))
+              // }
+              setUniqueIdFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
+            error={errordisplay[fld.name]}
           />)
           })}
         </Form.Group>
@@ -317,19 +372,24 @@ export function FormGenerator({ metadata, patientIdentifier }) {
         {option && formFields.PopulateForm.map((fld) => {
           var comp = <></>;
 
+          const disabled = fld.conditionals === null ? false : doesFieldNotMeetAllConditions(fld.conditionals, globalFormState, context)
+          const displayError = disabled ? null : errordisplay[fld.name]
           // add new components here - e.g. if for >5 then Button Select and also change field type in Neo4j for that field
           switch (fld.component) {
             case "Input":
+
                 if(fld.type === "month"){
-                  console.log(typeof globalFormState[fld.name], globalFormState[fld.name])
                   comp = (  
-                  <Form.Field disabled={fld.conditionals === null ? false : doesFieldNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}>
+                  <Form.Field disabled={disabled} error={displayError}>
                     <label>{fld.label}</label>
                     <DatePicker
                       selected={globalFormState[fld.name]}
                       placeholderText={fld.placeholder}
                       onChange={(date) => {
-                        console.log(date)
+                        const recheckValueValidation = validationObject[fld.name].safeParse(date === null ? date : new Date(date))
+                        if (recheckValueValidation.success){
+                         setErrorDisplay((err) =>({ ...err, [fld.name] : null}))
+                        }
                         setGlobalFormState((f) => ({...f, [fld.name] : date === null ? date : new Date(date)})) }}
                       dateFormat="MM/yyyy"
                       isClearable
@@ -346,8 +406,17 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                   type={fld.type}
                   label={fld.label}
                   placeholder={fld.placeholder}
-                  onChange={(e) => {setGlobalFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
-                  disabled={fld.conditionals === null ? false : doesFieldNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
+                  onChange={(e) => {
+                    let value = ["number", "integer"].includes(fld.type.toLowerCase()) ? +e.target.value : e.target.value
+                    value = Number.isNaN(value) ? fld.value : value  
+
+                    const recheckValueValidation = validationObject[fld.name].safeParse(value)
+                    if (recheckValueValidation.success){
+                     setErrorDisplay((err) =>({ ...err, [fld.name] : null}))
+                    }
+                    setGlobalFormState((f) => ({...f, [e.target.name] : value} ))}}
+                  disabled={disabled}
+                  error={displayError}
                 />
                 );
               } 
@@ -358,8 +427,9 @@ export function FormGenerator({ metadata, patientIdentifier }) {
               if (option[fld.name] === undefined) break; 
 
               if (option[fld.name].length <=4) {
+                
                 comp = (
-                  <Form.Field disabled={fld.conditionals === null ? false : doesFieldNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}>
+                  <Form.Field disabled={disabled} error={displayError}>
                   <label>{fld.label}</label>
                   <Form.Group widths={option[fld.name].length} >
                       {R.map(
@@ -371,7 +441,14 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                           basic={!isActive}
                           active={isActive}
                           color={isActive ? 'teal' : undefined}
-                          onClick={(e) => setGlobalFormState((fields) => ({ ...fields, ...{ [fld.name]: selectOption.value } }))}
+                          onClick={(e) => {
+                            const recheckValueValidation = validationObject[fld.name].safeParse(selectOption.value)
+                            if (recheckValueValidation.success){
+                             setErrorDisplay((err) =>({ ...err, [fld.name] : null}))
+                            }
+                            setGlobalFormState((fields) => ({ ...fields, ...{ [fld.name]: selectOption.value } }))
+                          }}
+                          error={displayError}
                           >{selectOption.text}
                           </Form.Button>
                         }
@@ -390,9 +467,15 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                 placeholder={fld.placeholder}
                 label={fld.label}
                 options={option[fld.name]} 
-                onChange={(e, { name, value }) => setGlobalFormState((fields) => ({ ...fields, ...{ [name]: value } }))}
+                onChange={(e, { name, value }) => {
+                  const recheckValueValidation = validationObject[name].safeParse(value)
+                  if (recheckValueValidation.success){
+                   setErrorDisplay((err) =>({ ...err, [fld.name] : null}))
+                  }
+                  setGlobalFormState((fields) => ({ ...fields, ...{ [name]: value } }))}}
                 clearable
-                disabled={fld.conditionals === null ? false : doesFieldNotMeetAllConditions(fld.conditionals, globalFormState, ctx)}
+                disabled={disabled}
+                error={errordisplay[fld.name]}
               />);
               }
               break;
@@ -423,7 +506,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
             disabled
             onClick={() => {
               setNodeEvent("update");
-              // console.log(uniqueIdsFormState)
+              // context(uniqueIdsFormState)
             }}
           ></Button>
         </Button.Group>

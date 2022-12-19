@@ -53,8 +53,8 @@
   }
 
   interface reference @relationshipProperties {
-    constraint : FormValue
-    required   : Boolean
+    canReference : FormValue
+    override     : Parser
   }
 
 
