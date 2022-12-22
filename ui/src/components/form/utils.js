@@ -65,27 +65,22 @@ export const sortForeignKeys = (feildState, fks) => {
   // dump them within there own form bucked
   fks.forEach(fk => {
     if (bucket[fk.node.primary_key_to.form_id] === undefined) {
-      bucket[fk.node.primary_key_to.form_id] = { "form" : fk.node.primary_key_to.form_id, "primary_keys" : {}}
+      bucket[fk.node.primary_key_to.form_id] = { "form" : fk.node.primary_key_to.form_id, "formPrimaryIdentifierKeys" : {}}
     }
-    bucket[fk.node.primary_key_to.form_id] = {...bucket[fk.node.primary_key_to.form_id], "primary_keys" : {...bucket[fk.node.primary_key_to.form_id].primaryKeys, ...getKeysValuePair([fk.node.name], feildState)}}    
+    bucket[fk.node.primary_key_to.form_id] = {...bucket[fk.node.primary_key_to.form_id], "formPrimaryIdentifierKeys" : {...bucket[fk.node.primary_key_to.form_id].primaryKeys, ...getKeysValuePair([fk.node.name], feildState)}}    
   })
 
-  // [{
-  //  form : ...,
-  //  primary_key : ... ,
-  // },...]
   // return an array of all the referenced forms 
-  
   return !Object.keys(bucket).length ? [] : Object.keys(bucket).map(reference => (bucket[reference]))
 }
 
 export const ParseFormToGraphQL = (form, fields) => {
   return {"form": form.form_id,
           "uuid": uuidv4(),
-          "primary_keys" : getKeysValuePair(fields.formPrimaryIdentifierKeys.map(pk => pk.name), form.ids),
+          "formPrimaryIdentifierKeys" : getKeysValuePair(fields.formPrimaryIdentifierKeys.map(pk => pk.name), form.ids),
           ...ObjectInputType(form.fields ,fields.formFields),
           ...fields.formReferenceKeys.concat(fields.globalIdentifierKeys).length ? 
-          {"reference_foreign_key": 
+          {"formReferenceKeys": 
             { "connect": [ 
                             {"where": 
                               {"node": { "OR" : [
@@ -124,7 +119,7 @@ export const ParseFormToGraphQL = (form, fields) => {
 export const parseFormFieldsToQueryContext = (fields,state) => {
   if (fields === null || state === {}) return {}
   return { "where" :
-           {"primary_keys" :  fields.globalIdentifierKeys.length === 0 ? null :  getKeysValuePair(fields.globalIdentifierKeys.map(id => id.name), state) },
+           {"formPrimaryIdentifierKeys" :  fields.globalIdentifierKeys.length === 0 ? null :  getKeysValuePair(fields.globalIdentifierKeys.map(id => id.name), state) },
            "referencePrimary": {
            ...!fields.formReferenceKeys.length ? {} : {"OR": [
               ...sortForeignKeys(state, fields.formReferenceKeys)
