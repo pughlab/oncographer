@@ -8,7 +8,6 @@ export default function TableToolDisplay({
   updateGlobalFormState,
   updateUniqueIdsFormState,
 }) {
-  console.log(metadata);
   if (metadata === undefined) return <></>;
 
   const sortFormFieldsDataForTableTool = (form) => {
@@ -36,7 +35,6 @@ export default function TableToolDisplay({
   };
 
   const sortHeadersForTableTool = (form) => {
-    console.log(form);
     let reference = form.formReferenceKeys.reduce(
       (accumulatedFields, currentField) => ({
         ...accumulatedFields,
@@ -59,7 +57,6 @@ export default function TableToolDisplay({
     // if so change it to a Date Object
     // Reason is react-Datepicker only takes null or a Date Object
     Object.keys(fields).forEach((key) => {
-      // console.log(!isNaN(Date.parse(fields[key])) && isNaN(+fields[key]) && re.exec(fields[key]) !== null)
       // TODO: improve filter to find the dates fields
       // check if the value can Date parse, not a Integer/Float/Number and meets the regular expression
       if (re.exec(fields[key]) !== null) {
@@ -72,10 +69,13 @@ export default function TableToolDisplay({
     // change Unique Ids within the Form State
     updateUniqueIdsFormState(keys);
   };
-  console.log(metadata)
+
   const typeofdisplay = "connectedFormsReferencingSubmitter" in metadata[0]
       ? metadata[0].connectedFormsReferencingSubmitter
       : metadata;
+
+  if (!typeofdisplay.length) return <></>;
+  
   const sortedHeaders = sortHeadersForTableTool(typeofdisplay[0]);
 
   return (

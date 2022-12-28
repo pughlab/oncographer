@@ -26,7 +26,6 @@ function value(value) {
   
   function vSet(value) {
     var vtype = null;
-    // console.log(typeof value, value)
     switch(typeof value) {
       case "number":
         vtype = value
@@ -83,7 +82,6 @@ export const resolvers = {
     parseValue : vSet,
     serialize : vSet,
     parseLiteral(ast) {
-      console.log(ast, Kind)
       if (ast.kind === Kind.INT){
         return parseInt(ast.value)
       } else if (ast.kind === Kind.FLOAT){

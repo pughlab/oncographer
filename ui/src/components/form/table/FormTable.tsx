@@ -84,7 +84,8 @@ export const TableTool = ({
   }
 
   // checks if the query shows up empty if so do not return anythng
-  if (data.submitters.length === 0) return <></>;
+  
+  if ((data.submitters !== undefined &&data.submitters.length === 0) || data.submitters === undefined) return <></>;
 
   if (error) {
     return (

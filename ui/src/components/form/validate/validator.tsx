@@ -44,7 +44,7 @@ import {z} from 'zod'
     schema = field.regex === null ? schema : schema.regex(new RegExp(field.regex), { message : "The text you have filled in does not match the standard expression"})
     // check if the field is not reuqired
     schema = field.required ? schema : schema.optional()
-  
+    
     return schema // return the zod object that will be paresed to vailidate schema
   }
 
