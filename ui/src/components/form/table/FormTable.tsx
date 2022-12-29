@@ -43,7 +43,7 @@ const getRootOfFormDirectedGraphFormFields = gql`
 
 // **REFACTOR**
 // THIS NEEDS TO REFACTORED
-export const TableTool = ({
+export const FormTable = ({
   form,
   searchForRootForm,
   globalIdentifierKeys,

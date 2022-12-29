@@ -26,13 +26,12 @@ export const validateFormFieldInputs = (
       continue;
     }
     let value = form[key]
-    console.log( )
+
     if (z.optional()._def.typeName === validationObject[key]._def.typeName && value === ""){
       value = undefined
     }
 
     const validate = validationObject[key].safeParse(value);
-    console.log(validate)
 
     if (!validate.success) {
       stopPopulatingProcess = true;
@@ -47,58 +46,9 @@ export const validateFormFieldInputs = (
   return stopPopulatingProcess;
 };
 
-export const connectionConsistencyCheck = (
-  doesFormExist,
-  relationalCardinalityToRoot,
-  relationalCardinalityToRefrenceKey,
-  constraints,
-  state
-) => {
-  
-  // const filterOutNonRequiredReferences = constraints.reference.filter((value) => {
-    
-  //   if ( value.override !== null && !value.override.required ) return false
-  //   return value.node.required
-  // }) 
-
-  // const sortedIds = sortSubmitterByFormId(state, filterOutNonRequiredReferences)
-  
-  // console.log(Boolean(doesFormExist), doesFormExist, constraints, relationalCardinalityToRoot, sortedIds)
-
-  
-  if (Boolean(doesFormExist)) return false; // the submitter does exist referenced to the root
-  console.log("Here");
-
-  if (
-    constraints.root !== null &&
-    relationalCardinalityToRoot >= constraints.root
-  )
-    return false; 
-    // if there is contraint relative root and 
-    // we meet that max constraints then return false
-    // as we can not construct anohter submitter under this form
-
-
-
-  // 1. from the root check if the required referenced submitteres exist
-  //if required submitter refereced does not exist
-  //  return false
-  //else
-  //  if relational cardinality to the root is not met or null
-  //  2. check the relational cardinality of the connection
-  //  if the cardinality is already met then
-  //    return false
-  //  else if the cardinality is not met
-  //    return true
-  return true
-};
-
-export const handleRelationshipCardinality = () => {
-
-}
 
 export const doesSumbitterExist = (data) => {
-  console.log(data)
+
   return Boolean(data)
 }
 
@@ -158,44 +108,76 @@ export const getKeysValuePair = (keys, object) => {
   return tempObject
 }
 
-export const sortSubmitterByFormId = (feildState, fks) => {
+// sort just the reference keys that are not global identifier
+export const sortSubmitterByFormId = (feildState, fks, deleteNonFullBucket=true, uuids={}) => {
 
-  let bucket = {} // initialize bucket will hold all the 
+  let bucket = new Object() // initialize bucket will hold all the 
                   // primary keys of each foreign keys referenced in form
   
   // loop through all the reference_key (foreign keys)
-  // dump them within there own form bucked
+  // dump them within there own form bucked object
   fks.forEach((fk) => {
-    if (bucket[fk.node.primaryFormIdentifiers.form_id] === undefined) {
+    if (!bucket.hasOwnProperty(fk.node.primaryFormIdentifiers.form_id)) {
       bucket[fk.node.primaryFormIdentifiers.form_id] = {
         form: fk.node.primaryFormIdentifiers.form_id,
+        
         formPrimaryIdentifierKeys: {},
       };
     }
+
+    if(uuids.hasOwnProperty(fk.node.primaryFormIdentifiers.form_id)){
+      bucket[fk.node.primaryFormIdentifiers.form_id] = {
+        ...bucket[fk.node.primaryFormIdentifiers.form_id],
+        uuid : uuids[fk.node.primaryFormIdentifiers.form_id]
+       }
+    }
+
     bucket[fk.node.primaryFormIdentifiers.form_id] = {
       ...bucket[fk.node.primaryFormIdentifiers.form_id],
       formPrimaryIdentifierKeys: {
         ...bucket[fk.node.primaryFormIdentifiers.form_id].formPrimaryIdentifierKeys,
         ...getKeysValuePair([fk.node.name], feildState),
+        
       },
     };
+
+    if (deleteNonFullBucket && feildState[fk.node.name] === "" ||  feildState[fk.node.name] === undefined) delete bucket[fk.node.primaryFormIdentifiers.form_id] // do not include the form if it's not been full filled out
+  
   });
 
   // return an array of all the referenced forms 
   return !Object.keys(bucket).length ? [] : Object.keys(bucket).map(reference => (bucket[reference]))
 }
 
+export const submitterReferenceFormsRelationalCardinality = (fks) => {
+
+  let bucket = {} // initialize bucket will hold all the 
+                  // primary keys of each foreign keys referenced in form
+  
+  // loop through all the reference_key (foreign keys)
+  // dump them within there own form bucked object
+  fks.forEach((fk) => {
+    if (fk.relationship_cardinality !== null && bucket[fk.node.primaryFormIdentifiers.form_id] === undefined) {
+      bucket[fk.node.primaryFormIdentifiers.form_id] = fk.relationship_cardinality
+    }
+  });
+  
+  return bucket
+}
+
 export const ParseFormToGraphQL = (form, fields) => {
   return {"form": form.form_id,
           "uuid": uuidv4(),
           "formPrimaryIdentifierKeys" : getKeysValuePair(fields.formPrimaryIdentifierKeys.map(pk => pk.name), form.ids),
-          ...ObjectInputType(form.fields ,fields.formFields),
+          "fields" : {
+            "create" : [...ObjectInputType(form.fields ,fields.formFieldsMetadata, form.context)]
+          },
           ...fields.formReferenceKeys.concat(fields.globalIdentifierKeys).length ? 
           {"formReferenceKeys": 
             { "connect": [ 
                             {"where": 
                               {"node": { "OR" : [
-                                              ...sortSubmitterByFormId(form.ids, fields.formReferenceKeys),
+                                              ...sortSubmitterByFormId(form.ids, fields.formReferenceKeys, true, form.uuids ),
                                               { "formPrimaryIdentifierKeys" : getKeysValuePair(fields.globalIdentifierKeys.map(id => id.name), form.ids)}
                                           ]
                                        }
@@ -213,24 +195,24 @@ export const ParseFormToGraphQL = (form, fields) => {
  * @param {*} fieldsMetaData 
  * @returns 
  */
- const ObjectInputType = (formState, fieldsMetaData) => {
+ const ObjectInputType = (formState, fieldsMetaData, context) => {
   let arr = []
   let cond = {}
   fieldsMetaData.forEach((value) => {
-      cond[value.name] = value.conditionals === null ? false : doesFieldNotMeetAllConditions(value.conditionals, formState)
+      cond[value.name] = value.conditionals === null ? false : doesFieldNotMeetAllConditions(value.conditionals, formState, context)
   })
 
   for (const prop in formState){
     if (cond[prop]) continue
     arr.push({ "node" : {key : prop, value : formState[prop] }}) // condition are met then set it to the value else set default value
   }
-  return {"fields" : {"create" : arr} }
+  return arr
 }
 
 export const parseFormFieldsToQueryContext = (fields, state) => {
   if (fields === null || state === {}) return {};
   return {
-    where: {
+    root: {
       formPrimaryIdentifierKeys:
         fields.globalIdentifierKeys.length === 0
           ? null
@@ -239,10 +221,10 @@ export const parseFormFieldsToQueryContext = (fields, state) => {
               state
             ),
     },
-    referencePrimary: {
+    references: {
       ...(!fields.formReferenceKeys.length
         ? {}
-        : { OR: [...sortSubmitterByFormId(state, fields.formReferenceKeys)] }),
+        : { OR: [...sortSubmitterByFormId(state, fields.formReferenceKeys, false)] }),
     },
   };
 };
@@ -256,7 +238,6 @@ export const submitterBundleQueryParse = (
   isRoot=false,
 ) => {
 
-  console.log(isRoot)
   if (isRoot){
     return {
       self : {
@@ -287,7 +268,7 @@ export const submitterBundleQueryParse = (
       form: form_id,
       formPrimaryIdentifierKeys:
         self.length === 0
-          ? null
+          ? {}
           : getKeysValuePair(
               self.map((id) => id.name),
               state
@@ -301,3 +282,5 @@ export const submitterBundleQueryParse = (
     form: { form: form_id },
   };
 };
+
+

@@ -14,10 +14,11 @@ import {
   doesFieldNotMeetAllConditions,
   getKeysValuePair,
   parseFormFieldsToQueryContext,
-  connectionConsistencyCheck,
   validateFormFieldInputs,
-  doesSumbitterExist,
-  submitterBundleQueryParse
+  submitterBundleQueryParse,
+  sortSubmitterByFormId,
+  submitterReferenceFormsRelationalCardinality,
+  doesSumbitterExist
 } from "./utils";
 import { zodifiyField } from "./validate/validator";
 import {
@@ -28,24 +29,23 @@ import {
   doesRootExist
 } from "./queries/query";
 
-import { TableTool } from "./table/FormTable";
+import { FormTable } from "./table/FormTable";
 
 export function FormGenerator({ metadata, patientIdentifier }) {
 
   const relationalCardinalityToRoot = metadata.form_relationship_cardinality
-  
   const [validationObject, setValidationObject] = useState({});
   const [errordisplay, setErrorDisplay] = useState({});
   const [globalFormState, setGlobalFormState] = useState({}); // Global State of the current form that holds all data inputs
   const [uniqueIdsFormState, setUniqueIdFormState] = useState({}); // Contains all the form States unique IDs and there inputs within the current form
   const [conditionalsFields, setConditionalsFields] = useState({});
   const [option, setOption] = useState({}); // Options of the Select Component fields **TODO: CHANGE AND STORE WITHIN BACKEND***
-
-  const [nodeEvent, setNodeEvent] = useState("submit"); // Protocol State in which to handle the data within the form when it is submited
+  const [coherentConnections, setConnetion] = useState(false); // all references keys that are being used exist
+  const [nodeEvent, setNodeEvent] = useState("pending"); // Protocol State in which to handle the data within the form when it is submited
   // to be processed to the backend
-
   const [context, setContext] = useState({}); // Context holds all the information of form that hold being refrenced by
   // either the identifiers, and foreign keys
+  
 
   //  Is a referance to root of the form directed acyclic graph in which all forms use there primary key
   const globalIdentifierKeys = metadata.identifier.filter(
@@ -67,7 +67,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
   // foreign identifier of the current form. This is the identifier that connects to other existing forms and there
   // primary identifier
   const formReferenceKeys = metadata.foreign_key.edges;
-
+  const [formReferenceKeysUUID, setUUID] = useState({});
   // (Populate Form Fields GraphQL Query) that loads all field data within the form
   const {
     loading: loadFieldData,
@@ -95,12 +95,14 @@ export function FormGenerator({ metadata, patientIdentifier }) {
   });
 
   // TESTING------------------------------
-  console.log(JSON.stringify(parseFormFieldsToQueryContext(
-    { globalIdentifierKeys, formReferenceKeys },
-    uniqueIdsFormState
-  )))
+  // console.log(JSON.stringify(parseFormFieldsToQueryContext(
+  //   { globalIdentifierKeys, formReferenceKeys },
+  //   uniqueIdsFormState
+  // )))
 
   const [createNode] = useMutation(CreateNode);
+
+  
 
   // On First Component Render
   // make sure all states are wiped from
@@ -122,7 +124,8 @@ export function FormGenerator({ metadata, patientIdentifier }) {
             (key) => (node[key] = fk.override[key])
           );
         }
-        console.log(node)
+        // --Testing---------
+        // console.log(node)
         return node;
       }),
     ];
@@ -154,17 +157,33 @@ export function FormGenerator({ metadata, patientIdentifier }) {
       typeof formFieldsContext === "object" &&
       formFieldsContext.submitters.length > 0
     ) {
-      if (Object.keys(context).length > 0) setContext({});
+      if (Object.keys(context).length > 0) {
+        setContext({});
+        setUUID({})
+      }
+
+      // filter out all non filled Reference Fields
+
+      const filledReferenceFormFields = formReferenceKeys.filter(rk => {
+        if (uniqueIdsFormState[rk.node.name] === "") return false
+        return true
+      });
+      
+      const numberOfFilledRefrenceFormID = sortSubmitterByFormId(uniqueIdsFormState, filledReferenceFormFields)
 
       formFieldsContext.submitters[0].fields.forEach((fld) => {
+        
         setContext((context) => ({
           ...context,
           [fld["key"]]: fld["value"],
         }));
       });
 
+      
       formFieldsContext.submitters[0].connectedFormsReferencingSubmitter.forEach(
         (form) => {
+          setUUID((uuids) => ({...uuids, [form.form] : form.uuid}))
+          
           form.fields.forEach((fld) => {
             setContext((context) => ({
               ...context,
@@ -173,6 +192,9 @@ export function FormGenerator({ metadata, patientIdentifier }) {
           });
         }
       );
+
+      // context connection are coherent
+      setConnetion(numberOfFilledRefrenceFormID.length === formFieldsContext.submitters[0].connectedFormsReferencingSubmitter.length)
     }
 
     // eslint-disable-next-line
@@ -182,43 +204,27 @@ export function FormGenerator({ metadata, patientIdentifier }) {
 
   const onFormComplete = async () => {
     
-    // Validate Current Form Data
-    if (
-      validateFormFieldInputs(
-        uniqueIdsFormState,
-        globalFormState,
-        conditionalsFields,
-        context,
-        validationObject,
-        errordisplay,
-        setErrorDisplay
-      )
-    )
+    // Validate Current Form Data 
+    const isValid = validateFormFieldInputs(uniqueIdsFormState,globalFormState,conditionalsFields,context,validationObject,errordisplay,setErrorDisplay)
+    if (isValid || (formReferenceKeys.length > 0 && !coherentConnections)){
+      alert(isValid ? `The are some unvalid fields` : `The references you enter do not make sense`) 
       return; 
-    // create the muation variables to populate the neo4j...
+    }
+      
+
+    // Currently know:
+    // - connection to all possible references are coherent mean they connect to the root
+    // - all fields are vaild
+    // Need To Know:
+    // - does this submitted form already exist
+    // - Is it NOT a Root
+      // - Does if have a relationship cardinality
+      //   YES: connection meet the relationship cardinality of it root
+      //   NO : continue
+      // - Does it have references
+      //   YES: connection meet there relationship cardinality of it's refereces
+      //   NO : continue
     
-    const internalFormMetadata = {
-      ids    : uniqueIdsFormState,
-      fields : globalFormState,
-      form_id: metadata.form_id,
-    };
-
-    const identifierKeys = {
-      globalIdentifierKeys,
-      formPrimaryIdentifierKeys,
-      formReferenceKeys,
-      formFields: formFields.PopulateForm,
-    };
-
-    const formCreateSchema = ParseFormToGraphQL(internalFormMetadata, identifierKeys);
-
-    // --TESTING-----------------------------------
-    console.log(formCreateSchema)
-    
-    // variables: parseFormFieldsToQueryContext(
-    //   { globalIdentifierKeys, formReferenceKeys },
-    //   uniqueIdsFormState
-    // ),
     let submitterConnectionQuery = isRootForm ? getRootIfExist : getSubmitterConstraints
     const received = await submitterConnectionQuery({
       variables: {
@@ -226,48 +232,75 @@ export function FormGenerator({ metadata, patientIdentifier }) {
       },
     })
 
-    // received.data.root.length 
-    // console.log("INFO", JSON.stringify(submitterBundleQueryParse(formPrimaryIdentifierKeys, globalIdentifierKeys, formReferenceKeys, uniqueIdsFormState, metadata.form_id)))
-    
-    
-
-    // console.log(globalIdentifierKeys.length, globalIdentifierKeys.length > 0 ? connectionConsistencyCheck(
-    //   received.data.ConnectedToRoot[0].connectedFormsReferencingSubmitterAggregate.count, // reference to root
-    //   received.data.CurrentRelationalCardinalityOfFormToRoot[0].connectedFormsReferencingSubmitterAggregate.count, // total times root has been refrence
-    //   received.data.RefrencesConnectionOfRoot.connectedFormsReferencingSubmitter, // connection to refrence nodes and amount of time they have been refrenced
-    //   {root : relationalCardinalityToRoot, reference : formReferenceKeys},
-    //   uniqueIdsFormState
-    //   ) : doesSumbitterExist(received.data.root.length));
     // --TESTING-----------------------------------
-    
-    
-    
-    console.log("EXIST", received.data)
+    // console.log("RECEIVED", received.data)
    
     // --TESTING-----------------------------------
-    console.log("REFERENCE", formReferenceKeys)
+    // console.log("REFERENCE", formReferenceKeys)
 
-    console.log(!formReferenceKeys.length)
+    // UPDATE: need to implment a override in the case of update
+    // if the submitter submits a form that exist then exit the function
+
+
+    if (!isRootForm){
+
+      if (formPrimaryIdentifierKeys.length > 0 && doesSumbitterExist(received.data.root[0].connectedFormsReferencingSubmitterAggregate.count)) {
+        alert("This already exists")
+        return}  // **COMMENT OUT**
+
+      const formCountToRoot = received.data.CurrentRelationalCardinalityOfFormToRoot[0].connectedFormsReferencingSubmitterAggregate.count;
+      if ( relationalCardinalityToRoot !== null && formCountToRoot >= relationalCardinalityToRoot ) {
+        alert("There exsit to many forms under this root")
+        return;
+      }
     
-    if (!formReferenceKeys.length){ // there are no refrence keys
+      // INFO NEEDED TO COMPUTE IF IT MEETS CARDINALITY
+      // - data of all reference forms filled
+      // - there cardinality for each form
+      
+      if (formReferenceKeys.length > 0){ // there exist no refrence keys
+        const referenceForms = received.data.RefrencesConnectionOfRoot[0] 
+        const referenceFormRelationalCardinality = submitterReferenceFormsRelationalCardinality(formReferenceKeys) // 
+        let currentForm = "";
+        for (let i = 0; i < referenceForms.connectedFormsReferencingSubmitter.length; i++){
+          currentForm = referenceForms.connectedFormsReferencingSubmitter[i].form;
+          if (referenceFormRelationalCardinality[currentForm] === undefined) continue; // there is no constraints on there relational cardinality
 
-    } else { // there are refrence keys
-
+          // there exist a constraints e.g the form referenced has a limited time it can be referenced by this form 
+          if (referenceForms.connectedFormsReferencingSubmitter[i].connectedFormsReferencingSubmitterAggregate.count >= referenceFormRelationalCardinality[currentForm]) {
+            alert(`It has already exceeded realtional cardinality of ${currentForm}`)
+            return
+          }
+        }
+      } 
+    } else {
+      if (doesSumbitterExist(received.data.root.length)) {
+        alert("This already exists")
+        return}  // **COMMENT OUT**
     }
 
+    const internalFormMetadata = {
+      form_id: metadata.form_id,   // ID to distinguish between all forms
+      ids    : uniqueIdsFormState, // unique set of identifiers to distinguish submitters from eachother
+      fields : globalFormState,    // fields submitted by the submitter
+      context: context,            // contextual information provided by referenced forms
+      uuids : formReferenceKeysUUID
+    };
+
+    const identifierKeys = {
+      globalIdentifierKeys,       // global ID's that uniquely identifier the root 
+      formPrimaryIdentifierKeys,  // form ID's that uniquely identifier form of the global ID
+      formReferenceKeys,          // referenced forms ID's
+      formFieldsMetadata: formFields.PopulateForm,
+    };
+
+    const formCreateSchema = ParseFormToGraphQL(internalFormMetadata, identifierKeys);
+
     // --TESTING-----------------------------------
-    console.log("CONTEXT ", formFieldsContext, context)
+    console.log(formCreateSchema)
 
-
-    // connectionConsistencyCheck(formReferenceKeys, uniqueIdsFormState, {})
-
-    // if (exist) {
-    //   alert("Node exists");
-    //   return;
-    // } // do nothing
-
+    // all checks are completed now just need to mutate the backend
     createNode({ variables: { input: [formCreateSchema] } });
-
   };
 
   // when data is recived then update global form state and as well populate the option necessary
@@ -419,7 +452,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
             DATA
           </Header>
         </Divider>
-        <TableTool
+        <FormTable
           form={metadata.form_id}
           searchForRootForm={isRootForm}
           globalIdentifierKeys={getKeysValuePair(

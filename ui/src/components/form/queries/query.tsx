@@ -103,7 +103,7 @@ export const submitterBundle = gql`
 query bundleFormMetadataChecks($self: SubmitterWhere, $root: SubmitterWhere, $refrences : SubmitterWhere, $form : SubmitterWhere) {
   # count the amount of nodes that exist within refrence to the root identifier.
   # This would be use to check if the form identifiers entered already exist
-  ConnectedToRoot: submitters(where: $root){
+  root: submitters(where: $root){
   connectedFormsReferencingSubmitterAggregate(where : $self){
       count
     }
@@ -132,16 +132,17 @@ query bundleFormMetadataChecks($self: SubmitterWhere, $root: SubmitterWhere, $re
 }`
 
 export const NodeGetContext = gql`
-  query Submitters($where: SubmitterWhere, $referencePrimary: SubmitterWhere) {
-    submitters(where: $where) {
+  query Submitters($root: SubmitterWhere, $references: SubmitterWhere) {
+    submitters(where: $root) {
       formPrimaryIdentifierKeys
       form
       fields {
         key
         value
       }
-      connectedFormsReferencingSubmitter(where: $referencePrimary) {
+      connectedFormsReferencingSubmitter(where: $references) {
         form
+        uuid
         formPrimaryIdentifierKeys
         fields {
           key

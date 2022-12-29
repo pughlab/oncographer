@@ -53,9 +53,13 @@ export default function TableToolDisplay({
   const onTableToolRowClicked = (fields, keys) => {
     // regular expression to collect the dates and convert them to Date object
     const re = /\d{4}-\d{2}-\d{2}/g; // FIX ME: Make more specific to YYYY-MM-DD
+    const keysOfObject = Object.keys(keys)
     // check if any of the fields is Date parsable
     // if so change it to a Date Object
     // Reason is react-Datepicker only takes null or a Date Object
+    
+    // TODO if the condition is not met need to fill the defaults of the given field 
+    
     Object.keys(fields).forEach((key) => {
       // TODO: improve filter to find the dates fields
       // check if the value can Date parse, not a Integer/Float/Number and meets the regular expression
@@ -63,6 +67,12 @@ export default function TableToolDisplay({
         fields[key] = new Date(fields[key]);
       }
     });
+    
+    sortedHeaders.forEach((header) =>{
+      if (!keysOfObject.includes(header)){
+        keys[header] = ""
+      }
+    })
 
     // change the global state form
     updateGlobalFormState(fields);
@@ -89,7 +99,6 @@ export default function TableToolDisplay({
           </Table.Row>
         </Table.Header>
 
-        {/* FIX ME WHEN THE FIELD IS A DATE DISPLAY ONLY YYYY-MMM */}
         <Table.Body>
           {typeofdisplay.map((form) => {
             let { values, references, primaryFormIdentifier } =
