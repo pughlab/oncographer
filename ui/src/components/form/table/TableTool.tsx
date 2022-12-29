@@ -5,6 +5,7 @@ import * as R from "remeda";
 
 export default function TableToolDisplay({
   metadata,
+  ids,
   updateGlobalFormState,
   updateUniqueIdsFormState,
 }) {
@@ -34,18 +35,11 @@ export default function TableToolDisplay({
     };
   };
 
-  const sortHeadersForTableTool = (form) => {
-    let reference = form.formReferenceKeys.reduce(
-      (accumulatedFields, currentField) => ({
-        ...accumulatedFields,
-        ...currentField.formPrimaryIdentifierKeys,
-      }),
-      {}
-    );
+  const sortHeadersForTableTool = (ids, form) => {
 
+    console.log(form.fields.map((fld) => fld.key))
     return [
-      ...Object.keys(form.formPrimaryIdentifierKeys),
-      ...Object.keys(reference),
+      ...Object.keys(ids),
       ...form.fields.map((fld) => fld.key),
     ];
   };
@@ -69,15 +63,16 @@ export default function TableToolDisplay({
     });
     
     sortedHeaders.forEach((header) =>{
-      if (!keysOfObject.includes(header)){
+      if (Object.keys(ids).includes(header) && !keysOfObject.includes(header)){
         keys[header] = ""
       }
     })
 
+    console.log(keys, fields)
     // change the global state form
     updateGlobalFormState(fields);
     // change Unique Ids within the Form State
-    updateUniqueIdsFormState(keys);
+    updateUniqueIdsFormState((prev) => ({...prev, ...keys}));
   };
 
   const typeofdisplay = "connectedFormsReferencingSubmitter" in metadata[0]
@@ -86,8 +81,7 @@ export default function TableToolDisplay({
 
   if (!typeofdisplay.length) return <></>;
   
-  const sortedHeaders = sortHeadersForTableTool(typeofdisplay[0]);
-
+  const sortedHeaders = sortHeadersForTableTool(ids, typeofdisplay[0]);
   return (
     <>
       <Table fixed selectable aria-labelledby="header">

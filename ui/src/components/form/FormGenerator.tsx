@@ -463,6 +463,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
             formPrimaryIdentifierKeys.map((pk) => pk.name),
             uniqueIdsFormState
           )}
+          identifierKeys={uniqueIdsFormState}
           updateUniqueIdsFormState={setUniqueIdFormState}
           updateGlobalFormState={setGlobalFormState}
         />

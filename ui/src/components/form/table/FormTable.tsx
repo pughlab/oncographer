@@ -47,6 +47,7 @@ export const FormTable = ({
   form,
   searchForRootForm,
   globalIdentifierKeys,
+  identifierKeys,
   formPrimaryIdentifierKeys,
   updateUniqueIdsFormState,
   updateGlobalFormState,
@@ -101,6 +102,7 @@ export const FormTable = ({
   return (
     <TableToolDisplay
       metadata={data.submitters}
+      ids={identifierKeys}
       updateGlobalFormState={updateGlobalFormState}
       updateUniqueIdsFormState={updateUniqueIdsFormState}
     />
