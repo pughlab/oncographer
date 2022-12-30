@@ -75,7 +75,14 @@ export const doesFieldNotMeetAllConditions = (conditionals, gfs, ctx={}) => {
   Object.keys(conditionals).forEach((key) => {
       if (gfs[key] === undefined && ctx[key] === undefined) 
            check.push(false)
-      else check.push(conditionals[key] === gfs[key] || ctx[key] === conditionals[key] ); 
+      
+      else {
+        
+        
+        Array.isArray(conditionals[key]) ? 
+        check.push(conditionals[key].includes(gfs[key]) || conditionals[key].includes(ctx[key]) ) :
+        check.push(conditionals[key] === gfs[key] || ctx[key] === conditionals[key] );
+      }
     });
 
   return check.includes(false);
