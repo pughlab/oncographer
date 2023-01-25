@@ -1,5 +1,5 @@
 import { useQuery } from "@apollo/client";
-import { GET_FORMS } from "../form/utils.js";
+import { getForms } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { Segment, Tab, Message, Image } from "semantic-ui-react";
 import * as React from 'react'
@@ -9,7 +9,7 @@ import * as R from 'remeda'
 
 
 export default function FormFactory({patientIdentifier}) {
-  const { loading, error, data } = useQuery(GET_FORMS);
+  const { loading, error, data } = useQuery(getForms);
   if (loading) {
     return (
     <>
@@ -34,15 +34,10 @@ export default function FormFactory({patientIdentifier}) {
   if (R.isNil(data)) {
     return null
   }
-  // "Something went wrong";
-  // console.log("hello")
-  // console.log(data.forms[0])
 
   //WIP - ordering needs to be changed to the query
   let newData ={forms: null}
   if (data) {
-  // console.log("form:")
-  // console.log(data.forms)
   newData.forms = [data.forms[2], data.forms[0], data.forms[3], data.forms[1], data.forms[5], data.forms[6], data.forms[7], data.forms[8], data.forms[9], data.forms[4], data.forms[10], data.forms[11]]
   }
   const paneData = newData.forms.map(form => ({

@@ -3,12 +3,13 @@ import { GraphQLScalarType, Kind, GraphQLError } from 'graphql'
 
 function value(value) {
   var vtype = null;
+  
   switch(typeof value) {
     case "number":
       vtype = value
       break;
     case "string":
-      vtype = value
+      vtype = value 
       break;
     case "boolean":
         vtype = value
@@ -25,7 +26,6 @@ function value(value) {
   
   function vSet(value) {
     var vtype = null;
-    // console.log(typeof value, value)
     switch(typeof value) {
       case "number":
         vtype = value
@@ -82,7 +82,6 @@ export const resolvers = {
     parseValue : vSet,
     serialize : vSet,
     parseLiteral(ast) {
-      console.log(ast, Kind)
       if (ast.kind === Kind.INT){
         return parseInt(ast.value)
       } else if (ast.kind === Kind.FLOAT){

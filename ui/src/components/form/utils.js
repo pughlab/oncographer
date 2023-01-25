@@ -1,180 +1,56 @@
-import { gql } from "@apollo/client";
 import { v4 as uuidv4 } from "uuid";
-import {z} from 'zod'
+import { ParseError } from "./validate/validator";
+import {z} from 'zod';
 
+export const validateFormFieldInputs = (
+  uniqueIdsFormState,
+  globalFormState,
+  conditionalsFields,
+  context,
+  validationObject,
+  errordisplay,
+  setErrorDisplay
+) => {
+  const form = { ...uniqueIdsFormState, ...globalFormState };
 
-export const GET_FORMS = gql`
-query Query {
-  forms {
-    form_id
-    form_name
-    identifier {
-      description
-      label
-      name
-      placeholder
-      value
-      type
+  let stopPopulatingProcess = false;
+  for (const key in validationObject) {
+    if (
+      conditionalsFields[key] &&
+      doesFieldNotMeetAllConditions(
+        conditionalsFields[key],
+        globalFormState,
+        context
+      )
+    ) {
+      continue;
     }
-    primary_key {
-      component
-      conditionals
-      description
-      label
-      name
-      placeholder
-      regex
-      required
-      set
-      type
-      value
-    }
-    foreign_key : foreign_keyConnection {
-      edges {
-        constraint
-        node {
-        component
-        conditionals
-        description
-        label
-        name
-        placeholder
-        regex
-        required
-        set
-        type
-        value
-        primary_key_to {
-          form_id
-        }
-        }
-      }
-    }  
-  }
-}`;
+    let value = form[key]
 
-export const FieldData = gql`
-query PopulateForm($id: String!) {
-  PopulateForm(id: $id) {
-    component
-    conditionals
-    description
-    label
-    name
-    regex
-    required
-    set
-    type
-    value
-    filter
+    if (z.optional()._def.typeName === validationObject[key]._def.typeName && value === ""){
+      value = undefined
+    }
+
+    const validate = validationObject[key].safeParse(value);
+
+    if (!validate.success) {
+      stopPopulatingProcess = true;
+      setErrorDisplay((err) => ({
+        ...err,
+        [key]: ParseError(validate.error.issues),
+      }));
+    } else if (errordisplay[key] !== null) {
+      setErrorDisplay((err) => ({ ...err, [key]: null }));
+    }
   }
+  return stopPopulatingProcess;
+};
+
+
+export const doesSumbitterExist = (data) => {
+
+  return Boolean(data)
 }
-`;
-
-export const CopyFormMutation = gql`
-mutation Create_Form_Copy($form: String!, $primary_keys: Conditional!, $key_value_pair: [Object!]!) {
-  Create_Form_Copy(form: $form, primary_keys: $primary_keys, key_value_pair: $key_value_pair){
-    values {
-      key
-      value
-    }
-  }
-}
-`;
-
-
-export const NodeExist = gql`
-query($where: SubmitterWhere) {
-  exist : submitters(where: $where) {
-    uuid
-    form
-    primary_keys
-  }
-}`;
-
-export const NodeGetCTX = gql`
-query Submitters($where: SubmitterWhere, $referencePrimary: SubmitterWhere) {
-  ctx : submitters(where: $where) {
-    primary_keys
-    form
-    fields {
-      key
-      value
-    }
-    references : reference_primary_key(where: $referencePrimary) {
-      form
-      primary_keys
-      fields {
-        key
-        value
-      }
-    }
-  }
-}
-`
-
-export const CreateNode = gql`
-mutation Fields($input: [SubmitterCreateInput!]!) {
-  createSubmitters(input: $input) {
-    submitters {
-      fields {
-        key
-        value
-      }
-    }
-  }
-}`
-
-
-/**
- * naive validation 
- * @param {*} param0 
- * @returns 
- */
-export function determineFieldValidation(field) {
-  // console.log(type, regex, required)
-  let schema = z
-
-
-
-  // const dateSchema = z.preprocess((arg) => {
-  //   if (typeof arg == "string" || arg instanceof Date) return new Date(arg);
-  // }, z.date());
-
-
-  // if (type === "text"){
-  //   schema = regex !== "" ? schema.string().regex(new RegExp(regex), { message : "The text you have filled in does not match the standard expression"}).min(2) : schema.string().min(2)
-  // } else if ( type === "number"){
-  //   schema = schema.number()
-  // } else if (type === "date"){
-  //   // fix later 
-  //   // schema = schema.string().regex(new RegExp(regex)).min(2)
-  //   schema = schema.date()
-  // }
-
-  // if (!required){
-  //   schema = schema.optional()
-  // }
-
-  return schema
-}
-
-/**
- * Given there is more then one error then populate all the errors
- * that are thrown.
- * @param {*} arr 
- * @returns 
- */
-export const ParseError = (arr) => {
-  return arr.map((issue, index) => {
-    if (arr.length === 1) return `${issue.message}`;
-    return index === arr.length - 1
-      ? `and ${issue.message}`
-      : `${issue.message}, `;
-  });
-}
-
-
 
 /**
  * 
@@ -183,7 +59,7 @@ export const ParseError = (arr) => {
  * @param {*} ctx (context) An object type, which allows the form to handle inter connection to other form
  * @returns (boolean) if there contains a false condition then some condition within the field is not met
  */
-export const doesNotMeetAllConditions = (conditionals, gfs, ctx={}) => {
+export const doesFieldNotMeetAllConditions = (conditionals, gfs, ctx={}) => {
   // =====================
   // Conditional Handler
   // =====================
@@ -194,13 +70,19 @@ export const doesNotMeetAllConditions = (conditionals, gfs, ctx={}) => {
   // there are no condition
   // to be met.
 
-  console.log(check)
   if (conditionals === null) return false
   
   Object.keys(conditionals).forEach((key) => {
       if (gfs[key] === undefined && ctx[key] === undefined) 
            check.push(false)
-      else check.push(conditionals[key] === gfs[key] || ctx[key] === conditionals[key] ); 
+      
+      else {
+        
+        
+        Array.isArray(conditionals[key]) ? 
+        check.push(conditionals[key].includes(gfs[key]) || conditionals[key].includes(ctx[key]) ) :
+        check.push(conditionals[key] === gfs[key] || ctx[key] === conditionals[key] );
+      }
     });
 
   return check.includes(false);
@@ -233,42 +115,77 @@ export const getKeysValuePair = (keys, object) => {
   return tempObject
 }
 
-export const sortForeignKeys = (feildState, fks) => {
+// sort just the reference keys that are not global identifier
+export const sortSubmitterByFormId = (feildState, fks, deleteNonFullBucket=true, uuids={}) => {
+
+  let bucket = new Object() // initialize bucket will hold all the 
+                  // primary keys of each foreign keys referenced in form
+  
+  // loop through all the reference_key (foreign keys)
+  // dump them within there own form bucked object
+  fks.forEach((fk) => {
+    if (!bucket.hasOwnProperty(fk.node.primaryFormIdentifiers.form_id)) {
+      bucket[fk.node.primaryFormIdentifiers.form_id] = {
+        form: fk.node.primaryFormIdentifiers.form_id,
+        
+        formPrimaryIdentifierKeys: {},
+      };
+    }
+
+    if(uuids.hasOwnProperty(fk.node.primaryFormIdentifiers.form_id)){
+      bucket[fk.node.primaryFormIdentifiers.form_id] = {
+        ...bucket[fk.node.primaryFormIdentifiers.form_id],
+        uuid : uuids[fk.node.primaryFormIdentifiers.form_id]
+       }
+    }
+
+    bucket[fk.node.primaryFormIdentifiers.form_id] = {
+      ...bucket[fk.node.primaryFormIdentifiers.form_id],
+      formPrimaryIdentifierKeys: {
+        ...bucket[fk.node.primaryFormIdentifiers.form_id].formPrimaryIdentifierKeys,
+        ...getKeysValuePair([fk.node.name], feildState),
+        
+      },
+    };
+
+    if (deleteNonFullBucket && feildState[fk.node.name] === "" ||  feildState[fk.node.name] === undefined) delete bucket[fk.node.primaryFormIdentifiers.form_id] // do not include the form if it's not been full filled out
+  
+  });
+
+  // return an array of all the referenced forms 
+  return !Object.keys(bucket).length ? [] : Object.keys(bucket).map(reference => (bucket[reference]))
+}
+
+export const submitterReferenceFormsRelationalCardinality = (fks) => {
 
   let bucket = {} // initialize bucket will hold all the 
                   // primary keys of each foreign keys referenced in form
   
   // loop through all the reference_key (foreign keys)
-  // dump them within there own form bucked
-  fks.forEach(fk => {
-    console.log(fk)
-    if (bucket[fk.node.primary_key_to.form_id] === undefined) {
-      bucket[fk.node.primary_key_to.form_id] = { "form" : fk.node.primary_key_to.form_id, "primary_keys" : {}}
+  // dump them within there own form bucked object
+  fks.forEach((fk) => {
+    if (fk.relationship_cardinality !== null && bucket[fk.node.primaryFormIdentifiers.form_id] === undefined) {
+      bucket[fk.node.primaryFormIdentifiers.form_id] = fk.relationship_cardinality
     }
-    bucket[fk.node.primary_key_to.form_id] = {...bucket[fk.node.primary_key_to.form_id], "primary_keys" : {...bucket[fk.node.primary_key_to.form_id].primaryKeys, ...getKeysValuePair([fk.node.name], feildState)}}    
-  })
-
-  // [{
-  //  form : ...,
-  //  primary_key : ... ,
-  // },...]
-  // return an array of all the referenced forms 
+  });
   
-  return !Object.keys(bucket).length ? [] : Object.keys(bucket).map(reference => (bucket[reference]))
+  return bucket
 }
 
 export const ParseFormToGraphQL = (form, fields) => {
   return {"form": form.form_id,
           "uuid": uuidv4(),
-          "primary_keys" : getKeysValuePair(fields.primaryKeys.map(pk => pk.name), form.ids),
-          ...ObjectInputType(form.fields ,fields.formFields),
-          ...fields.foreignKeys.concat(fields.identifier).length ? 
-          {"reference_foreign_key": 
+          "formPrimaryIdentifierKeys" : getKeysValuePair(fields.formPrimaryIdentifierKeys.map(pk => pk.name), form.ids),
+          "fields" : {
+            "create" : [...ObjectInputType(form.fields ,fields.formFieldsMetadata, form.context)]
+          },
+          ...fields.formReferenceKeys.concat(fields.globalIdentifierKeys).length ? 
+          {"formReferenceKeys": 
             { "connect": [ 
                             {"where": 
                               {"node": { "OR" : [
-                                              ...sortForeignKeys(form.ids, fields.foreignKeys),
-                                              { "primary_keys" : getKeysValuePair(fields.identifier.map(id => id.name), form.ids)}
+                                              ...sortSubmitterByFormId(form.ids, fields.formReferenceKeys, true, form.uuids ),
+                                              { "formPrimaryIdentifierKeys" : getKeysValuePair(fields.globalIdentifierKeys.map(id => id.name), form.ids)}
                                           ]
                                        }
                               } 
@@ -285,28 +202,92 @@ export const ParseFormToGraphQL = (form, fields) => {
  * @param {*} fieldsMetaData 
  * @returns 
  */
- const ObjectInputType = (formState, fieldsMetaData) => {
+ const ObjectInputType = (formState, fieldsMetaData, context) => {
   let arr = []
   let cond = {}
   fieldsMetaData.forEach((value) => {
-      cond[value.name] = value.conditionals === null ? false : doesNotMeetAllConditions(value.conditionals, formState)
+      cond[value.name] = value.conditionals === null ? false : doesFieldNotMeetAllConditions(value.conditionals, formState, context)
   })
 
   for (const prop in formState){
     if (cond[prop]) continue
     arr.push({ "node" : {key : prop, value : formState[prop] }}) // condition are met then set it to the value else set default value
   }
-  return {"fields" : {"create" : arr} }
+  return arr
 }
 
-export const parseFormIDCTX = (fields,state) => {
-  if (fields === null || state === {}) return {}
-  return { "where" :
-           {"primary_keys" :  fields.identifier.length === 0 ? null :  getKeysValuePair(fields.identifier.map(id => id.name), state) },
-           "referencePrimary": {
-            "OR": [
-              ...sortForeignKeys(state, fields.foreignKeys)
-            ],
-            }
+export const parseFormFieldsToQueryContext = (fields, state) => {
+  if (fields === null || state === {}) return {};
+  return {
+    root: {
+      formPrimaryIdentifierKeys:
+        fields.globalIdentifierKeys.length === 0
+          ? null
+          : getKeysValuePair(
+              fields.globalIdentifierKeys.map((id) => id.name),
+              state
+            ),
+    },
+    references: {
+      ...(!fields.formReferenceKeys.length
+        ? {}
+        : { OR: [...sortSubmitterByFormId(state, fields.formReferenceKeys, false)] }),
+    },
+  };
+};
+
+export const submitterBundleQueryParse = (
+  self,
+  root,
+  reference,
+  state,
+  form_id,
+  isRoot=false,
+) => {
+
+  if (isRoot){
+    return {
+      self : {
+        form: form_id,
+        formPrimaryIdentifierKeys:
+          self.length === 0
+            ? null
+            : getKeysValuePair(
+                self.map((id) => id.name),
+                state
+              ),
+      }
+    }
   }
-}
+
+
+  return {
+    root: {
+      formPrimaryIdentifierKeys:
+        root.length === 0
+          ? null
+          : getKeysValuePair(
+              root.map((id) => id.name),
+              state
+            ),
+    },
+    self: {
+      form: form_id,
+      formPrimaryIdentifierKeys:
+        self.length === 0
+          ? {}
+          : getKeysValuePair(
+              self.map((id) => id.name),
+              state
+            ),
+    },
+    refrences: {
+      ...(!reference.length
+        ? {}
+        : { OR: [...sortSubmitterByFormId(state, reference)] }),
+    },
+    form: { form: form_id },
+  };
+};
+
+
