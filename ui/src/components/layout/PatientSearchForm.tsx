@@ -13,7 +13,7 @@ const PatientSearchForm = ({patientIdentifier, setPatientIdentifier}) => {
           </Header>
         </Divider>
         <Form
-        size="small"
+        size="large"
         // onSubmit={(event) => {
         //   setNodeEvent("submit");
         //   onFormComplete(event);
@@ -46,7 +46,7 @@ const PatientSearchForm = ({patientIdentifier, setPatientIdentifier}) => {
 
             // onChange={(e) => {setUniqueIdFormState((f) => ({...f, [e.target.name] : e.target.value}))}}
           />
-          <Form.Button onClick={() => {setPatientIdentifier({submitter_donor_id: '', program_id: ''})}} fluid inverted icon='trash' color='red' content='CLEAR FORMS' width={2}/>
+          <Form.Button size='large' onClick={() => {setPatientIdentifier({submitter_donor_id: '', program_id: ''})}} fluid inverted icon='trash' color='red' content='CLEAR FORMS' width={2}/>
           {/* <Button icon='trash' fluid color='red'/> */}
 
         </Form.Group>
