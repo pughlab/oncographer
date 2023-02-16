@@ -82,11 +82,16 @@ export default function TableToolDisplay({
   if (!typeofdisplay.length) return <></>;
   
   const sortedHeaders = sortHeadersForTableTool(ids, typeofdisplay[0]);
+  let tableSize = sortedHeaders.length > 10
   return (
     <>
-      <Table fixed selectable aria-labelledby="header">
-        <Table.Header>
-          <Table.Row>
+    {
+      tableSize ? 
+      <Table fixed selectable aria-labelledby="header" striped>
+      <div style={{overflowX: 'auto', maxHeight: '500px'}}>
+
+        <Table.Header  style={{ position: "sticky", top: 0, background: 0.0, opacity: 1 }}>
+          <Table.Row >
             {sortedHeaders.map((p) => {
               return <Table.HeaderCell>{keyToLabel(p)}</Table.HeaderCell>;
             })}
@@ -128,7 +133,56 @@ export default function TableToolDisplay({
             );
           })}
         </Table.Body>
+        </div>
+
       </Table>
+      : 
+        <Table fixed selectable aria-labelledby="header" striped>
+          <Table.Header >
+            <Table.Row >
+              {sortedHeaders.map((p) => {
+                return <Table.HeaderCell>{keyToLabel(p)}</Table.HeaderCell>;
+              })}
+            </Table.Row>
+          </Table.Header>
+  
+          <Table.Body>
+            {typeofdisplay.map((form) => {
+              let { values, references, primaryFormIdentifier } =
+                sortFormFieldsDataForTableTool(form);
+              let sortedFields = {
+                ...primaryFormIdentifier,
+                ...references,
+                ...values,
+              };
+              return (
+                <Table.Row
+                  onClick={() => {
+                    onTableToolRowClicked(values, {
+                      ...primaryFormIdentifier,
+                      ...references,
+                    });
+                  }}
+                >
+                  {sortedHeaders.map((fld) => {
+                    let cell = sortedFields[fld];
+                    const re = /\d{4}-\d{2}-\d{2}/g; // FIX ME: Make more specific to YYYY-MM-DD
+  
+                    if (re.exec(sortedFields[fld])) {
+                      cell = new Date(cell);
+                      cell = `${cell.toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                      })}`;
+                    }
+                    return <Table.Cell>{cell}</Table.Cell>;
+                  })}
+                </Table.Row>
+              );
+            })}
+          </Table.Body>  
+        </Table>
+        }
     </>
   );
 }
