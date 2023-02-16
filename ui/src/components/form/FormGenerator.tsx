@@ -3,7 +3,7 @@ import { useQuery, useMutation, useLazyQuery, LazyQueryExecFunction, OperationVa
 
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { Form, Divider, Header, Icon, Button } from "semantic-ui-react";
+import { Form, Divider, Header, Icon, Button, Popup } from "semantic-ui-react";
 
 
 import * as R from "remeda";
@@ -31,7 +31,7 @@ import {
 
 import { FormTable } from "./table/FormTable";
 
-export function FormGenerator({ metadata, patientIdentifier }) {
+export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifier }) {
 
   const relationalCardinalityToRoot = metadata.form_relationship_cardinality
   const [validationObject, setValidationObject] = useState({});
@@ -207,7 +207,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
     // Validate Current Form Data 
     const isValid = validateFormFieldInputs(uniqueIdsFormState,globalFormState,conditionalsFields,context,validationObject,errordisplay,setErrorDisplay)
     if (isValid || (formReferenceKeys.length > 0 && !coherentConnections)){
-      alert(isValid ? `The are some unvalid fields` : `The references you enter do not make sense`) 
+      alert(isValid ? `There are some invalid fields! Please address the fields marked in red and re-submit.` : `The reference IDs you entered are not correct!`) 
       return; 
     }
       
@@ -301,6 +301,8 @@ export function FormGenerator({ metadata, patientIdentifier }) {
 
     // all checks are completed now just need to mutate the backend
     createNode({ variables: { input: [formCreateSchema] } });
+    alert("Form submitted!")
+    setPatientIdentifier({submitter_donor_id: uniqueIdsFormState['submitter_donor_id'], program_id: uniqueIdsFormState['program_id']})
   };
 
   // when data is recived then update global form state and as well populate the option necessary
@@ -373,11 +375,21 @@ export function FormGenerator({ metadata, patientIdentifier }) {
         </Divider>
         <Form.Group widths={"equal"}>
           {globalIdentifierKeys.map((fld) => (
+            <Form.Field>
+            <div>
+              <label style={{ marginRight: '5px' }}>{fld.label}</label>
+              <Popup
+                trigger={<Icon name='help circle' />}
+                content={fld.description}
+                position='top center'
+                inverted
+              />
+            </div>
             <Form.Input
               name={fld.name}
               value={uniqueIdsFormState[fld.name]}
               type={fld.type}
-              label={fld.label}
+              // label={fld.label}
               placeholder={fld.placeholder}
               onChange={(e) => {
                 const recheckValueValidation = validationObject[
@@ -393,16 +405,27 @@ export function FormGenerator({ metadata, patientIdentifier }) {
               }}
               error={errordisplay[fld.name]}
             />
+            </Form.Field>
           ))}
         </Form.Group>
 
         <Form.Group widths={"equal"}>
           {formPrimaryIdentifierKeys.map((fld) => (
+            <Form.Field>
+            <div>
+              <label style={{ marginRight: '5px' }}>{fld.label}</label>
+              <Popup
+                trigger={<Icon name='help circle' />}
+                content={fld.description}
+                position='top center'
+                inverted
+              />
+            </div>
             <Form.Input
               name={fld.name}
               value={uniqueIdsFormState[fld.name]}
               type={fld.type}
-              label={fld.label}
+              // label={fld.label}
               placeholder={fld.placeholder}
               onChange={(e) => {
                 const recheckValueValidation = validationObject[
@@ -418,17 +441,28 @@ export function FormGenerator({ metadata, patientIdentifier }) {
               }}
               error={errordisplay[fld.name]}
             />
+            </Form.Field>
           ))}
         </Form.Group>
 
         <Form.Group widths={"equal"}>
           {formReferenceKeys.map((fld) => {
             return (
+              <Form.Field>
+              <div>
+                <label style={{ marginRight: '5px' }}>{fld.node.label}</label>
+                <Popup
+                  trigger={<Icon name='help circle' />}
+                  content={fld.node.description}
+                  position='top center'
+                  inverted
+                />
+              </div>
               <Form.Input
                 name={fld.node.name}
                 value={uniqueIdsFormState[fld.node.name]}
                 type={fld.node.type}
-                label={fld.node.label}
+                // label={fld.node.label}
                 placeholder={fld.node.placeholder}
                 onChange={(e) => {
                   const recheckValueValidation = validationObject[fld.node.name].safeParse(e.target.value)
@@ -442,6 +476,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                 }}
                 error={errordisplay[fld.node.name]}
               />
+              </Form.Field>
             );
           })}
         </Form.Group>
@@ -487,7 +522,15 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                 if (fld.type === "month") {
                   comp = (
                     <Form.Field disabled={disabled} error={displayError}>
-                      <label>{fld.label}</label>
+                      <div>
+                        <label style={{ marginRight: '5px' }}>{fld.label}</label>
+                        <Popup
+                          trigger={<Icon name='help circle' />}
+                          content={fld.description}
+                          position='top center'
+                          inverted
+                        />
+                      </div>
                       <DatePicker
                         selected={globalFormState[fld.name]}
                         placeholderText={fld.placeholder}
@@ -516,11 +559,21 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                   );
                 } else {
                   comp = (
+                    <Form.Field disabled={disabled} error={displayError}>
+                    <div>
+                      <label style={{ marginRight: '5px' }}>{fld.label}</label>
+                      <Popup
+                        trigger={<Icon name='help circle' />}
+                        content={fld.description}
+                        position='top center'
+                        inverted
+                      />
+                    </div>
                     <Form.Input
                       name={fld.name}
                       value={globalFormState[fld.name]}
                       type={fld.type}
-                      label={fld.label}
+                      // label={fld.label}
                       placeholder={fld.placeholder}
                       onChange={(e) => {
                         let value = ["number", "integer"].includes(
@@ -543,9 +596,10 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                           [e.target.name]: value,
                         }));
                       }}
-                      disabled={disabled}
+                      // disabled={disabled}
                       error={displayError}
                     />
+                    </Form.Field>
                   );
                 }
                 break;
@@ -556,7 +610,15 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                 if (option[fld.name].length <= 4) {
                   comp = (
                     <Form.Field disabled={disabled} error={displayError}>
-                      <label>{fld.label}</label>
+                      <div>
+                        <label style={{ marginRight: '5px' }}>{fld.label}</label>
+                        <Popup
+                          trigger={<Icon name='help circle' />}
+                          content={fld.description}
+                          position='top center'
+                          inverted
+                        />
+                      </div>
                       <Form.Group widths={option[fld.name].length}>
                         {R.map(option[fld.name], (selectOption) => {
                           const isActive =
@@ -593,6 +655,16 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                   );
                 } else {
                   comp = (
+                    <Form.Field disabled={disabled} error={displayError}>
+                    <div>
+                      <label style={{ marginRight: '5px' }}>{fld.label}</label>
+                      <Popup
+                        trigger={<Icon name='help circle' />}
+                        content={fld.description}
+                        position='top center'
+                        inverted
+                      />
+                    </div>
                     <Form.Select
                       key={fld.name}
                       search
@@ -600,7 +672,7 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                       value={globalFormState[fld.name]}
                       multiple={fld.type === "mutiple"}
                       placeholder={fld.placeholder}
-                      label={fld.label}
+                      // label={fld.label}
                       options={option[fld.name]}
                       onChange={(e, { name, value }) => {
                         const recheckValueValidation =
@@ -617,9 +689,10 @@ export function FormGenerator({ metadata, patientIdentifier }) {
                         }));
                       }}
                       clearable
-                      disabled={disabled}
+                      // disabled={disabled}
                       error={errordisplay[fld.name]}
                     />
+                    </Form.Field>
                   );
                 }
                 break;
@@ -643,15 +716,14 @@ export function FormGenerator({ metadata, patientIdentifier }) {
           ></Button>
           <Button.Or />
           <Button
-            icon="sync alternate"
-            content="UPDATE"
-            color="black"
-            style={{ backgroundColor: "#01859d" }}
-            disabled
-            onClick={() => {
-              setNodeEvent("update");
-              // context(uniqueIdsFormState)
-            }}
+            // icon="sync alternate"
+            inverted
+            icon="trash"
+            content="CLEAR FORMS"
+            color="red"
+            // style={{ backgroundColor: "#01859d" }}
+            // disabled
+            onClick={() => {setPatientIdentifier({submitter_donor_id: '', program_id: ''})}}
           ></Button>
         </Button.Group>
       </Form>
