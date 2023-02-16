@@ -81,7 +81,7 @@ export default function Portal () {
       <PatientSearchForm patientIdentifier={patientIdentifier} setPatientIdentifier={setPatientIdentifier}/>
       <Divider horizontal />
 
-      <FormFactory patientIdentifier={patientIdentifier}/>
+      <FormFactory patientIdentifier={patientIdentifier} setPatientIdentifier={setPatientIdentifier}/>
     </div>
     </>
   )

@@ -8,7 +8,7 @@ import * as R from 'remeda'
 
 
 
-export default function FormFactory({patientIdentifier}) {
+export default function FormFactory({patientIdentifier, setPatientIdentifier}) {
   const { loading, error, data } = useQuery(getForms);
   if (loading) {
     return (
@@ -45,7 +45,7 @@ export default function FormFactory({patientIdentifier}) {
     name: form.form_name,
     displayName: form.form_name,
     content: () => (
-      <FormGenerator metadata={form} patientIdentifier={patientIdentifier}/>
+      <FormGenerator metadata={form} patientIdentifier={patientIdentifier} setPatientIdentifier={setPatientIdentifier} />
     )
   }))
   const panes = paneData.map((item) => {
