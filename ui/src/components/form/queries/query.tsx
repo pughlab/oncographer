@@ -180,8 +180,9 @@ export const CreateNode = gql`
 export const FindDraft = gql`
   query FindDraft($where: FormDraftWhere) {
     formDrafts(where: $where) {
-      form_id,
-      patient_id,
+      draft_id
+      form_id
+      patient_id
       data
     }
   }
@@ -190,6 +191,7 @@ export const CreateDraft = gql`
   mutation CreateDrafts($input: [FormDraftCreateInput!]!) {
     createFormDrafts(input: $input) {
       formDrafts {
+        draft_id
         form_id
         patient_id
         data
