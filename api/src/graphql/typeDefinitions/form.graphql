@@ -30,6 +30,16 @@
      
   }
 
+  type FormDraft {
+    """
+      FormDraft allows the user to save a draft of any form they are currently
+      editing so they do not lose the data they have already input
+    """
+    form_id: String!
+    patient_id: String!
+    data: String
+  }
+
   type Form {
     """
     

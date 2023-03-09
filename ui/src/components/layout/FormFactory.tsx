@@ -44,16 +44,14 @@ export default function FormFactory({patientIdentifier, setPatientIdentifier}) {
     id: form.form_id,
     name: form.form_name,
     displayName: form.form_name,
-    content: () => (
-      <FormGenerator metadata={form} patientIdentifier={patientIdentifier} setPatientIdentifier={setPatientIdentifier} />
-    )
+    content: <FormGenerator metadata={form} patientIdentifier={patientIdentifier} setPatientIdentifier={setPatientIdentifier} />
   }))
   const panes = paneData.map((item) => {
-    return { key: item.name, menuItem: item.displayName, render: () => <Tab.Pane>{item.content()}</Tab.Pane> }
+    return { key: item.name, menuItem: item.displayName, render: () => <Tab.Pane>{item.content}</Tab.Pane> }
   })
   return (
     <Segment>
-      <Tab menu={{color:'teal', active: true, fluid: true, vertical: true, tabular: true }} panes={panes} />
+      <Tab menu={{color:'teal', active: 'true', fluid: true, vertical: true, tabular: true }} panes={panes} />
     </Segment>
   );
 }

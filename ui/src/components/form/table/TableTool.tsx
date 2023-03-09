@@ -1,7 +1,6 @@
 import { Table } from "semantic-ui-react";
 import { keyToLabel } from "./utils";
 import * as React from "react";
-import * as R from "remeda";
 
 export default function TableToolDisplay({
   metadata,
@@ -87,13 +86,13 @@ export default function TableToolDisplay({
     <>
     {
       tableSize ? 
-      <Table fixed selectable aria-labelledby="header" striped>
       <div style={{overflowX: 'auto', maxHeight: '500px'}}>
+      <Table fixed selectable aria-labelledby="header" striped>
 
         <Table.Header  style={{ position: "sticky", top: 0, background: 0.0, opacity: 1 }}>
           <Table.Row >
             {sortedHeaders.map((p) => {
-              return <Table.HeaderCell>{keyToLabel(p)}</Table.HeaderCell>;
+              return <Table.HeaderCell key={p}>{keyToLabel(p)}</Table.HeaderCell>;
             })}
           </Table.Row>
         </Table.Header>
@@ -109,6 +108,7 @@ export default function TableToolDisplay({
             };
             return (
               <Table.Row
+                key={form}
                 onClick={() => {
                   onTableToolRowClicked(values, {
                     ...primaryFormIdentifier,
@@ -127,21 +127,21 @@ export default function TableToolDisplay({
                       month: "long",
                     })}`;
                   }
-                  return <Table.Cell>{cell}</Table.Cell>;
+                  return <Table.Cell key={sortedFields[fld]}>{cell}</Table.Cell>;
                 })}
               </Table.Row>
             );
           })}
         </Table.Body>
-        </div>
 
-      </Table>
+        </Table>
+      </div>
       : 
         <Table fixed selectable aria-labelledby="header" striped>
           <Table.Header >
             <Table.Row >
               {sortedHeaders.map((p) => {
-                return <Table.HeaderCell>{keyToLabel(p)}</Table.HeaderCell>;
+                return <Table.HeaderCell key={p}>{keyToLabel(p)}</Table.HeaderCell>;
               })}
             </Table.Row>
           </Table.Header>
@@ -157,6 +157,7 @@ export default function TableToolDisplay({
               };
               return (
                 <Table.Row
+                  key={form}
                   onClick={() => {
                     onTableToolRowClicked(values, {
                       ...primaryFormIdentifier,
@@ -175,7 +176,7 @@ export default function TableToolDisplay({
                         month: "long",
                       })}`;
                     }
-                    return <Table.Cell>{cell}</Table.Cell>;
+                    return <Table.Cell key={sortedFields[fld]}>{cell}</Table.Cell>;
                   })}
                 </Table.Row>
               );

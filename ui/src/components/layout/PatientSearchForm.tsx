@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Icon, Input, Button, Form, Segment, Divider, Header } from 'semantic-ui-react'
+import { Icon, Form, Segment, Divider, Header } from 'semantic-ui-react'
 
 const PatientSearchForm = ({patientIdentifier, setPatientIdentifier}) => {
     const [ patientId, setPatientId ] = useState('')

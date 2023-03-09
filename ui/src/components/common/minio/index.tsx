@@ -1,7 +1,5 @@
 import React, { useCallback } from 'react'
-import { Route, Routes, useParams } from 'react-router-dom'
-import { Message, Divider, Container, Icon, List, Input, Segment, Form, Button, Modal } from 'semantic-ui-react'
-import SegmentPlaceholder from '../SegmentPlaceholder'
+import { Divider, List, Segment, Button, Modal } from 'semantic-ui-react'
 import { useDropzone, FileWithPath } from 'react-dropzone'
 import { gql, useQuery } from '@apollo/client'
 import useMinioUploadMutation from '../../../hooks/useMinioUploadMutation'

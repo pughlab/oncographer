@@ -1,4 +1,4 @@
-import { ApolloClient, HttpLink, InMemoryCache } from '@apollo/client'
+import { ApolloClient, InMemoryCache } from '@apollo/client'
 import { createUploadLink } from 'apollo-upload-client'
 import { setContext } from '@apollo/client/link/context';
 
