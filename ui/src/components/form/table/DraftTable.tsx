@@ -64,27 +64,28 @@ export const DraftTable = ({ drafts, patientIdentifier, updateGlobalFormState })
                   }
                 })
 
-                return <Table.Row key={row} onClick={() => {
+                return <Table.Row key={draft.draft_id} onClick={() => {
                   updateGlobalFormState(data)
                 }}>{
-                    row.map((cell, cellIndex) => {
-                      const isDate = re.test(cell)
-                      
-                      // transform the cell's value for better reading if necessary
-                      let value = cell
-                      if (isDate) {
-                        value = toDateString(cell)
-                      } else if (Array.isArray(cell)) {
-                        value = cell.join(', ')
-                      }
-                      return (
-                        <Table.Cell
-                          key={`${row}-${cell}-${cellIndex + 1}`}
-                        >
-                          { value }
-                        </Table.Cell>
-                      )
-                    })
+                  row.map((cell) => {
+                    const isDate = re.test(cell)
+                    
+                    // transform the cell's value for better reading if necessary
+                    let value = cell
+                    if (isDate) {
+                      value = toDateString(cell)
+                    } else if (Array.isArray(cell)) {
+                      value = cell.join(', ')
+                    }
+
+                    return (
+                      <Table.Cell
+                        key={`${draft.draft_id}-${cell}`}
+                      >
+                        { value }
+                      </Table.Cell>
+                    )
+                  })
                 }</Table.Row>
               })
             }
