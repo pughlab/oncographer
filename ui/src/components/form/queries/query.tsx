@@ -177,6 +177,36 @@ export const CreateNode = gql`
   }
 `;
 
+export const FormIDsNames = gql`
+  query FormsRecursive {
+    forms (where: {form_name: "Donor"}) {
+      ...FormIDFields
+      ...FormRecursive
+    }
+  }
+
+  fragment FormIDFields on Form {
+    form_id
+    form_name
+    next_form {
+      form_id
+      form_name
+    }
+  }
+
+  fragment FormRecursive on Form {
+    next_form {
+      ...FormIDFields
+      next_form {
+        ...FormIDFields
+        next_form {
+          ...FormIDFields
+        }
+      }
+    }
+  }
+`
+
 export const FindDraft = gql`
   query FindDraft($where: FormDraftWhere) {
     formDrafts(where: $where) {
