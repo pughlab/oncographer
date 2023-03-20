@@ -1,5 +1,5 @@
 import { useQuery } from "@apollo/client";
-import { FormIDsNames } from "../form/queries/query";
+import { Forms } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { Segment, Message, Image, List, Grid } from "semantic-ui-react";
 import * as React from 'react'
@@ -102,7 +102,7 @@ function ListMenu({
 }
 
 export default function FormFactory({ patientIdentifier, setPatientIdentifier }) {
-  const { loading, error, data } = useQuery(FormIDsNames)
+  const { loading, error, data } = useQuery(Forms)
   const [ content, setContent ] = React.useState(null)
 
   if (loading) {

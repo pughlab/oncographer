@@ -53,6 +53,13 @@ export const DraftTable = ({ drafts, patientIdentifier, updateGlobalFormState })
                   ...Object.values(data)
                 ]
 
+                // if the draft doesn't have values for all fields, fill the missing fields with empty strings
+                if (row.length < headers.length) {
+                  for (let idx = row.length; idx < headers.length; idx++) {
+                    row.push("")
+                  }
+                }
+
                 // convert date-like strings to Date objects
                 // and empty strings to null
                 Object.keys(data).forEach((key) => {
@@ -67,7 +74,7 @@ export const DraftTable = ({ drafts, patientIdentifier, updateGlobalFormState })
                 return <Table.Row key={draft.draft_id} onClick={() => {
                   updateGlobalFormState(data)
                 }}>{
-                  row.map((cell) => {
+                  row.map((cell,idx) => {
                     const isDate = re.test(cell)
                     
                     // transform the cell's value for better reading if necessary
@@ -80,7 +87,7 @@ export const DraftTable = ({ drafts, patientIdentifier, updateGlobalFormState })
 
                     return (
                       <Table.Cell
-                        key={`${draft.draft_id}-${cell}`}
+                        key={`${draft.draft_id}-${headers[idx]}-${cell}`}
                       >
                         { value }
                       </Table.Cell>

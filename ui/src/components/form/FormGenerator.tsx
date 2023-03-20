@@ -31,7 +31,7 @@ import { FormTable } from "./table/FormTable";
 import { DraftTable } from "./table/DraftTable";
 
 export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifier }) {
-
+  
   const relationalCardinalityToRoot = metadata.form_relationship_cardinality
   const [validators, setValidators] = useState({}); // validators for each field
   const [errordisplay, setErrorDisplay] = useState({}); // error messages for each field
@@ -66,7 +66,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
 
   // foreign identifier of the current form. 
   // This is the identifier that connects to other existing forms and their primary identifier
-  const formReferenceKeys = metadata.foreign_key.edges;
+  const formReferenceKeys = metadata.foreign_keyConnection.edges;
 
   // (Populate Form Fields GraphQL Query) that loads all field data within the form
   const {

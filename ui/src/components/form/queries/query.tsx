@@ -1,11 +1,28 @@
 import { gql } from "@apollo/client";
 
-export const getForms = gql`
-query Query {
-  forms{
-    form_name
+export const Forms = gql`
+  query Forms($where: FormWhere = {form_name: "Donor"}) {
+    forms(where: $where) {
+      ...FormID
+      ...Identifier
+      ...PrimaryKey
+      ...ForeignKey
+      ...FormRecursive
+    }
+  }
+
+  fragment FormID on Form {
     form_id
+    form_name
     form_relationship_cardinality
+    next_form {
+      form_id
+      form_name
+      form_relationship_cardinality
+    }
+  }
+
+  fragment Identifier on Form {
     identifier {
       component
       conditionals
@@ -19,6 +36,9 @@ query Query {
       type
       value
     }
+  }
+
+  fragment PrimaryKey on Form {
     primary_key {
       component
       conditionals
@@ -36,7 +56,10 @@ query Query {
         form_relationship_cardinality
       }
     }
-    foreign_key : foreign_keyConnection {
+  }
+
+  fragment ForeignKey on Form {
+    foreign_keyConnection {
       edges {
         relationship_cardinality
         override
@@ -55,12 +78,32 @@ query Query {
           primaryFormIdentifiers {
             form_id
             form_relationship_cardinality
-          }
+          } 
         }
       }
     }
   }
-}
+
+  fragment FormRecursive on Form {
+    next_form {
+      ...FormID
+      ...Identifier
+      ...PrimaryKey
+      ...ForeignKey
+      next_form {
+        ...FormID
+        ...Identifier
+        ...PrimaryKey
+        ...ForeignKey
+        next_form {
+          ...FormID
+          ...Identifier
+          ...PrimaryKey
+          ...ForeignKey
+        }
+      }
+    }
+  }
 `;
 
 export const FieldData = gql`
@@ -176,36 +219,6 @@ export const CreateNode = gql`
     }
   }
 `;
-
-export const FormIDsNames = gql`
-  query FormsRecursive {
-    forms (where: {form_name: "Donor"}) {
-      ...FormIDFields
-      ...FormRecursive
-    }
-  }
-
-  fragment FormIDFields on Form {
-    form_id
-    form_name
-    next_form {
-      form_id
-      form_name
-    }
-  }
-
-  fragment FormRecursive on Form {
-    next_form {
-      ...FormIDFields
-      next_form {
-        ...FormIDFields
-        next_form {
-          ...FormIDFields
-        }
-      }
-    }
-  }
-`
 
 export const FindDraft = gql`
   query FindDraft($where: FormDraftWhere) {
