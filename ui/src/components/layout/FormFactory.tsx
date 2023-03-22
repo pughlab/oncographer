@@ -1,11 +1,11 @@
+import * as React from 'react'
+import * as R from 'remeda'
 import { useQuery } from "@apollo/client";
+import { Segment, List, Grid } from "semantic-ui-react";
 import { Forms } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
-import { Segment, Message, Image, List, Grid } from "semantic-ui-react";
-import * as React from 'react'
-import logo from '../logos/logo.png'
-import * as R from 'remeda'
-
+import { LoadingSegment } from '../common/LoadingSegment'
+import { BasicErrorMessage } from '../common/BasicErrorMessage';
 
 function ListMenuItem({
   item,
@@ -103,27 +103,23 @@ function ListMenu({
 
 export default function FormFactory({ patientIdentifier, setPatientIdentifier }) {
   const { loading, error, data } = useQuery(Forms)
-  const [ content, setContent ] = React.useState(null)
+  const [ content, setContent ] = React.useState(<></>)
+
+  React.useEffect(() => setContent(
+    data 
+    ? <FormGenerator
+        metadata={data.forms[0]}
+        patientIdentifier={patientIdentifier}
+        setPatientIdentifier={setPatientIdentifier} />
+    : <></>
+  ), [patientIdentifier])
 
   if (loading) {
-    return (
-      <>
-        <Segment loading style={{ height: '100%' }}>
-          <Image src={logo} centered size='medium' />
-        </Segment>
-      </>
-    )
+    return <LoadingSegment />
   }
 
   if (error) {
-    return (
-      <>
-        <Message warning>
-          <Message.Header>Something went wrong</Message.Header>
-          <p>Restart the page, then try again.</p>
-        </Message>
-      </>
-    )
+    return <BasicErrorMessage />
   }
 
   if (R.isNil(data)) {

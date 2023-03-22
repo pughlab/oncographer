@@ -1,8 +1,8 @@
-import { Segment, Image, Message } from "semantic-ui-react";
 import { useQuery, gql } from "@apollo/client";
 import React from "react";
-import logo from "../../logos/logo.png";
 import TableToolDisplay from "./TableTool";
+import { LoadingSegment } from "../../common/LoadingSegment";
+import { BasicErrorMessage } from "../../common/BasicErrorMessage";
 
 const getCurrentFormAssociatedToIdentifier = gql`
   query ($where: SubmitterWhere, $reference: SubmitterWhere) {
@@ -52,11 +52,7 @@ export const FormTable = ({
   updateUniqueIdsFormState,
   updateGlobalFormState,
 }) => {
-  const filterQueryIfEmptyString = searchForRootForm ? formPrimaryIdentifierKeys : globalIdentifierKeys
-  if (Object.values(filterQueryIfEmptyString).filter((x : string) => !x.replace(/\s/g, '').length).length > 0){
-    return <></>
-  }
-  
+
   const { loading, data, error } = useQuery(
     searchForRootForm
       ? getRootOfFormDirectedGraphFormFields
@@ -74,29 +70,20 @@ export const FormTable = ({
     }
   );
 
+  const filterQueryIfEmptyString = searchForRootForm ? formPrimaryIdentifierKeys : globalIdentifierKeys
+  if (Object.values(filterQueryIfEmptyString).filter((x : string) => !x.replace(/\s/g, '').length).length > 0){
+    return <></>
+  }
+
   if (loading) {
-    return (
-      <>
-        <Segment loading style={{ height: "100%" }}>
-          <Image src={logo} centered size="medium" />
-        </Segment>
-      </>
-    );
+    return <LoadingSegment />
   }
 
   // checks if the query shows up empty if so do not return anythng
-  
-  if ((data.submitters !== undefined &&data.submitters.length === 0) || data.submitters === undefined) return <></>;
+  if (data.submitters === undefined || (data.submitters !== undefined &&data.submitters.length === 0)) return <></>;
 
   if (error) {
-    return (
-      <>
-        <Message warning>
-          <Message.Header>Something went wrong</Message.Header>
-          <p>Restart the page, then try again.</p>
-        </Message>
-      </>
-    );
+    return <BasicErrorMessage />
   }
 
   return (

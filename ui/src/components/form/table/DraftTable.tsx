@@ -54,11 +54,7 @@ export const DraftTable = ({ drafts, patientIdentifier, updateGlobalFormState })
                 ]
 
                 // if the draft doesn't have values for all fields, fill the missing fields with empty strings
-                if (row.length < headers.length) {
-                  for (let idx = row.length; idx < headers.length; idx++) {
-                    row.push("")
-                  }
-                }
+                fillEmptyFields(row, headers)
 
                 // convert date-like strings to Date objects
                 // and empty strings to null
@@ -108,4 +104,12 @@ export const DraftTable = ({ drafts, patientIdentifier, updateGlobalFormState })
   }
 
   return table
+}
+
+function fillEmptyFields(row: unknown[], headers: string[]) {
+  if (row.length < headers.length) {
+    for (let idx = row.length; idx < headers.length; idx++) {
+      row.push("")
+    }
+  }
 }

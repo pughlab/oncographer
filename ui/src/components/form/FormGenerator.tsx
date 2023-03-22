@@ -29,6 +29,46 @@ import {
 } from "./queries/query";
 import { FormTable } from "./table/FormTable";
 import { DraftTable } from "./table/DraftTable";
+import { LoadingSegment } from "../common/LoadingSegment";
+import { BasicErrorMessage } from "../common/BasicErrorMessage";
+
+function DraftContent({ metadata, uniqueIdsFormState, patientIdentifier, setGlobalFormState }) {
+  // attempt to find drafts for the current form/patient combination
+  const { loading: draftsLoading, error: draftsError, data: drafts } = useQuery(FindDraft, {
+    variables: {
+      where: { 
+        form_id: metadata.form_id,
+        patient_id: JSON.stringify(uniqueIdsFormState)
+      } 
+    },
+    fetchPolicy: "network-only"
+  })
+
+  if (draftsLoading) {
+    return <LoadingSegment />
+  }
+
+  if (draftsError) {
+    return <BasicErrorMessage />
+  }
+
+  return (
+    <>
+      <Divider hidden />
+      <Divider horizontal>
+        <Header as="h4">
+          <Icon name="save outline" />
+          DRAFTS
+        </Header>
+      </Divider>
+      <DraftTable
+        drafts={drafts.formDrafts}
+        patientIdentifier={patientIdentifier}
+        updateGlobalFormState={setGlobalFormState}
+      />
+    </>
+  )
+}
 
 export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifier }) {
   
@@ -86,18 +126,6 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
     fetchPolicy: "network-only",
   });
 
-  // attempt to find a draft for the current form/patient combination
-  const { data: drafts } = useQuery(FindDraft, {
-    variables: {
-      where: { 
-        form_id: metadata.form_id,
-        patient_id: JSON.stringify(uniqueIdsFormState)
-      } 
-    },
-    fetchPolicy: "network-only"
-  })
-  
-
   // (Context GraphQL Query) given if there is a reference or an identifier
   const { data: formFieldsContext } = useQuery(NodeGetContext, {
     variables: parseFormFieldsToQueryContext(
@@ -144,7 +172,6 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
       }),
     ];
 
-
     setUniqueIdFormState({
       ...R.mapToObj(ids, (field) => [field.name, field.value]),
       submitter_donor_id: patientIdentifier.submitter_donor_id,
@@ -155,7 +182,48 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
       ...R.mapToObj(ids, (field) => [field.name, zodifyField(field)]),
     });
 
-  }, [metadata, patientIdentifier]);
+  }, [patientIdentifier]);
+
+  // when data is received then update global form state and as well populate the option necessary
+  // for the select components
+  useEffect(() => {
+
+    if (formFields !== undefined) {
+      // populate form other fields
+      if (Object.keys(globalFormState).length > 0) {
+        setGlobalFormState({});
+        setOption({});
+        setErrorDisplay({});
+        setConditionalFields({});
+      }
+
+      formFields.PopulateForm.forEach((field) => {
+        if (field.conditionals) {
+          setConditionalFields((cond) => ({
+            ...cond,
+            [`${field.name}`]: field.conditionals,
+          }));
+        }
+
+        if (field.component === "Select") {
+          setOption((opt) => ({
+            ...opt,
+            ...{ [`${field.name}`]: constructDropdown(field.set) },
+          }));
+        }
+
+        setErrorDisplay((err) => ({
+          ...err,
+          [`${field.name}`]: null,
+        }));
+
+        setValidators((fld) => ({
+          ...fld,
+          [field.name]: zodifyField(field),
+        }));
+      });
+    }
+  }, [formFields]);
 
   useEffect(() => {
     if (!formReferenceKeys.length) return;
@@ -317,60 +385,10 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
     setPatientIdentifier({ submitter_donor_id: uniqueIdsFormState['submitter_donor_id'], program_id: uniqueIdsFormState['program_id'] })
   };
 
-  // when data is received then update global form state and as well populate the option necessary
-  // for the select components
-  useEffect(() => {
-    if (formFields !== undefined) {
-      // populate form other fields
-      if (Object.keys(globalFormState).length > 0) {
-        setGlobalFormState({});
-        setOption({});
-        setErrorDisplay({});
-        setConditionalFields({});
-      }
-
-      formFields.PopulateForm.forEach((field) => {
-        if (field.conditionals) {
-          setConditionalFields((cond) => ({
-            ...cond,
-            [`${field.name}`]: field.conditionals,
-          }));
-        }
-
-        if (field.component === "Select") {
-          setOption((opt) => ({
-            ...opt,
-            ...{ [`${field.name}`]: constructDropdown(field.set) },
-          }));
-        }
-
-        setErrorDisplay((err) => ({
-          ...err,
-          [`${field.name}`]: null,
-        }));
-        
-        if (
-          drafts !== undefined 
-          && typeof drafts === "object"
-          && drafts.hasOwnProperty('formDrafts')
-          && drafts.formDrafts.length > 0 
-        ) {
-          setDraftData(drafts)
-        }
-
-        setValidators((fld) => ({
-          ...fld,
-          [field.name]: zodifyField(field),
-        }));
-      });
-    }
-    // eslint-disable-next-line
-  }, [drafts, formFields, patientIdentifier]);
-
   //  do not return anything to the DOM if the data is not loaded
   if (loadFieldData) return <></>;
   else if (errorFields)
-    return `Something went wrong within the backend ${errorFields}`;
+    return <BasicErrorMessage/>;
 
   return (
     <div
@@ -495,24 +513,12 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
             );
           })}
         </Form.Group>
-        { // display drafts if they are available
-          draftData.formDrafts.length > 0 ? 
-            <>
-              <Divider hidden />
-              <Divider horizontal>
-                <Header as="h4">
-                  <Icon name="save outline" />
-                  DRAFTS
-                </Header>
-              </Divider>
-              <DraftTable
-                drafts={draftData.formDrafts}
-                patientIdentifier={patientIdentifier}
-                updateGlobalFormState={setGlobalFormState}
-              />
-            </>
-          : <></>
-        }
+        <DraftContent
+          metadata={metadata}
+          uniqueIdsFormState={uniqueIdsFormState}
+          patientIdentifier={patientIdentifier}
+          setGlobalFormState={setGlobalFormState}
+        /> 
         <Divider hidden />
         <Divider horizontal>
           <Header as="h4">
