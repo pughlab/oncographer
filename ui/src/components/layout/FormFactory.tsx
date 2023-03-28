@@ -1,7 +1,7 @@
 import * as React from 'react'
 import * as R from 'remeda'
 import { useQuery } from "@apollo/client";
-import { Segment, List, Grid } from "semantic-ui-react";
+import { Segment, List, Grid, Message } from "semantic-ui-react";
 import { Forms } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
@@ -12,14 +12,14 @@ function ListMenuItem({
   setContent,
   patientIdentifier,
   setPatientIdentifier,
-  active,
-  setActive 
+  activeItem,
+  setActiveItem
 }) {
   let finalItem = null
 
   if (!item.next_form) {
     finalItem = (
-      <List.Item active={active === item.form_id}>
+      <List.Item active={activeItem === item}>
         <List.Icon name="file" />
         <List.Content>
           <a onClick={() => {
@@ -30,14 +30,14 @@ function ListMenuItem({
                 setPatientIdentifier={setPatientIdentifier}
               />
             )
-            setActive(item.form_id)
+            setActiveItem(item)
           }}>{item.form_name}</a>
         </List.Content>
       </List.Item>
     )
   } else {
     finalItem = (
-      <List.Item active={active === item.form_id}>
+      <List.Item active={activeItem === item}>
         <List.Icon name="folder open" />
         <List.Content>
           <a onClick={() => {
@@ -48,7 +48,7 @@ function ListMenuItem({
                 setPatientIdentifier={setPatientIdentifier}
               />
             )
-            setActive(item.form_id)
+            setActiveItem(item)
           }}>{item.form_name}</a>
           <List.List>
             {
@@ -59,8 +59,8 @@ function ListMenuItem({
                   setContent={setContent}
                   patientIdentifier={patientIdentifier}
                   setPatientIdentifier={setPatientIdentifier}
-                  active={active}
-                  setActive={setActive}
+                  activeItem={activeItem}
+                  setActiveItem={setActiveItem}
                 />
               })
             }
@@ -78,8 +78,9 @@ function ListMenu({
   setContent,
   patientIdentifier,
   setPatientIdentifier,
+  activeItem,
+  setActiveItem
 }) {
-  const [ activeMenuItem, setActiveMenuItem ] = React.useState(null)
   const menuItems = items.map((item) => {
     return (
       <ListMenuItem
@@ -88,8 +89,8 @@ function ListMenu({
         setContent={setContent} 
         patientIdentifier={patientIdentifier} 
         setPatientIdentifier={setPatientIdentifier} 
-        active={activeMenuItem} 
-        setActive={setActiveMenuItem}
+        activeItem={activeItem} 
+        setActiveItem={setActiveItem}
       />
     )
   })
@@ -104,14 +105,20 @@ function ListMenu({
 export default function FormFactory({ patientIdentifier, setPatientIdentifier }) {
   const { loading, error, data } = useQuery(Forms)
   const [ content, setContent ] = React.useState(<></>)
+  const [ activeItem, setActiveItem ] = React.useState(null)
 
   React.useEffect(() => setContent(
-    data 
+    data
     ? <FormGenerator
-        metadata={data.forms[0]}
+        metadata={activeItem !== null ? activeItem : data.forms[0]}
         patientIdentifier={patientIdentifier}
         setPatientIdentifier={setPatientIdentifier} />
-    : <></>
+    : <>
+        <Message>
+          <Message.Header>Welcome to mCODER2!</Message.Header>
+          <p>Type a donor's ID in the search form or select a form on the left menu to start.</p>
+        </Message>
+      </>
   ), [patientIdentifier])
 
   if (loading) {
@@ -135,6 +142,8 @@ export default function FormFactory({ patientIdentifier, setPatientIdentifier })
             setContent={setContent}
             patientIdentifier={patientIdentifier}
             setPatientIdentifier={setPatientIdentifier}
+            activeItem={activeItem}
+            setActiveItem={setActiveItem}
           />
         </Grid.Column>
         <Grid.Column width={13}>

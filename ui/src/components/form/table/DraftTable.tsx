@@ -1,31 +1,12 @@
 import * as React from 'react'
 import { Table } from 'semantic-ui-react'
+import { toTitle, toDateString } from './utils'
 
-// helper functions for data visualization
-function toTitle(str: string) {
-  return str.toLowerCase().split('_').map((word) => {
-    return word === 'id' ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1)
-  }).join(' ')
-}
-
-function toDateString(value: string | Date) {
-  let date = value instanceof Date ? value : new Date(value)
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: 'long'
-  })
-}
-
-// main component
-export const DraftTable = ({ drafts, patientIdentifier, updateGlobalFormState }) => {
+export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFormState }) => {
 
   let table = null
 
   if (drafts.length > 0) { // valid results, create the table
-    const headers = [
-      ...Object.keys(patientIdentifier),
-      ...Object.keys(JSON.parse(drafts[0].data))
-    ]
 
     // regex to determine a date in the YYYY-MM-DD format
     // It will also match anything after the YYYY-MM-DD match,

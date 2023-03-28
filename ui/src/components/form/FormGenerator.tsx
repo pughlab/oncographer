@@ -32,7 +32,7 @@ import { DraftTable } from "./table/DraftTable";
 import { LoadingSegment } from "../common/LoadingSegment";
 import { BasicErrorMessage } from "../common/BasicErrorMessage";
 
-function DraftContent({ metadata, uniqueIdsFormState, patientIdentifier, setGlobalFormState }) {
+function DraftContent({ metadata, headers, uniqueIdsFormState, patientIdentifier, setGlobalFormState }) {
   // attempt to find drafts for the current form/patient combination
   const { loading: draftsLoading, error: draftsError, data: drafts } = useQuery(FindDraft, {
     variables: {
@@ -63,6 +63,7 @@ function DraftContent({ metadata, uniqueIdsFormState, patientIdentifier, setGlob
       </Divider>
       <DraftTable
         drafts={drafts.formDrafts}
+        headers={headers}
         patientIdentifier={patientIdentifier}
         updateGlobalFormState={setGlobalFormState}
       />
@@ -85,6 +86,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
   const [formReferenceKeysUUID, setUUID] = useState({});
   const [draftData, setDraftData] = useState({ formDrafts: [] });
   const [createDraft] = useMutation(CreateDraft)
+  const [createNode] = useMutation(CreateNode);
 
 
   //  Is a reference to root of the form directed acyclic graph in which all forms use their primary key
@@ -134,31 +136,8 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
     ),
   });
 
-  const saveDraft = () => {
-    const draftInfo = {
-      'form_id': String(metadata.form_id), 
-      'patient_id': JSON.stringify(uniqueIdsFormState),
-      'data': JSON.stringify(globalFormState)
-    }
-    createDraft({ variables: { input: draftInfo }})
-    alert("Draft saved")
-    setDraftData({ formDrafts: [...draftData.formDrafts, draftInfo] })
-  }
-
-  const [createNode] = useMutation(CreateNode);
-
-  // On First Component Render
-  // make sure all states are wiped from
-  // any changes like for example a change from
-  // one form to another.
-  useEffect(() => {
-    setValidators({});
-    setUniqueIdFormState({});
-    setGlobalFormState({});
-    setDraftData({ formDrafts: [] })
-
-    // populate form foreign keys, primary keys, globalIdentifierKeys
-    const ids = [
+  const getIdFields = () => {
+    return [
       ...globalIdentifierKeys,
       ...formPrimaryIdentifierKeys,
       ...formReferenceKeys.map((fk: any) => {
@@ -170,7 +149,58 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
         }
         return node;
       }),
-    ];
+    ]
+  }
+
+  const getValidators = () => {
+    const fields = getIdFields()
+
+    let validators = R.mapToObj(fields, (field) => [field.name, zodifyField(field)])
+
+    if (formFields !== undefined) {
+      formFields.PopulateForm.forEach((field) => {
+        validators[field.name] = zodifyField(field)
+      })
+    }
+
+    return validators
+  }
+
+  const getTableHeaders = () => {
+    const idFields = getIdFields()
+
+    let headers = idFields.map(field => field.label)
+
+    if (formFields !== undefined) {
+      formFields.PopulateForm.forEach((field) => {
+        headers.push(field.label)
+      })
+    }
+    return headers
+  }
+
+  const saveDraft = () => {
+    const draftInfo = {
+      'form_id': String(metadata.form_id), 
+      'patient_id': JSON.stringify(uniqueIdsFormState),
+      'data': JSON.stringify(globalFormState)
+    }
+    createDraft({ variables: { input: draftInfo }})
+    alert("Draft saved")
+    setDraftData({ formDrafts: [...draftData.formDrafts, draftInfo] })
+  }
+
+  // On First Component Render
+  // make sure all states are wiped from
+  // any changes like for example a change from
+  // one form to another.
+  useEffect(() => {
+    setUniqueIdFormState({});
+    setGlobalFormState({});
+    setDraftData({ formDrafts: [] })
+
+    // populate form foreign keys, primary keys, globalIdentifierKeys
+    const ids = getIdFields()
 
     setUniqueIdFormState({
       ...R.mapToObj(ids, (field) => [field.name, field.value]),
@@ -178,10 +208,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
       program_id: patientIdentifier.program_id,
     });
 
-    setValidators({
-      ...R.mapToObj(ids, (field) => [field.name, zodifyField(field)]),
-    });
-
+    setValidators(getValidators())
   }, [patientIdentifier]);
 
   // when data is received then update global form state and as well populate the option necessary
@@ -189,6 +216,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
   useEffect(() => {
 
     if (formFields !== undefined) {
+      setValidators({})
       // populate form other fields
       if (Object.keys(globalFormState).length > 0) {
         setGlobalFormState({});
@@ -217,10 +245,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
           [`${field.name}`]: null,
         }));
 
-        setValidators((fld) => ({
-          ...fld,
-          [field.name]: zodifyField(field),
-        }));
+        setValidators(getValidators())
       });
     }
   }, [formFields]);
@@ -275,7 +300,6 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
       // context connection are coherent
       setConnection(numberOfFilledReferenceFormID.length === formFieldsContext.submitters[0].connectedFormsReferencingSubmitter.length)
     }
-
     // eslint-disable-next-line
   }, [formFieldsContext]);
 
@@ -515,6 +539,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
         </Form.Group>
         <DraftContent
           metadata={metadata}
+          headers={getTableHeaders()}
           uniqueIdsFormState={uniqueIdsFormState}
           patientIdentifier={patientIdentifier}
           setGlobalFormState={setGlobalFormState}

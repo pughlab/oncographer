@@ -1,5 +1,5 @@
 import { Table } from "semantic-ui-react";
-import { keyToLabel } from "./utils";
+import { toTitle } from "./utils";
 import * as React from "react";
 
 export default function TableToolDisplay({
@@ -91,7 +91,7 @@ export default function TableToolDisplay({
         <Table.Header  style={{ position: "sticky", top: 0, background: 0.0, opacity: 1 }}>
           <Table.Row >
             {sortedHeaders.map((p) => {
-              return <Table.HeaderCell key={p}>{keyToLabel(p)}</Table.HeaderCell>;
+              return <Table.HeaderCell key={p}>{toTitle(p, '_')}</Table.HeaderCell>;
             })}
           </Table.Row>
         </Table.Header>
@@ -140,7 +140,7 @@ export default function TableToolDisplay({
           <Table.Header >
             <Table.Row >
               {sortedHeaders.map((p) => {
-                return <Table.HeaderCell key={p}>{keyToLabel(p)}</Table.HeaderCell>;
+                return <Table.HeaderCell key={p}>{toTitle(p, '_')}</Table.HeaderCell>;
               })}
             </Table.Row>
           </Table.Header>
