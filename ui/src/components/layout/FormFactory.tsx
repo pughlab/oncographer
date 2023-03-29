@@ -6,6 +6,7 @@ import { Forms } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
+import { WelcomeMessage } from './WelcomeMessage';
 
 function ListMenuItem({
   item,
@@ -113,12 +114,7 @@ export default function FormFactory({ patientIdentifier, setPatientIdentifier })
         metadata={activeItem !== null ? activeItem : data.forms[0]}
         patientIdentifier={patientIdentifier}
         setPatientIdentifier={setPatientIdentifier} />
-    : <>
-        <Message>
-          <Message.Header>Welcome to mCODER2!</Message.Header>
-          <p>Type a donor's ID in the search form or select a form on the left menu to start.</p>
-        </Message>
-      </>
+    : <WelcomeMessage />
   ), [patientIdentifier])
 
   if (loading) {
