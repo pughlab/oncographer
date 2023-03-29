@@ -1,10 +1,25 @@
 import * as React from 'react'
-import { Table } from 'semantic-ui-react'
+import { Button, Table } from 'semantic-ui-react'
+import { useMutation } from '@apollo/client'
 import { toTitle, toDateString } from './utils'
+import { DeleteDraft } from '../queries/query'
 
-export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFormState }) => {
+export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFormState, setDrafts }) => {
 
   let table = null
+  const [deleteDraft] = useMutation(DeleteDraft)
+
+  const removeDraft = (draft) => {
+    deleteDraft({
+      variables: {
+        where: {
+          'draft_id': draft.draft_id
+        }
+      }
+    })
+    alert('Draft deleted')
+    setDrafts(drafts.filter((currentDraft) => currentDraft.draft_id !== draft.draft_id))
+  }
 
   if (drafts.length > 0) { // valid results, create the table
 
@@ -19,23 +34,21 @@ export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFor
           <Table.Header>
             <Table.Row>
               {
-                headers.map((header) => {
+                Object.values(headers).map((header) => {
                   return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
                 })
               }
+              <Table.HeaderCell key="Delete" textAlign='center'>Delete</Table.HeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body>
             {
               drafts.map((draft) => {
                 const data = JSON.parse(draft.data) // the data that is used to save the draft
-                const row = [ // the visual representation of the full draft
-                  ...Object.values(patientIdentifier),
-                  ...Object.values(data)
-                ]
-
-                // if the draft doesn't have values for all fields, fill the missing fields with empty strings
-                fillEmptyFields(row, headers)
+                const row = { // the visual representation of the full draft
+                  ...patientIdentifier,
+                  ...data
+                }
 
                 // convert date-like strings to Date objects
                 // and empty strings to null
@@ -48,29 +61,37 @@ export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFor
                   }
                 })
 
-                return <Table.Row key={draft.draft_id} onClick={() => {
-                  updateGlobalFormState(data)
-                }}>{
-                  row.map((cell,idx) => {
-                    const isDate = re.test(cell)
-                    
-                    // transform the cell's value for better reading if necessary
-                    let value = cell
-                    if (isDate) {
-                      value = toDateString(cell)
-                    } else if (Array.isArray(cell)) {
-                      value = cell.join(', ')
-                    }
+                return (
+                <>
+                  <Table.Row key={draft.draft_id} onClick={() => {
+                    updateGlobalFormState(data)
+                  }}>{
+                    Object.keys(headers).map((key) => {
+                      let value = row.hasOwnProperty(key) ? row[key] : ""
 
-                    return (
-                      <Table.Cell
-                        key={`${draft.draft_id}-${headers[idx]}-${cell}`}
-                      >
-                        { value }
-                      </Table.Cell>
-                    )
-                  })
-                }</Table.Row>
+                      const isDate = re.test(value)
+                      
+                      // transform the cell's value for better reading if necessary
+                      if (isDate) {
+                        value = toDateString(value)
+                      } else if (Array.isArray(value)) {
+                        value = value.join(', ')
+                      }
+
+                      return (
+                        <Table.Cell
+                          key={`${draft.draft_id}-${key}-${value}`}
+                        >
+                          { value }
+                        </Table.Cell>
+                      )
+                    })
+                  }
+                    <Table.Cell key={`${draft.draft_id}-delete`} textAlign="center">
+                      <Button negative icon='trash' onClick={() => {removeDraft(draft)}} />
+                    </Table.Cell>
+                  </Table.Row>
+                </>)
               })
             }
           </Table.Body>
@@ -85,12 +106,4 @@ export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFor
   }
 
   return table
-}
-
-function fillEmptyFields(row: unknown[], headers: string[]) {
-  if (row.length < headers.length) {
-    for (let idx = row.length; idx < headers.length; idx++) {
-      row.push("")
-    }
-  }
 }

@@ -32,7 +32,7 @@ import { DraftTable } from "./table/DraftTable";
 import { LoadingSegment } from "../common/LoadingSegment";
 import { BasicErrorMessage } from "../common/BasicErrorMessage";
 
-function DraftContent({ metadata, headers, uniqueIdsFormState, patientIdentifier, setGlobalFormState }) {
+function DraftContent({ metadata, headers, uniqueIdsFormState, patientIdentifier, setGlobalFormState, setDrafts }) {
   // attempt to find drafts for the current form/patient combination
   const { loading: draftsLoading, error: draftsError, data: drafts } = useQuery(FindDraft, {
     variables: {
@@ -63,6 +63,7 @@ function DraftContent({ metadata, headers, uniqueIdsFormState, patientIdentifier
       </Divider>
       <DraftTable
         drafts={drafts.formDrafts}
+        setDrafts={setDrafts}
         headers={headers}
         patientIdentifier={patientIdentifier}
         updateGlobalFormState={setGlobalFormState}
@@ -169,11 +170,11 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
   const getTableHeaders = () => {
     const idFields = getIdFields()
 
-    let headers = idFields.map(field => field.label)
+    let headers = R.mapToObj(idFields, (field) => [field.name, field.label])
 
     if (formFields !== undefined) {
       formFields.PopulateForm.forEach((field) => {
-        headers.push(field.label)
+        headers[field.name] = field.label
       })
     }
     return headers
@@ -543,6 +544,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
           uniqueIdsFormState={uniqueIdsFormState}
           patientIdentifier={patientIdentifier}
           setGlobalFormState={setGlobalFormState}
+          setDrafts={setDraftData}
         /> 
         <Divider hidden />
         <Divider horizontal>
