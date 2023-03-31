@@ -4,7 +4,7 @@ import { useMutation } from '@apollo/client'
 import { toTitle, toDateString } from './utils'
 import { DeleteDraft } from '../queries/query'
 
-export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFormState, setDrafts }) => {
+export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFormState, setLastDraftUpdate }) => {
 
   let table = null
   const [deleteDraft] = useMutation(DeleteDraft)
@@ -15,10 +15,12 @@ export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFor
         where: {
           'draft_id': draft.draft_id
         }
+      },
+      onCompleted: () => {
+        alert('Draft deleted')
+        setLastDraftUpdate(new Date().toUTCString())
       }
     })
-    alert('Draft deleted')
-    setDrafts(drafts.filter((currentDraft) => currentDraft.draft_id !== draft.draft_id))
   }
 
   if (drafts.length > 0) { // valid results, create the table
@@ -52,14 +54,7 @@ export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFor
 
                 // convert date-like strings to Date objects
                 // and empty strings to null
-                Object.keys(data).forEach((key) => {
-                  const isDate = re.test(data[key])
-                  if (isDate) {
-                    data[key] = new Date(data[key])
-                  } else if (data[key] === "") {
-                    data[key] = null
-                  }
-                })
+                transformData(data, re)
 
                 return (
                 <>
@@ -106,4 +101,15 @@ export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFor
   }
 
   return table
+}
+
+function transformData(data: any, re: RegExp) {
+  Object.keys(data).forEach((key) => {
+    const isDate = re.test(data[key])
+    if (isDate) {
+      data[key] = new Date(data[key])
+    } else if (data[key] === "") {
+      data[key] = null
+    }
+  })
 }

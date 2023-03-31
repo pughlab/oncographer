@@ -32,7 +32,7 @@ import { DraftTable } from "./table/DraftTable";
 import { LoadingSegment } from "../common/LoadingSegment";
 import { BasicErrorMessage } from "../common/BasicErrorMessage";
 
-function DraftContent({ metadata, headers, uniqueIdsFormState, patientIdentifier, setGlobalFormState, setDrafts }) {
+function DraftContent({ metadata, headers, uniqueIdsFormState, patientIdentifier, setGlobalFormState, setLastDraftUpdate }) {
   // attempt to find drafts for the current form/patient combination
   const { loading: draftsLoading, error: draftsError, data: drafts } = useQuery(FindDraft, {
     variables: {
@@ -63,7 +63,7 @@ function DraftContent({ metadata, headers, uniqueIdsFormState, patientIdentifier
       </Divider>
       <DraftTable
         drafts={drafts.formDrafts}
-        setDrafts={setDrafts}
+        setLastDraftUpdate={setLastDraftUpdate}
         headers={headers}
         patientIdentifier={patientIdentifier}
         updateGlobalFormState={setGlobalFormState}
@@ -85,11 +85,12 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
   const [context, setContext] = useState({}); // Context holds all the information of form that hold being referenced by
   // either the identifiers, and foreign keys
   const [formReferenceKeysUUID, setUUID] = useState({});
-  const [draftData, setDraftData] = useState({ formDrafts: [] });
+  const [lastDraftUpdate, setLastDraftUpdate] = useState(new Date().toUTCString())
+  const [lastSubmission, setLastSubmission] = useState(new Date().toUTCString())
   const [createDraft] = useMutation(CreateDraft)
   const [createNode] = useMutation(CreateNode);
 
-
+1
   //  Is a reference to root of the form directed acyclic graph in which all forms use their primary key
   const globalIdentifierKeys = metadata.identifier.filter(
     (field) => !metadata.primary_key.map((field) => field.name).includes(field.name)
@@ -184,11 +185,15 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
     const draftInfo = {
       'form_id': String(metadata.form_id), 
       'patient_id': JSON.stringify(uniqueIdsFormState),
-      'data': JSON.stringify(globalFormState)
+      'data': JSON.stringify(globalFormState),
     }
-    createDraft({ variables: { input: draftInfo }})
-    alert("Draft saved")
-    setDraftData({ formDrafts: [...draftData.formDrafts, draftInfo] })
+    createDraft({ 
+      variables: { input: draftInfo },
+      onCompleted: () => {
+        alert("Draft saved")
+        setLastDraftUpdate(new Date().toUTCString())
+      }
+    })
   }
 
   // On First Component Render
@@ -198,7 +203,6 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
   useEffect(() => {
     setUniqueIdFormState({});
     setGlobalFormState({});
-    setDraftData({ formDrafts: [] })
 
     // populate form foreign keys, primary keys, globalIdentifierKeys
     const ids = getIdFields()
@@ -404,10 +408,15 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
     console.log(formCreateSchema)
 
     // all checks are completed now just need to mutate the backend
-    createNode({ variables: { input: [formCreateSchema] } });
+    createNode({
+      variables: { input: [formCreateSchema] },
+      onCompleted: () => {
+        alert("Form submitted!")
+        setLastSubmission(new Date().toUTCString())
+        setPatientIdentifier({ submitter_donor_id: uniqueIdsFormState['submitter_donor_id'], program_id: uniqueIdsFormState['program_id'] })
+      }
+    });
 
-    alert("Form submitted!")
-    setPatientIdentifier({ submitter_donor_id: uniqueIdsFormState['submitter_donor_id'], program_id: uniqueIdsFormState['program_id'] })
   };
 
   //  do not return anything to the DOM if the data is not loaded
@@ -539,12 +548,13 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
           })}
         </Form.Group>
         <DraftContent
+          key={lastDraftUpdate} // this state variable gets updated whenever the drafts change
           metadata={metadata}
           headers={getTableHeaders()}
           uniqueIdsFormState={uniqueIdsFormState}
           patientIdentifier={patientIdentifier}
           setGlobalFormState={setGlobalFormState}
-          setDrafts={setDraftData}
+          setLastDraftUpdate={setLastDraftUpdate}
         /> 
         <Divider hidden />
         <Divider horizontal>
@@ -554,6 +564,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
           </Header>
         </Divider>
         <FormTable
+          key={lastSubmission} // this state variable gets updated when the form is submitted
           form={metadata.form_id}
           searchForRootForm={isRootForm}
           globalIdentifierKeys={getKeyValuePairs(
