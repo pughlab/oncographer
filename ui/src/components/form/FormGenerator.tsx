@@ -45,7 +45,18 @@ function DraftContent({ metadata, headers, uniqueIdsFormState, patientIdentifier
   })
 
   if (draftsLoading) {
-    return <LoadingSegment />
+    return (
+    <>
+    <Divider hidden />
+      <Divider horizontal>
+        <Header as="h4">
+          <Icon name="save" />
+          DRAFTS
+        </Header>
+      </Divider>
+      <LoadingSegment />
+    </>
+    )
   }
 
   if (draftsError) {
@@ -57,7 +68,7 @@ function DraftContent({ metadata, headers, uniqueIdsFormState, patientIdentifier
       <Divider hidden />
       <Divider horizontal>
         <Header as="h4">
-          <Icon name="save outline" />
+          <Icon name="save" />
           DRAFTS
         </Header>
       </Divider>
@@ -90,7 +101,6 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
   const [createDraft] = useMutation(CreateDraft)
   const [createNode] = useMutation(CreateNode);
 
-1
   //  Is a reference to root of the form directed acyclic graph in which all forms use their primary key
   const globalIdentifierKeys = metadata.identifier.filter(
     (field) => !metadata.primary_key.map((field) => field.name).includes(field.name)
@@ -111,6 +121,8 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
   // foreign identifier of the current form. 
   // This is the identifier that connects to other existing forms and their primary identifier
   const formReferenceKeys = metadata.foreign_keyConnection.edges;
+  // console.log("FORM REFERENCE KEYS:")
+  // console.log(formReferenceKeys)
 
   // (Populate Form Fields GraphQL Query) that loads all field data within the form
   const {
@@ -154,19 +166,20 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
     ]
   }
 
-  const getValidators = () => {
-    const fields = getIdFields()
+  // const getValidators = () => {
+  //   const fields = getIdFields()
 
-    let validators = R.mapToObj(fields, (field) => [field.name, zodifyField(field)])
+  //   let validators = {}
+  //   // let validators = R.mapToObj(fields, (field) => [field.name, zodifyField(field)])
 
-    if (formFields !== undefined) {
-      formFields.PopulateForm.forEach((field) => {
-        validators[field.name] = zodifyField(field)
-      })
-    }
+  //   if (formFields !== undefined) {
+  //     formFields.PopulateForm.forEach((field) => {
+  //       validators[field.name] = zodifyField(field)
+  //     })
+  //   }
 
-    return validators
-  }
+  //   return validators
+  // }
 
   const getTableHeaders = () => {
     const idFields = getIdFields()
@@ -196,16 +209,31 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
     })
   }
 
-  // On First Component Render
+  // on form change (previously was written as "first component render")
   // make sure all states are wiped from
   // any changes like for example a change from
   // one form to another.
   useEffect(() => {
+    setValidators({})
     setUniqueIdFormState({});
     setGlobalFormState({});
 
     // populate form foreign keys, primary keys, globalIdentifierKeys
-    const ids = getIdFields()
+    const ids = [
+      ...globalIdentifierKeys,
+      ...formPrimaryIdentifierKeys,
+      ...formReferenceKeys.map((fk : any) => {
+        const node = { ...fk.node }; // shallow copy node object
+        if (fk.override) {
+          Object.keys(fk.override).forEach(
+            (key) => (node[key] = fk.override[key])
+          );
+        }
+        // --Testing---------
+        // console.log(node)
+        return node;
+      }),
+    ];
 
     setUniqueIdFormState({
       ...R.mapToObj(ids, (field) => [field.name, field.value]),
@@ -213,47 +241,11 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
       program_id: patientIdentifier.program_id,
     });
 
-    setValidators(getValidators())
-  }, [patientIdentifier]);
-
-  // when data is received then update global form state and as well populate the option necessary
-  // for the select components
-  useEffect(() => {
-
-    if (formFields !== undefined) {
-      setValidators({})
-      // populate form other fields
-      if (Object.keys(globalFormState).length > 0) {
-        setGlobalFormState({});
-        setOption({});
-        setErrorDisplay({});
-        setConditionalFields({});
-      }
-
-      formFields.PopulateForm.forEach((field) => {
-        if (field.conditionals) {
-          setConditionalFields((cond) => ({
-            ...cond,
-            [`${field.name}`]: field.conditionals,
-          }));
-        }
-
-        if (field.component === "Select") {
-          setOption((opt) => ({
-            ...opt,
-            ...{ [`${field.name}`]: constructDropdown(field.set) },
-          }));
-        }
-
-        setErrorDisplay((err) => ({
-          ...err,
-          [`${field.name}`]: null,
-        }));
-
-        setValidators(getValidators())
-      });
-    }
-  }, [formFields]);
+    setValidators({
+      ...R.mapToObj(ids, (field) => [field.name, zodifyField(field)]),
+    });
+  
+  }, [metadata, patientIdentifier]); // tracking metadata here will reset any foreign key IDs in subsequent forms (maybe needs to re-visited if we do "sticky" foreign keys across forms)
 
   useEffect(() => {
     if (!formReferenceKeys.length) return;
@@ -419,6 +411,47 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
 
   };
 
+  // when data is received then update global form state and as well populate the option necessary
+  // for the select components
+  useEffect(() => {
+    if (formFields !== undefined) {
+      
+      // populate form other fields
+      if (Object.keys(globalFormState).length > 0) {
+        setGlobalFormState({});
+        setOption({});
+        setErrorDisplay({});
+        setConditionalFields({});
+      }
+
+      formFields.PopulateForm.forEach((field) => {
+        if (field.conditionals) {
+          setConditionalFields((cond) => ({
+            ...cond,
+            [`${field.name}`]: field.conditionals,
+          }));
+        }
+
+        if (field.component === "Select") {
+          setOption((opt) => ({
+            ...opt,
+            ...{ [`${field.name}`]: constructDropdown(field.set) },
+          }));
+        }
+
+        setErrorDisplay((err) => ({
+          ...err,
+          [`${field.name}`]: null,
+        }));
+
+        setValidators((fld) => ({
+          ...fld,
+          [field.name]: zodifyField(field),
+        }));
+      });
+    }
+  }, [formFields, patientIdentifier]);
+
   //  do not return anything to the DOM if the data is not loaded
   if (loadFieldData) return <></>;
   else if (errorFields)
@@ -445,6 +478,12 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
           {globalIdentifierKeys.map((fld) => (
             <Form.Field key={fld.name}>
               <div>
+                <Popup
+                    trigger={<span style={ fld.required ? { color: 'red'} : {display: 'none'}  }>* </span>}
+                    content={"Required field."}
+                    position='top center'
+                    inverted
+                  />
                 <label style={{ marginRight: '5px' }}>{fld.label}</label>
                 <Popup
                   trigger={<Icon name='help circle' />}
@@ -480,6 +519,12 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
           {formPrimaryIdentifierKeys.map((fld) => (
             <Form.Field key={fld.name}>
               <div>
+                <Popup
+                    trigger={<span style={ fld.required ? { color: 'red'} : {display: 'none'}}>* </span>}
+                    content={"Required field."}
+                    position='top center'
+                    inverted
+                  />
                 <label style={{ marginRight: '5px' }}>{fld.label}</label>
                 <Popup
                   trigger={<Icon name='help circle' />}
@@ -517,6 +562,12 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
             return (
               <Form.Field key={fld.node.name}>
                 <div>
+                  <Popup
+                    trigger={<span style={ fld.node.required && fld.override == null ? { color: 'red'} : {display: 'none'}}>* </span>}
+                    content={"Required field."}
+                    position='top center'
+                    inverted
+                  />
                   <label style={{ marginRight: '5px' }}>{fld.node.label}</label>
                   <Popup
                     trigger={<Icon name='help circle' />}
@@ -559,8 +610,8 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
         <Divider hidden />
         <Divider horizontal>
           <Header as="h4">
-            <Icon name="folder open" />
-            DATA
+            <Icon name="send" />
+            SUBMISSIONS
           </Header>
         </Divider>
         <FormTable
@@ -600,9 +651,15 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
                   comp = (
                     <Form.Field disabled={disabled} error={displayError}>
                       <div>
+                        <Popup
+                          trigger={<span style={ fld.required && !disabled ? { color: 'red'} : {display: 'none'}}>* </span>}
+                          content={"Required field."}
+                          position='top center'
+                          inverted
+                        />
                         <label style={{ marginRight: '5px' }}>{fld.label}</label>
                         <Popup
-                          trigger={<Icon name='help circle' />}
+                          trigger={!disabled && <Icon name='help circle' />}
                           content={fld.description}
                           position='top center'
                           inverted
@@ -638,9 +695,15 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
                   comp = (
                     <Form.Field disabled={disabled} error={displayError}>
                       <div>
+                        <Popup
+                          trigger={<span style={ fld.required && !disabled ? { color: 'red'} : {display: 'none'}}>* </span>}
+                          content={"Required field."}
+                          position='top center'
+                          inverted
+                        />
                         <label style={{ marginRight: '5px' }}>{fld.label}</label>
                         <Popup
-                          trigger={<Icon name='help circle' />}
+                          trigger={!disabled && <Icon name='help circle' />}
                           content={fld.description}
                           position='top center'
                           inverted
@@ -688,9 +751,15 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
                   comp = (
                     <Form.Field disabled={disabled} error={displayError}>
                       <div>
+                        <Popup
+                          trigger={<span style={ fld.required && !disabled ? { color: 'red'} : {display: 'none'}}>* </span>}
+                          content={"Required field."}
+                          position='top center'
+                          inverted
+                        />
                         <label style={{ marginRight: '5px' }}>{fld.label}</label>
                         <Popup
-                          trigger={<Icon name='help circle' />}
+                          trigger={!disabled && <Icon name='help circle' />}
                           content={fld.description}
                           position='top center'
                           inverted
@@ -735,9 +804,15 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
                   comp = (
                     <Form.Field disabled={disabled} error={displayError}>
                       <div>
+                        <Popup
+                          trigger={<span style={ fld.required && !disabled ? { color: 'red'} : {display: 'none'}}>* </span>}
+                          content={"Required field."}
+                          position='top center'
+                          inverted
+                        />
                         <label style={{ marginRight: '5px' }}>{fld.label}</label>
                         <Popup
-                          trigger={<Icon name='help circle' />}
+                          trigger={!disabled && <Icon name='help circle' />}
                           content={fld.description}
                           position='top center'
                           inverted
@@ -801,14 +876,14 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
               onFormComplete();
             }}
           ></Button>
-          <Button.Or />
+          {/* <Button.Or />
           <Button
             inverted
             icon="trash"
             content="CLEAR FORMS"
             color="red"
             onClick={() => { setPatientIdentifier({ submitter_donor_id: '', program_id: '' }) }}
-          ></Button>
+          ></Button> */}
         </Button.Group>
       </Form>
     </div>
