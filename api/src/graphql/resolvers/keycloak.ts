@@ -32,5 +32,32 @@ export const resolvers = {
         throw new ApolloError('mutation.me error')
       }
     },
+    assignKeycloakUserToSubmitter: async (obj, { submitterID }, { driver, kauth }, resolveInfo) => {
+      try {
+        const { sub: keycloakUserID, email, name, ...kcAuth } = kauth.accessToken.content
+        const keycloakUser = { keycloakUserID, email, name }
+
+        const session = driver.session()
+        const existingUser = await session.run(
+          'MATCH (a:KeycloakUser {keycloakUserID: $keycloakUserID}) RETURN a',
+          { keycloakUserID }
+        )
+        // console.log('match result', existingUser)
+        if (existingUser.records.length) {
+          const createConnectionToSubmitter = await session.run(
+            'MATCH (s:Submitter {uuid: $submitterID}), (k:KeycloakUser {keycloakUserID: $keycloakUserID}) MERGE (s)-[:SUBMITTED_BY]->(k) RETURN s, k',
+            { submitterID, keycloakUserID }
+          )
+      
+          return keycloakUser
+        } else {
+          // console.log('existing user props', existingUser.records[0].get(0).properties)
+          throw new ApolloError('mutation.missing user error')
+        }
+        
+      } catch (error) {
+        throw new ApolloError('mutation.me error')
+      }
+    }
   },
 }
