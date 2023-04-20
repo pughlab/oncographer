@@ -215,10 +215,19 @@ export const CreateNode = gql`
           key
           value
         }
+        uuid
       }
     }
   }
 `;
+
+export const CreateKeycloakSubmitterConnection = gql `
+  mutation AssignKeycloakUserToSubmitter($submitterID: ID!) {
+    assignKeycloakUserToSubmitter(submitterID: $submitterID) {
+        keycloakUserID
+    }
+  }
+`
 
 export const FindDraft = gql`
   query FindDraft($where: FormDraftWhere) {
