@@ -28,6 +28,7 @@
     formReferenceKeys                  : [Submitter!]! @relationship(type : "REFERENCE_PRIMARY_KEY", direction : OUT)
     connectedFormsReferencingSubmitter : [Submitter!]! @relationship(type : "REFERENCE_PRIMARY_KEY", direction : IN)
      
+    submittedByKeycloakUser            : KeycloakUser! @relationship(type : "SUBMITTED_BY", direction : OUT) 
   }
 
   type FormDraft {

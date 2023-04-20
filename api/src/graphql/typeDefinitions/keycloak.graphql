@@ -8,4 +8,5 @@ type KeycloakUser @exclude {
 
 type Mutation {
     me: KeycloakUser @auth
+    assignKeycloakUserToSubmitter(submitterID: ID!): KeycloakUser @auth
 }
