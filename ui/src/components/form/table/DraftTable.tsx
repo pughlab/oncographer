@@ -31,8 +31,9 @@ export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFor
     const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
 
     table = (
-      <div style={{overflowX: 'auto'}}>
         <Table fixed selectable aria-labelledby="header" striped>
+          <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
+
           <Table.Header>
             <Table.Row>
               {
@@ -90,8 +91,8 @@ export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFor
               })
             }
           </Table.Body>
+          </div>
         </Table>
-      </div>
     )
   } else { // invalid results, return an empty tag
     table = (

@@ -85,8 +85,8 @@ export default function TableToolDisplay({
     <>
     {
       tableSize ? 
-      <div style={{overflowX: 'auto', maxHeight: '500px'}}>
       <Table fixed selectable aria-labelledby="header" striped>
+        <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
 
         <Table.Header  style={{ position: "sticky", top: 0, background: 0.0, opacity: 1 }}>
           <Table.Row >
@@ -132,9 +132,9 @@ export default function TableToolDisplay({
             );
           })}
         </Table.Body>
+        </div>
 
         </Table>
-      </div>
       : 
         <Table fixed selectable aria-labelledby="header" striped>
           <Table.Header >
