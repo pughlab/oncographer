@@ -21,6 +21,7 @@ import { zodifyField } from "./validate/validator";
 import {
   FieldData,
   CreateNode,
+  CreateKeycloakSubmitterConnection,
   NodeGetContext,
   submitterBundle,
   doesRootExist,
@@ -100,6 +101,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
   const [lastSubmission, setLastSubmission] = useState(new Date().toUTCString())
   const [createDraft] = useMutation(CreateDraft)
   const [createNode] = useMutation(CreateNode);
+  const [createKeycloakSubmitterConnection] = useMutation(CreateKeycloakSubmitterConnection)
 
   //  Is a reference to root of the form directed acyclic graph in which all forms use their primary key
   const globalIdentifierKeys = metadata.identifier.filter(
@@ -402,10 +404,15 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
     // all checks are completed now just need to mutate the backend
     createNode({
       variables: { input: [formCreateSchema] },
-      onCompleted: () => {
-        alert("Form submitted!")
+      onCompleted: (submitter) => {
+        createKeycloakSubmitterConnection({ variables: { submitterID: submitter.createSubmitters.submitters[0].uuid } })
+        console.log(submitter.createSubmitters.submitters[0].uuid)
+        console.log("completed keycloak connection to submitter!")
+
         setLastSubmission(new Date().toUTCString())
         setPatientIdentifier({ submitter_donor_id: uniqueIdsFormState['submitter_donor_id'], program_id: uniqueIdsFormState['program_id'] })
+
+        alert("Form submitted!")
       }
     });
 
