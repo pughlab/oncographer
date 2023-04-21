@@ -698,6 +698,56 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
                       />
                     </Form.Field>
                   );
+                } else if (fld.type === "textarea") {
+                  comp = (
+                    <Form.Field disabled={disabled} error={displayError}>
+                      <div>
+                        <Popup
+                          trigger={<span style={ fld.required && !disabled ? { color: 'red'} : {display: 'none'}}>* </span>}
+                          content={"Required field."}
+                          position='top center'
+                          inverted
+                        />
+                        <label style={{ marginRight: '5px' }}>{fld.label}</label>
+                        <Popup
+                          trigger={!disabled && <Icon name='help circle' />}
+                          content={fld.description}
+                          position='top center'
+                          inverted
+                        />
+                      </div>
+                      <Form.TextArea
+                        name={fld.name}
+                        rows={4}
+                        value={globalFormState[fld.name]}
+                        // type={fld.type}
+                        // label={fld.label}
+                        placeholder={fld.placeholder}
+                        onChange={(e) => {
+                          let value = ["number", "integer"].includes(
+                            fld.type.toLowerCase()
+                          )
+                            ? +e.target.value
+                            : e.target.value;
+                          value = Number.isNaN(value) ? fld.value : value;                          
+                          const recheckValueValidation =
+                            validators[fld.name].safeParse(value);
+                          if (recheckValueValidation.success) {
+                            setErrorDisplay((err) => ({
+                              ...err,
+                              [fld.name]: null,
+                            }));
+                          }
+                          setGlobalFormState((f) => ({
+                            ...f,
+                            [e.target.name]: value,
+                          }));
+                        }}
+                        // disabled={disabled}
+                        error={displayError}
+                      />
+                    </Form.Field>
+                  );
                 } else {
                   comp = (
                     <Form.Field disabled={disabled} error={displayError}>

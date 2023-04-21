@@ -29,7 +29,10 @@ import {z} from 'zod'
           break;
         case "mutiple":
         schema = schema.array(z.any()) // Array[any]
-        break;
+          break;
+        case "textarea":
+          schema = schema.string().min(1, { message: "Must be 1 or more characters long"}); // any string whith a min character length of 1
+          break;
         default:
           throw new Error(`There is something wrong with the field schema type: ${field.type}\ndoes not exist...`)
     }
