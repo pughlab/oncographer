@@ -25,64 +25,11 @@ import {
   NodeGetContext,
   submitterBundle,
   doesRootExist,
-  CreateDraft,
-  FindDraft
+  CreateDraft
 } from "./queries/query";
 import { FormTable } from "./table/FormTable";
 import { DraftTable } from "./table/DraftTable";
-import { LoadingSegment } from "../common/LoadingSegment";
 import { BasicErrorMessage } from "../common/BasicErrorMessage";
-
-function DraftContent({ metadata, headers, uniqueIdsFormState, patientIdentifier, setGlobalFormState, setLastDraftUpdate }) {
-  // attempt to find drafts for the current form/patient combination
-  const { loading: draftsLoading, error: draftsError, data: drafts } = useQuery(FindDraft, {
-    variables: {
-      where: { 
-        form_id: metadata.form_id,
-        patient_id: JSON.stringify(uniqueIdsFormState)
-      } 
-    },
-    fetchPolicy: "network-only"
-  })
-
-  if (draftsLoading) {
-    return (
-    <>
-    <Divider hidden />
-      <Divider horizontal>
-        <Header as="h4">
-          <Icon name="save" />
-          DRAFTS
-        </Header>
-      </Divider>
-      <LoadingSegment />
-    </>
-    )
-  }
-
-  if (draftsError) {
-    return <BasicErrorMessage />
-  }
-
-  return (
-    <>
-      <Divider hidden />
-      <Divider horizontal>
-        <Header as="h4">
-          <Icon name="save" />
-          DRAFTS
-        </Header>
-      </Divider>
-      <DraftTable
-        drafts={drafts.formDrafts}
-        setLastDraftUpdate={setLastDraftUpdate}
-        headers={headers}
-        patientIdentifier={patientIdentifier}
-        updateGlobalFormState={setGlobalFormState}
-      />
-    </>
-  )
-}
 
 export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifier }) {
   
@@ -102,6 +49,13 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
   const [createDraft] = useMutation(CreateDraft)
   const [createNode] = useMutation(CreateNode);
   const [createKeycloakSubmitterConnection] = useMutation(CreateKeycloakSubmitterConnection)
+
+  let secondaryIds = Object.keys(uniqueIdsFormState)
+    .filter((key) => !Object.keys(patientIdentifier).includes(key))
+    .reduce((obj, key) => {
+      obj[key] = uniqueIdsFormState[key]
+      return obj
+    }, {})
 
   //  Is a reference to root of the form directed acyclic graph in which all forms use their primary key
   const globalIdentifierKeys = metadata.identifier.filter(
@@ -168,21 +122,6 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
     ]
   }
 
-  // const getValidators = () => {
-  //   const fields = getIdFields()
-
-  //   let validators = {}
-  //   // let validators = R.mapToObj(fields, (field) => [field.name, zodifyField(field)])
-
-  //   if (formFields !== undefined) {
-  //     formFields.PopulateForm.forEach((field) => {
-  //       validators[field.name] = zodifyField(field)
-  //     })
-  //   }
-
-  //   return validators
-  // }
-
   const getTableHeaders = () => {
     const idFields = getIdFields()
 
@@ -197,16 +136,19 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
   }
 
   const saveDraft = () => {
-    const draftInfo = {
+    const draftInfo: any = {
       'form_id': String(metadata.form_id), 
-      'patient_id': JSON.stringify(uniqueIdsFormState),
+      'patient_id': JSON.stringify(patientIdentifier),
       'data': JSON.stringify(globalFormState),
+    }
+    if (Object.keys(secondaryIds).length > 0) {
+      draftInfo['secondary_ids'] = JSON.stringify(secondaryIds)
     }
     createDraft({ 
       variables: { input: draftInfo },
       onCompleted: () => {
         alert("Draft saved")
-        setLastDraftUpdate(new Date().toUTCString())
+        setLastDraftUpdate(`Drafts-${new Date().toUTCString()}`)
       }
     })
   }
@@ -231,8 +173,6 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
             (key) => (node[key] = fk.override[key])
           );
         }
-        // --Testing---------
-        // console.log(node)
         return node;
       }),
     ];
@@ -409,7 +349,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
         console.log(submitter.createSubmitters.submitters[0].uuid)
         console.log("completed keycloak connection to submitter!")
 
-        setLastSubmission(new Date().toUTCString())
+        setLastSubmission(`Submissions-${new Date().toUTCString()}`)
         setPatientIdentifier({ submitter_donor_id: uniqueIdsFormState['submitter_donor_id'], program_id: uniqueIdsFormState['program_id'] })
 
         alert("Form submitted!")
@@ -605,11 +545,10 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
             );
           })}
         </Form.Group>
-        <DraftContent
-          key={lastDraftUpdate} // this state variable gets updated whenever the drafts change
+        <DraftTable
+          key={`Drafts-${lastDraftUpdate}`} // this state variable gets updated whenever the drafts change
           metadata={metadata}
-          headers={getTableHeaders()}
-          uniqueIdsFormState={uniqueIdsFormState}
+          headers={getTableHeaders}
           patientIdentifier={patientIdentifier}
           setGlobalFormState={setGlobalFormState}
           setLastDraftUpdate={setLastDraftUpdate}
@@ -622,7 +561,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
           </Header>
         </Divider>
         <FormTable
-          key={lastSubmission} // this state variable gets updated when the form is submitted
+          key={`Submissions-${lastSubmission}`} // this state variable gets updated when the form is submitted
           form={metadata.form_id}
           searchForRootForm={isRootForm}
           globalIdentifierKeys={getKeyValuePairs(

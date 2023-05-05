@@ -1,10 +1,59 @@
 import * as React from 'react'
-import { Button, Table } from 'semantic-ui-react'
-import { useMutation } from '@apollo/client'
+import { Button, Divider, Header, Icon, Table } from 'semantic-ui-react'
+import { useMutation, useQuery } from '@apollo/client'
 import { toTitle, toDateString } from './utils'
-import { DeleteDraft } from '../queries/query'
+import { LoadingSegment } from "../../common/LoadingSegment";
+import { FindDraft, DeleteDraft } from '../queries/query'
+import { BasicErrorMessage } from '../../common/BasicErrorMessage';
 
-export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFormState, setLastDraftUpdate }) => {
+type DraftSearchInfo = {
+  form_id: String,
+  patient_id: String,
+  secondary_ids?: String
+}
+
+export function DraftTable({ metadata, headers, patientIdentifier, setGlobalFormState, setLastDraftUpdate }) {
+  // attempt to find drafts for the current form/patient combination
+  const draftInfo: DraftSearchInfo = { 
+    form_id: metadata.form_id,
+    patient_id: JSON.stringify(patientIdentifier)
+  }
+
+  const { loading: draftsLoading, error: draftsError, data: drafts } = useQuery(FindDraft, {
+    variables: {
+      where: draftInfo
+    },
+    fetchPolicy: "network-only"
+  })
+
+  if (draftsLoading) {
+    return <LoadingSegment />
+  }
+
+  if (draftsError) {
+    return <BasicErrorMessage />
+  }
+
+  return (
+    <>
+      <Divider hidden />
+      <Divider horizontal>
+        <Header as="h4">
+          <Icon name="save" />
+          DRAFTS
+        </Header>
+      </Divider>
+      <DraftTableContents
+        drafts={drafts.formDrafts}
+        setLastDraftUpdate={setLastDraftUpdate}
+        headers={headers}
+        updateGlobalFormState={setGlobalFormState}
+      />
+    </>
+  )
+}
+
+const DraftTableContents = ({ drafts, headers, updateGlobalFormState, setLastDraftUpdate }) => {
 
   let table = null
   const [deleteDraft] = useMutation(DeleteDraft)
@@ -31,13 +80,13 @@ export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFor
     const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
 
     table = (
+      <div>
         <Table fixed selectable aria-labelledby="header" striped>
-          <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
 
           <Table.Header>
             <Table.Row>
               {
-                Object.values(headers).map((header) => {
+                Object.values(headers()).map((header) => {
                   return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
                 })
               }
@@ -49,7 +98,8 @@ export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFor
               drafts.map((draft) => {
                 const data = JSON.parse(draft.data) // the data that is used to save the draft
                 const row = { // the visual representation of the full draft
-                  ...patientIdentifier,
+                  ...JSON.parse(draft.patient_id),
+                  ...JSON.parse(draft.secondary_ids),
                   ...data
                 }
 
@@ -58,41 +108,40 @@ export const DraftTable = ({ drafts, headers, patientIdentifier, updateGlobalFor
                 transformData(data, re)
 
                 return (
-                <>
                   <Table.Row key={draft.draft_id} onClick={() => {
                     updateGlobalFormState(data)
                   }}>{
-                    Object.keys(headers).map((key) => {
-                      let value = row.hasOwnProperty(key) ? row[key] : ""
+                      Object.keys(headers()).map((key) => {
+                        let value = row.hasOwnProperty(key) ? row[key] : ""
 
-                      const isDate = re.test(value)
-                      
-                      // transform the cell's value for better reading if necessary
-                      if (isDate) {
-                        value = toDateString(value)
-                      } else if (Array.isArray(value)) {
-                        value = value.join(', ')
-                      }
+                        const isDate = re.test(value)
 
-                      return (
-                        <Table.Cell
-                          key={`${draft.draft_id}-${key}-${value}`}
-                        >
-                          { value }
-                        </Table.Cell>
-                      )
-                    })
-                  }
+                        // transform the cell's value for better reading if necessary
+                        if (isDate) {
+                          value = toDateString(value)
+                        } else if (Array.isArray(value)) {
+                          value = value.join(', ')
+                        }
+
+                        return (
+                          <Table.Cell
+                            key={`${draft.draft_id}-${key}-${value}`}
+                          >
+                            { value }
+                          </Table.Cell>
+                        )
+                      })
+                    }
                     <Table.Cell key={`${draft.draft_id}-delete`} textAlign="center">
-                      <Button negative icon='trash' onClick={() => {removeDraft(draft)}} />
+                      <Button negative icon='trash' onClick={() => { removeDraft(draft) }} />
                     </Table.Cell>
                   </Table.Row>
-                </>)
+                )
               })
             }
           </Table.Body>
-          </div>
         </Table>
+      </div>
     )
   } else { // invalid results, return an empty tag
     table = (

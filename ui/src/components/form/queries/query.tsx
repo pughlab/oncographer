@@ -235,6 +235,7 @@ export const FindDraft = gql`
       draft_id
       form_id
       patient_id
+      secondary_ids
       data
     }
   }
@@ -246,6 +247,7 @@ export const CreateDraft = gql`
         draft_id
         form_id
         patient_id
+        secondary_ids
         data
       }
     }

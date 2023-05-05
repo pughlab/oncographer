@@ -39,6 +39,7 @@
     draft_id: ID! @id
     form_id: String!
     patient_id: String!
+    secondary_ids: String # Secondary IDs are fields that are unique to a form, but are not part of the patient's data
     data: String
   }
 
