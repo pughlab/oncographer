@@ -71,7 +71,9 @@ export const FormTable = ({
   );
 
   const filterQueryIfEmptyString = searchForRootForm ? formPrimaryIdentifierKeys : globalIdentifierKeys
-  if (Object.values(filterQueryIfEmptyString).filter((x : string) => !x.replace(/\s/g, '').length).length > 0){
+  if (filterQueryIfEmptyString !== undefined && Object.values(filterQueryIfEmptyString).filter(
+    (x) => x !== undefined && String(x).replace(/\s/g, '').length === 0
+  ).length > 0){
     return <></>
   }
 
@@ -79,12 +81,13 @@ export const FormTable = ({
     return <LoadingSegment />
   }
 
-  // checks if the query shows up empty if so do not return anythng
-  if (data.submitters === undefined || (data.submitters !== undefined &&data.submitters.length === 0)) return <></>;
-
   if (error) {
     return <BasicErrorMessage />
   }
+  
+  // checks if the query shows up empty if so do not return anythng
+  if (data.submitters === undefined || (data.submitters !== undefined &&data.submitters.length === 0)) return <></>;
+
 
   return (
     <TableToolDisplay

@@ -55,7 +55,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
     .reduce((obj, key) => {
       obj[key] = uniqueIdsFormState[key]
       return obj
-    }, {})
+    }, {}) || {}
 
   //  Is a reference to root of the form directed acyclic graph in which all forms use their primary key
   const globalIdentifierKeys = metadata.identifier.filter(
@@ -551,6 +551,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
           headers={getTableHeaders}
           patientIdentifier={patientIdentifier}
           setGlobalFormState={setGlobalFormState}
+          setUniqueIdFormState={setUniqueIdFormState}
           setLastDraftUpdate={setLastDraftUpdate}
         /> 
         <Divider hidden />

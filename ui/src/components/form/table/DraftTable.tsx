@@ -12,7 +12,14 @@ type DraftSearchInfo = {
   secondary_ids?: String
 }
 
-export function DraftTable({ metadata, headers, patientIdentifier, setGlobalFormState, setLastDraftUpdate }) {
+export function DraftTable({ 
+  metadata,
+  headers,
+  patientIdentifier,
+  setGlobalFormState,
+  setUniqueIdFormState,
+  setLastDraftUpdate }
+) {
   // attempt to find drafts for the current form/patient combination
   const draftInfo: DraftSearchInfo = { 
     form_id: metadata.form_id,
@@ -48,12 +55,13 @@ export function DraftTable({ metadata, headers, patientIdentifier, setGlobalForm
         setLastDraftUpdate={setLastDraftUpdate}
         headers={headers}
         updateGlobalFormState={setGlobalFormState}
+        updateUniqueIdFormState={setUniqueIdFormState}
       />
     </>
   )
 }
 
-const DraftTableContents = ({ drafts, headers, updateGlobalFormState, setLastDraftUpdate }) => {
+const DraftTableContents = ({ drafts, headers, updateGlobalFormState, setLastDraftUpdate, updateUniqueIdFormState }) => {
 
   let table = null
   const [deleteDraft] = useMutation(DeleteDraft)
@@ -80,13 +88,13 @@ const DraftTableContents = ({ drafts, headers, updateGlobalFormState, setLastDra
     const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
 
     table = (
-      <div>
-        <Table fixed selectable aria-labelledby="header" striped>
+      <Table fixed selectable aria-labelledby="header" striped>
+        <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
 
           <Table.Header>
             <Table.Row>
               {
-                Object.values(headers()).map((header) => {
+                Object.values(headers()).map((header: any) => {
                   return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
                 })
               }
@@ -96,10 +104,12 @@ const DraftTableContents = ({ drafts, headers, updateGlobalFormState, setLastDra
           <Table.Body>
             {
               drafts.map((draft) => {
+                const patientId = JSON.parse(draft.patient_id)
+                const secondaryIds = JSON.parse(draft.secondary_ids) || {}
                 const data = JSON.parse(draft.data) // the data that is used to save the draft
                 const row = { // the visual representation of the full draft
-                  ...JSON.parse(draft.patient_id),
-                  ...JSON.parse(draft.secondary_ids),
+                  ...patientId,
+                  ...secondaryIds,
                   ...data
                 }
 
@@ -110,6 +120,10 @@ const DraftTableContents = ({ drafts, headers, updateGlobalFormState, setLastDra
                 return (
                   <Table.Row key={draft.draft_id} onClick={() => {
                     updateGlobalFormState(data)
+                    updateUniqueIdFormState({
+                      ...patientId,
+                      ...secondaryIds
+                    })
                   }}>{
                       Object.keys(headers()).map((key) => {
                         let value = row.hasOwnProperty(key) ? row[key] : ""
@@ -140,8 +154,8 @@ const DraftTableContents = ({ drafts, headers, updateGlobalFormState, setLastDra
               })
             }
           </Table.Body>
-        </Table>
-      </div>
+        </div>
+      </Table>
     )
   } else { // invalid results, return an empty tag
     table = (

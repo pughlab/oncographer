@@ -2,6 +2,57 @@ import { Table } from "semantic-ui-react";
 import { toTitle } from "./utils";
 import * as React from "react";
 
+function TableContents({ headers, forms, sortFields, onRowClicked }) {
+  return (
+    <>
+      <Table.Header style={{ position: "sticky", top: 0, background: 0.0, opacity: 1 }}>
+        <Table.Row >
+          {headers.map((p: String) => {
+            return <Table.HeaderCell key={p}>{toTitle(p, '_')}</Table.HeaderCell>;
+          })}
+        </Table.Row>
+      </Table.Header>
+
+      <Table.Body>
+        {forms.map((form) => {
+          let { values, references, primaryFormIdentifier } =
+            sortFields(form);
+          let sortedFields = {
+            ...primaryFormIdentifier,
+            ...references,
+            ...values,
+          };
+          return (
+            <Table.Row
+              key={form}
+              onClick={() => {
+                onRowClicked(values, {
+                  ...primaryFormIdentifier,
+                  ...references,
+                });
+              }}
+            >
+              {headers.map((header) => {
+                let cell = sortedFields[header];
+                const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
+
+                if (re.test(sortedFields[header])) {
+                  cell = new Date(cell);
+                  cell = `${cell.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                  })}`;
+                }
+                return <Table.Cell key={sortedFields[header]}>{cell}</Table.Cell>;
+              })}
+            </Table.Row>
+          );
+        })}
+      </Table.Body>
+    </>
+  )
+}
+
 export default function TableToolDisplay({
   metadata,
   ids,
@@ -38,7 +89,7 @@ export default function TableToolDisplay({
 
     return [
       ...Object.keys(ids),
-      ...form.fields.map((fld) => fld.key),
+      ...form.fields.map((field) => field.key),
     ];
   };
 
@@ -66,7 +117,6 @@ export default function TableToolDisplay({
       }
     })
 
-    console.log(keys, fields)
     // change the global state form
     updateGlobalFormState(fields);
     // change Unique Ids within the Form State
@@ -80,109 +130,27 @@ export default function TableToolDisplay({
   if (!typeofdisplay.length) return <></>;
   
   const sortedHeaders = sortHeadersForTableTool(ids, typeofdisplay[0]);
-  let tableSize = sortedHeaders.length > 10
+  let bigTable = sortedHeaders.length > 10
   return (
-    <>
+    <Table fixed selectable aria-labelledby="header" striped>
     {
-      tableSize ? 
-      <Table fixed selectable aria-labelledby="header" striped>
+      bigTable ?
         <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
-
-        <Table.Header  style={{ position: "sticky", top: 0, background: 0.0, opacity: 1 }}>
-          <Table.Row >
-            {sortedHeaders.map((p) => {
-              return <Table.HeaderCell key={p}>{toTitle(p, '_')}</Table.HeaderCell>;
-            })}
-          </Table.Row>
-        </Table.Header>
-
-        <Table.Body>
-          {typeofdisplay.map((form) => {
-            let { values, references, primaryFormIdentifier } =
-              sortFormFieldsDataForTableTool(form);
-            let sortedFields = {
-              ...primaryFormIdentifier,
-              ...references,
-              ...values,
-            };
-            return (
-              <Table.Row
-                key={form}
-                onClick={() => {
-                  onTableToolRowClicked(values, {
-                    ...primaryFormIdentifier,
-                    ...references,
-                  });
-                }}
-              >
-                {sortedHeaders.map((fld) => {
-                  let cell = sortedFields[fld];
-                  const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
-
-                  if (re.test(sortedFields[fld])) {
-                    cell = new Date(cell);
-                    cell = `${cell.toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                    })}`;
-                  }
-                  return <Table.Cell key={sortedFields[fld]}>{cell}</Table.Cell>;
-                })}
-              </Table.Row>
-            );
-          })}
-        </Table.Body>
+          <TableContents 
+            forms={typeofdisplay}
+            headers={sortedHeaders}
+            onRowClicked={onTableToolRowClicked}
+            sortFields={sortFormFieldsDataForTableTool}
+          />
         </div>
-
-        </Table>
       : 
-        <Table fixed selectable aria-labelledby="header" striped>
-          <Table.Header >
-            <Table.Row >
-              {sortedHeaders.map((p) => {
-                return <Table.HeaderCell key={p}>{toTitle(p, '_')}</Table.HeaderCell>;
-              })}
-            </Table.Row>
-          </Table.Header>
-  
-          <Table.Body>
-            {typeofdisplay.map((form) => {
-              let { values, references, primaryFormIdentifier } =
-                sortFormFieldsDataForTableTool(form);
-              let sortedFields = {
-                ...primaryFormIdentifier,
-                ...references,
-                ...values,
-              };
-              return (
-                <Table.Row
-                  key={form}
-                  onClick={() => {
-                    onTableToolRowClicked(values, {
-                      ...primaryFormIdentifier,
-                      ...references,
-                    });
-                  }}
-                >
-                  {sortedHeaders.map((fld) => {
-                    let cell = sortedFields[fld];
-                    const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
-  
-                    if (re.test(sortedFields[fld])) {
-                      cell = new Date(cell);
-                      cell = `${cell.toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                      })}`;
-                    }
-                    return <Table.Cell key={sortedFields[fld]}>{cell}</Table.Cell>;
-                  })}
-                </Table.Row>
-              );
-            })}
-          </Table.Body>  
-        </Table>
-        }
-    </>
+        <TableContents 
+          forms={typeofdisplay}
+          headers={sortedHeaders}
+          onRowClicked={onTableToolRowClicked}
+          sortFields={sortFormFieldsDataForTableTool}
+        />
+    }
+    </Table>
   );
 }
