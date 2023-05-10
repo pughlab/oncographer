@@ -659,7 +659,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
                       <Form.TextArea
                         name={fld.name}
                         rows={4}
-                        value={globalFormState[fld.name]}
+                        value={globalFormState[fld.name] ?? ''}
                         // type={fld.type}
                         // label={fld.label}
                         placeholder={fld.placeholder}
@@ -708,7 +708,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
                       </div>
                       <Form.Input
                         name={fld.name}
-                        value={globalFormState[fld.name]}
+                        value={globalFormState[fld.name] ?? ''}
                         type={fld.type}
                         // label={fld.label}
                         placeholder={fld.placeholder}
@@ -819,12 +819,12 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
                         key={fld.name}
                         search
                         name={fld.name}
-                        value={fld.type === "mutiple" && globalFormState[fld.name] === "" ? [] : globalFormState[fld.name]}
+                        value={fld.type === "mutiple" ? globalFormState[fld.name] ?? [] : []}
                         multiple={fld.type === "mutiple"}
                         placeholder={fld.placeholder}
                         // label={fld.label}
                         options={option[fld.name]}
-                        onChange={(e, { name, value }) => {
+                        onChange={(_e, { name, value }) => {
                           const recheckValueValidation =
                             validators[name].safeParse(value);
                           if (recheckValueValidation.success) {

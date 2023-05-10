@@ -1,4 +1,4 @@
-import { Table } from "semantic-ui-react";
+import { List, Table } from "semantic-ui-react";
 import { toTitle } from "./utils";
 import * as React from "react";
 
@@ -42,6 +42,8 @@ function TableContents({ headers, forms, sortFields, onRowClicked }) {
                     year: "numeric",
                     month: "long",
                   })}`;
+                } else if (Array.isArray(cell)){
+                  cell = <List>{cell.map((value) => <List.Item key={value}>{value}</List.Item>)}</List>
                 }
                 return <Table.Cell key={sortedFields[header]}>{cell}</Table.Cell>;
               })}
@@ -96,7 +98,6 @@ export default function TableToolDisplay({
   const onTableToolRowClicked = (fields, keys) => {
     // regular expression to collect the dates and convert them to Date object
     const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
-    const keysOfObject = Object.keys(keys)
     // check if any of the fields is Date parsable
     // if so change it to a Date Object
     // Reason is react-Datepicker only takes null or a Date Object
@@ -112,7 +113,7 @@ export default function TableToolDisplay({
     });
     
     sortedHeaders.forEach((header) =>{
-      if (Object.keys(ids).includes(header) && !keysOfObject.includes(header)){
+      if (Object.keys(ids).includes(header) && !Object.keys(keys).includes(header)){
         keys[header] = ""
       }
     })

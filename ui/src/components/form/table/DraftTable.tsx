@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Button, Divider, Header, Icon, Table } from 'semantic-ui-react'
+import { Button, Divider, Header, Icon, List, Table } from 'semantic-ui-react'
 import { useMutation, useQuery } from '@apollo/client'
 import { toTitle, toDateString } from './utils'
 import { LoadingSegment } from "../../common/LoadingSegment";
@@ -134,7 +134,7 @@ const DraftTableContents = ({ drafts, headers, updateGlobalFormState, setLastDra
                         if (isDate) {
                           value = toDateString(value)
                         } else if (Array.isArray(value)) {
-                          value = value.join(', ')
+                          value = <List>{ value.map((item) => <List.Item key={item}>{item}</List.Item>) }</List>
                         }
 
                         return (
