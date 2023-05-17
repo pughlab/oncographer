@@ -28,6 +28,19 @@
     formReferenceKeys                  : [Submitter!]! @relationship(type : "REFERENCE_PRIMARY_KEY", direction : OUT)
     connectedFormsReferencingSubmitter : [Submitter!]! @relationship(type : "REFERENCE_PRIMARY_KEY", direction : IN)
      
+    submittedByKeycloakUser            : KeycloakUser! @relationship(type : "SUBMITTED_BY", direction : OUT) 
+  }
+
+  type FormDraft {
+    """
+      FormDraft allows the user to save a draft of any form they are currently
+      editing so they do not lose the data they have already input
+    """
+    draft_id: ID! @id
+    form_id: String!
+    patient_id: String!
+    secondary_ids: String # Secondary IDs are fields that are unique to a form, but are not part of the patient's data
+    data: String
   }
 
   type Form {

@@ -9,15 +9,12 @@ import { shallowEqual } from 'react-redux';
 import {Logo} from '../logos'
 import {LOGIN_MENU_ELEMENT_ID} from '../intros/PortalNavBarIntro'
 
-export default function LoginModal ({}) {
-  console.log('test')
+export default function LoginModal () {
   // const {keycloakUser} = state
   // const {name, email} = keycloakUser
   const [open, setOpen] = useState(false)
   const { keycloak, initialized } = useKeycloak()
   const keycloakMe = useAppSelector(currentAppContextKeycloakMe, shallowEqual)
-  console.log("keycloak me:")
-  console.log(keycloakMe)
   if (!keycloakMe) {
     return (
       <Menu.Item

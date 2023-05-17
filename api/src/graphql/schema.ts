@@ -1,4 +1,4 @@
-import { mergeTypeDefs, mergeSchemas, mergeResolvers } from '@graphql-tools/merge'
+import { mergeTypeDefs, mergeResolvers } from '@graphql-tools/merge'
 const { KeycloakTypeDefs, KeycloakSchemaDirectives } = require('keycloak-connect-graphql')
 import { loadFilesSync } from '@graphql-tools/load-files'
 import path from 'path'
@@ -13,7 +13,7 @@ const customResolvers = loadFilesSync(path.join(__dirname, './resolvers'))
 export const typeDefs = mergeTypeDefs([... autoTypeDefs, KeycloakTypeDefs, ])
 
 const neo4jSchema = new Neo4jGraphQL({
-    typeDefs: mergeTypeDefs([... autoTypeDefs, KeycloakTypeDefs ]),
+    typeDefs: typeDefs,
     resolvers: mergeResolvers([... customResolvers, {Upload: GraphQLUpload}]),
     schemaDirectives: KeycloakSchemaDirectives,
     logger: {log: e => console.log(e)}

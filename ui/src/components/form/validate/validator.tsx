@@ -5,7 +5,7 @@ import {z} from 'zod'
  * @param {field}   
  * @returns 
  */
- export function zodifiyField(field) {  
+ export function zodifyField(field) {  
   
     let schema : any = z
   
@@ -29,15 +29,18 @@ import {z} from 'zod'
           break;
         case "mutiple":
         schema = schema.array(z.any()) // Array[any]
-        break;
+          break;
+        case "textarea":
+          schema = schema.string().min(1, { message: "Must be 1 or more characters long"}); // any string whith a min character length of 1
+          break;
         default:
-          throw `There is something wrong with the field schema type: ${type}\ndoes not exist...`
+          throw new Error(`There is something wrong with the field schema type: ${field.type}\ndoes not exist...`)
     }
   
     // define a possible min, and max
     if (["number", "integer"].includes(field.type.toLowerCase())){
-      field.set.min === null ? schema : schema.min(field.set.min, { message : `The minimum number you can enter is ${field.set.min}`})
-      field.set.max === null ? schema : schema.max(field.set.max, { message : `The maximum number you can enter is ${field.set.max}`})
+      schema = field.set.min === null ? schema : schema.min(field.set.min, { message : `The minimum number you can enter is ${field.set.min}`})
+      schema = field.set.max === null ? schema : schema.max(field.set.max, { message : `The maximum number you can enter is ${field.set.max}`})
     }
   
     // check if the field contain a regex

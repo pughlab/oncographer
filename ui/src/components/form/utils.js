@@ -47,7 +47,7 @@ export const validateFormFieldInputs = (
 };
 
 
-export const doesSumbitterExist = (data) => {
+export const doesSubmitterExist = (data) => {
 
   return Boolean(data)
 }
@@ -104,7 +104,7 @@ export const constructDropdown = (values, menu = []) => {
 };
 
 
-export const getKeysValuePair = (keys, object) => {
+export const getKeyValuePairs = (keys, object) => {
   let tempObject = {} // initialize object
 
   // look through the array of keys
@@ -116,7 +116,7 @@ export const getKeysValuePair = (keys, object) => {
 }
 
 // sort just the reference keys that are not global identifier
-export const sortSubmitterByFormId = (feildState, fks, deleteNonFullBucket=true, uuids={}) => {
+export const sortSubmitterByFormId = (fieldState, fks, deleteNonFullBucket=true, uuids={}) => {
 
   let bucket = new Object() // initialize bucket will hold all the 
                   // primary keys of each foreign keys referenced in form
@@ -143,17 +143,17 @@ export const sortSubmitterByFormId = (feildState, fks, deleteNonFullBucket=true,
       ...bucket[fk.node.primaryFormIdentifiers.form_id],
       formPrimaryIdentifierKeys: {
         ...bucket[fk.node.primaryFormIdentifiers.form_id].formPrimaryIdentifierKeys,
-        ...getKeysValuePair([fk.node.name], feildState),
+        ...getKeyValuePairs([fk.node.name], fieldState),
         
       },
     };
 
-    if (deleteNonFullBucket && feildState[fk.node.name] === "" ||  feildState[fk.node.name] === undefined) delete bucket[fk.node.primaryFormIdentifiers.form_id] // do not include the form if it's not been full filled out
+    if (deleteNonFullBucket && fieldState[fk.node.name] === "" ||  fieldState[fk.node.name] === undefined) delete bucket[fk.node.primaryFormIdentifiers.form_id] // do not include the form if it's not been full filled out
   
   });
 
   // return an array of all the referenced forms 
-  return !Object.keys(bucket).length ? [] : Object.keys(bucket).map(reference => (bucket[reference]))
+  return Object.keys(bucket).length ? Object.keys(bucket).map(reference => (bucket[reference])) : []
 }
 
 export const submitterReferenceFormsRelationalCardinality = (fks) => {
@@ -175,7 +175,7 @@ export const submitterReferenceFormsRelationalCardinality = (fks) => {
 export const ParseFormToGraphQL = (form, fields) => {
   return {"form": form.form_id,
           "uuid": uuidv4(),
-          "formPrimaryIdentifierKeys" : getKeysValuePair(fields.formPrimaryIdentifierKeys.map(pk => pk.name), form.ids),
+          "formPrimaryIdentifierKeys" : getKeyValuePairs(fields.formPrimaryIdentifierKeys.map(pk => pk.name), form.ids),
           "fields" : {
             "create" : [...ObjectInputType(form.fields ,fields.formFieldsMetadata, form.context)]
           },
@@ -185,7 +185,7 @@ export const ParseFormToGraphQL = (form, fields) => {
                             {"where": 
                               {"node": { "OR" : [
                                               ...sortSubmitterByFormId(form.ids, fields.formReferenceKeys, true, form.uuids ),
-                                              { "formPrimaryIdentifierKeys" : getKeysValuePair(fields.globalIdentifierKeys.map(id => id.name), form.ids)}
+                                              { "formPrimaryIdentifierKeys" : getKeyValuePairs(fields.globalIdentifierKeys.map(id => id.name), form.ids)}
                                           ]
                                        }
                               } 
@@ -223,7 +223,7 @@ export const parseFormFieldsToQueryContext = (fields, state) => {
       formPrimaryIdentifierKeys:
         fields.globalIdentifierKeys.length === 0
           ? null
-          : getKeysValuePair(
+          : getKeyValuePairs(
               fields.globalIdentifierKeys.map((id) => id.name),
               state
             ),
@@ -252,7 +252,7 @@ export const submitterBundleQueryParse = (
         formPrimaryIdentifierKeys:
           self.length === 0
             ? null
-            : getKeysValuePair(
+            : getKeyValuePairs(
                 self.map((id) => id.name),
                 state
               ),
@@ -266,7 +266,7 @@ export const submitterBundleQueryParse = (
       formPrimaryIdentifierKeys:
         root.length === 0
           ? null
-          : getKeysValuePair(
+          : getKeyValuePairs(
               root.map((id) => id.name),
               state
             ),
@@ -276,12 +276,12 @@ export const submitterBundleQueryParse = (
       formPrimaryIdentifierKeys:
         self.length === 0
           ? {}
-          : getKeysValuePair(
+          : getKeyValuePairs(
               self.map((id) => id.name),
               state
             ),
     },
-    refrences: {
+    references: {
       ...(!reference.length
         ? {}
         : { OR: [...sortSubmitterByFormId(state, reference)] }),

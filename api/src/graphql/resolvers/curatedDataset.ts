@@ -1,7 +1,5 @@
 import { listBucketObjects, makePresignedURL } from '../../minio/minio'
-import papa from 'papaparse'
 import { ApolloError } from 'apollo-server'
-import zlib from 'zlib'
 
 
 export const resolvers = {

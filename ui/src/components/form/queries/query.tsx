@@ -1,11 +1,28 @@
 import { gql } from "@apollo/client";
 
-export const getForms = gql`
-query Query {
-  forms{
-    form_name
+export const Forms = gql`
+  query Forms($where: FormWhere = {form_name: "Donor"}) {
+    forms(where: $where) {
+      ...FormID
+      ...Identifier
+      ...PrimaryKey
+      ...ForeignKey
+      ...FormRecursive
+    }
+  }
+
+  fragment FormID on Form {
     form_id
+    form_name
     form_relationship_cardinality
+    next_form {
+      form_id
+      form_name
+      form_relationship_cardinality
+    }
+  }
+
+  fragment Identifier on Form {
     identifier {
       component
       conditionals
@@ -19,6 +36,9 @@ query Query {
       type
       value
     }
+  }
+
+  fragment PrimaryKey on Form {
     primary_key {
       component
       conditionals
@@ -36,7 +56,10 @@ query Query {
         form_relationship_cardinality
       }
     }
-    foreign_key : foreign_keyConnection {
+  }
+
+  fragment ForeignKey on Form {
+    foreign_keyConnection {
       edges {
         relationship_cardinality
         override
@@ -55,12 +78,32 @@ query Query {
           primaryFormIdentifiers {
             form_id
             form_relationship_cardinality
-          }
+          } 
         }
       }
     }
   }
-}
+
+  fragment FormRecursive on Form {
+    next_form {
+      ...FormID
+      ...Identifier
+      ...PrimaryKey
+      ...ForeignKey
+      next_form {
+        ...FormID
+        ...Identifier
+        ...PrimaryKey
+        ...ForeignKey
+        next_form {
+          ...FormID
+          ...Identifier
+          ...PrimaryKey
+          ...ForeignKey
+        }
+      }
+    }
+  }
 `;
 
 export const FieldData = gql`
@@ -100,8 +143,8 @@ query ($where: SubmitterWhere) {
 
 
 export const submitterBundle = gql`
-query bundleFormMetadataChecks($self: SubmitterWhere, $root: SubmitterWhere, $refrences : SubmitterWhere, $form : SubmitterWhere) {
-  # count the amount of nodes that exist within refrence to the root identifier.
+query bundleFormMetadataChecks($self: SubmitterWhere, $root: SubmitterWhere, $references : SubmitterWhere, $form : SubmitterWhere) {
+  # count the amount of nodes that exist within reference to the root identifier.
   # This would be use to check if the form identifiers entered already exist
   root: submitters(where: $root){
   connectedFormsReferencingSubmitterAggregate(where : $self){
@@ -109,13 +152,13 @@ query bundleFormMetadataChecks($self: SubmitterWhere, $root: SubmitterWhere, $re
     }
   }
   # from the root get all referenced form within the current form being
-	# queried as well with the refrence count how many times it has ben used
+	# queried as well with the reference count how many times it has ben used
 	# under the form id; this is nessary to check if it still meets the relational cardinality of
 	# its referenced keys that are not the root 
-  RefrencesConnectionOfRoot : submitters(where : $root){
+  ReferencesConnectionOfRoot : submitters(where : $root){
     form
     formPrimaryIdentifierKeys
-    connectedFormsReferencingSubmitter(where : $refrences){
+    connectedFormsReferencingSubmitter(where : $references){
       form
       formPrimaryIdentifierKeys
       connectedFormsReferencingSubmitterAggregate(where : $form){
@@ -156,7 +199,7 @@ export const NodeGetContext = gql`
 // FIX LATER: change this to it's own resolver that just return boolean if the root exists 
 export const doesRootExist = gql`
 query doseRootExsit($self: SubmitterWhere) {
-  # count the amount of nodes that exist within refrence to the root identifier.
+  # count the amount of nodes that exist within reference to the root identifier.
   # This would be use to check if the form identifiers entered already exist
   root: submitters(where: $self){
 			form
@@ -172,7 +215,50 @@ export const CreateNode = gql`
           key
           value
         }
+        uuid
       }
     }
   }
 `;
+
+export const CreateKeycloakSubmitterConnection = gql `
+  mutation AssignKeycloakUserToSubmitter($submitterID: ID!) {
+    assignKeycloakUserToSubmitter(submitterID: $submitterID) {
+        keycloakUserID
+    }
+  }
+`
+
+export const FindDraft = gql`
+  query FindDraft($where: FormDraftWhere) {
+    formDrafts(where: $where) {
+      draft_id
+      form_id
+      patient_id
+      secondary_ids
+      data
+    }
+  }
+`
+export const CreateDraft = gql`
+  mutation CreateDrafts($input: [FormDraftCreateInput!]!) {
+    createFormDrafts(input: $input) {
+      formDrafts {
+        draft_id
+        form_id
+        patient_id
+        secondary_ids
+        data
+      }
+    }
+  }
+`
+
+export const DeleteDraft = gql`
+  mutation DeleteDrafts($where: FormDraftWhere) {
+    deleteFormDrafts(where: $where) {
+      nodesDeleted
+      relationshipsDeleted
+    }
+  }
+`
