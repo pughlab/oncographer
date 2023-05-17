@@ -819,7 +819,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
                         key={fld.name}
                         search
                         name={fld.name}
-                        value={fld.type === "mutiple" ? globalFormState[fld.name] ?? [] : []}
+                        value={fld.type === "mutiple" && globalFormState[fld.name] === "" ? [] : globalFormState[fld.name]} // ?? [] : []}
                         multiple={fld.type === "mutiple"}
                         placeholder={fld.placeholder}
                         // label={fld.label}
