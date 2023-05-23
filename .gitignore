@@ -12,3 +12,4 @@ docker-compose.macbook.yml
 .vscode
 
 nginx/certs
+docker-compose.prod.yml
