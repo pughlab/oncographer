@@ -6,7 +6,7 @@ export const WelcomeMessage = () => {
     return (
         <Segment color={'teal'}>
         <Message >
-            <Message.Header>Welcome to mCODER2!</Message.Header>
+            <Message.Header>Welcome to OncoGrapher!</Message.Header>
             <p>Enter a Donor ID in the search form above or select a form on the left menu to begin abstracting.</p>
         </Message>
 
