@@ -58,8 +58,7 @@ function TableContents({ headers, forms, sortFields, onRowClicked }) {
 export default function TableToolDisplay({
   metadata,
   ids,
-  updateGlobalFormState,
-  updateUniqueIdsFormState,
+  fillForm
 }) {
   if (metadata === undefined) return <></>;
 
@@ -89,13 +88,13 @@ export default function TableToolDisplay({
 
   const sortHeadersForTableTool = (ids, form) => {
 
-    return [
+    return [...new Set([
       ...Object.keys(ids),
       ...form.fields.map((field) => field.key),
-    ];
+    ])];
   };
 
-  const onTableToolRowClicked = (fields, keys) => {
+  const onTableToolRowClicked = (fields, idKeys) => {
     // regular expression to collect the dates and convert them to Date object
     const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
     // check if any of the fields is Date parsable
@@ -113,15 +112,14 @@ export default function TableToolDisplay({
     });
     
     sortedHeaders.forEach((header) =>{
-      if (Object.keys(ids).includes(header) && !Object.keys(keys).includes(header)){
-        keys[header] = ""
+      if (Object.keys(ids).includes(header) && !Object.keys(idKeys).includes(header)){
+        idKeys[header] = ""
       }
     })
-
-    // change the global state form
-    updateGlobalFormState(fields);
-    // change Unique Ids within the Form State
-    updateUniqueIdsFormState((prev) => ({...prev, ...keys}));
+    fillForm({
+      fields: fields,
+      IDs: Object.keys(ids).map((key) => { return { [key]: ids[key] }})
+    })
   };
 
   const typeofdisplay = "connectedFormsReferencingSubmitter" in metadata[0]

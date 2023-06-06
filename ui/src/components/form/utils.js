@@ -35,12 +35,9 @@ export const validateFormFieldInputs = (
 
     if (!validate.success) {
       stopPopulatingProcess = true;
-      setErrorDisplay((err) => ({
-        ...err,
-        [key]: ParseError(validate.error.issues),
-      }));
+      setErrorDisplay({ [key]: ParseError(validate.error.issues) });
     } else if (errordisplay[key] !== null) {
-      setErrorDisplay((err) => ({ ...err, [key]: null }));
+      setErrorDisplay({ [key]: null });
     }
   }
   return stopPopulatingProcess;
@@ -110,7 +107,7 @@ export const getKeyValuePairs = (keys, object) => {
   // look through the array of keys
   // and store it in temp object.
   keys.forEach((key) => {
-    tempObject[key] = object[key] // with the given keys assign key and value within that object
+    tempObject[key] = object[key] || "" // with the given keys assign key and value within that object
   })
   return tempObject
 }

@@ -49,8 +49,7 @@ export const FormTable = ({
   globalIdentifierKeys,
   identifierKeys,
   formPrimaryIdentifierKeys,
-  updateUniqueIdsFormState,
-  updateGlobalFormState,
+  fillForm
 }) => {
 
   const { loading, data, error } = useQuery(
@@ -93,8 +92,7 @@ export const FormTable = ({
     <TableToolDisplay
       metadata={data.submitters}
       ids={identifierKeys}
-      updateGlobalFormState={updateGlobalFormState}
-      updateUniqueIdsFormState={updateUniqueIdsFormState}
+      fillForm={fillForm}
     />
   );
 };

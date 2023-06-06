@@ -16,10 +16,9 @@ export function DraftTable({
   metadata,
   headers,
   patientIdentifier,
-  setGlobalFormState,
-  setUniqueIdFormState,
-  setLastDraftUpdate }
-) {
+  setLastDraftUpdate,
+  fillForm
+}) {
   // attempt to find drafts for the current form/patient combination
   const draftInfo: DraftSearchInfo = { 
     form_id: metadata.form_id,
@@ -54,14 +53,13 @@ export function DraftTable({
         drafts={drafts.formDrafts}
         setLastDraftUpdate={setLastDraftUpdate}
         headers={headers}
-        updateGlobalFormState={setGlobalFormState}
-        updateUniqueIdFormState={setUniqueIdFormState}
+        fillForm={fillForm}
       />
     </>
   )
 }
 
-const DraftTableContents = ({ drafts, headers, updateGlobalFormState, setLastDraftUpdate, updateUniqueIdFormState }) => {
+const DraftTableContents = ({ drafts, headers, setLastDraftUpdate, fillForm }) => {
 
   let table = null
   const [deleteDraft] = useMutation(DeleteDraft)
@@ -107,9 +105,12 @@ const DraftTableContents = ({ drafts, headers, updateGlobalFormState, setLastDra
                 const patientId = JSON.parse(draft.patient_id)
                 const secondaryIds = JSON.parse(draft.secondary_ids) || {}
                 const data = JSON.parse(draft.data) // the data that is used to save the draft
-                const row = { // the visual representation of the full draft
+                const ids = {
                   ...patientId,
-                  ...secondaryIds,
+                  ...secondaryIds
+                }
+                const row = { // the visual representation of the full draft
+                  ...ids,
                   ...data
                 }
 
@@ -119,10 +120,9 @@ const DraftTableContents = ({ drafts, headers, updateGlobalFormState, setLastDra
 
                 return (
                   <Table.Row key={draft.draft_id} onClick={() => {
-                    updateGlobalFormState(data)
-                    updateUniqueIdFormState({
-                      ...patientId,
-                      ...secondaryIds
+                    fillForm({
+                      fields: data,
+                      IDs: Object.keys(ids).map((key) => { return { [key]: ids[key] } })
                     })
                   }}>{
                       Object.keys(headers()).map((key) => {
