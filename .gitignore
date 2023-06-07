@@ -10,3 +10,6 @@ ui/.DS_Store
 neo4j
 docker-compose.macbook.yml
 .vscode
+
+nginx/certs
+docker-compose.prod.yml

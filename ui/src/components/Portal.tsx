@@ -22,12 +22,12 @@ const DocsLink = () => {
         id={HOME_MENU_ELEMENT_ID}     
         header
         icon='info circle'
-        href='https://mcoder2.ca' 
+        href='https://oncographer.ca' 
         target='_blank'
       />
     }
   >
-    <Label basic content="Go to mCODER2 Docs:" detail="https://mcoder2.ca" />
+    <Label basic content="Go to OncoGrapher Docs:" detail="https://oncographer.ca" />
   </Popup>
 </>
 )}
@@ -50,7 +50,7 @@ export default function Portal () {
           <Logo href="/" size='tiny' />
           <Menu.Item>
             <Header href="/" size='large'>
-              <strong >mCODER2</strong><strong style={{fontWeight: 100}}>App</strong>
+              <strong >OncoGrapher</strong><strong style={{fontWeight: 100}}>App</strong>
             </Header>
           </Menu.Item>
 
