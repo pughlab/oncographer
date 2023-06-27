@@ -9,8 +9,6 @@ import { BasicErrorMessage } from '../common/BasicErrorMessage';
 
 function ListMenuItem({
   item,
-  patientIdentifier,
-  setPatientIdentifier,
   activeItem,
   setActiveItem
 }) {
@@ -32,8 +30,6 @@ function ListMenuItem({
               return <ListMenuItem
                 key={subform.form_id}
                 item={subform}
-                patientIdentifier={patientIdentifier}
-                setPatientIdentifier={setPatientIdentifier}
                 activeItem={activeItem}
                 setActiveItem={setActiveItem}
               />
@@ -47,8 +43,6 @@ function ListMenuItem({
 
 function ListMenu({ 
   items,
-  patientIdentifier,
-  setPatientIdentifier,
   activeItem,
   setActiveItem
 }) {
@@ -57,8 +51,6 @@ function ListMenu({
       <ListMenuItem
         key={item.form_id}
         item={item}
-        patientIdentifier={patientIdentifier} 
-        setPatientIdentifier={setPatientIdentifier} 
         activeItem={activeItem} 
         setActiveItem={setActiveItem}
       />
@@ -74,7 +66,7 @@ function ListMenu({
   )
 }
 
-export default function FormFactory({ patientIdentifier, setPatientIdentifier }) {
+export default function FormFactory() {
   const { loading, error, data } = useQuery(Forms)
   const [ activeItem, setActiveItem ] = React.useState(null)
 
@@ -96,8 +88,6 @@ export default function FormFactory({ patientIdentifier, setPatientIdentifier })
         <Grid.Column width={3}>
           <ListMenu
             items={data.forms}
-            patientIdentifier={patientIdentifier}
-            setPatientIdentifier={setPatientIdentifier}
             activeItem={activeItem}
             setActiveItem={setActiveItem}
           />
@@ -105,9 +95,7 @@ export default function FormFactory({ patientIdentifier, setPatientIdentifier })
         <Grid.Column width={13}>
           <FormGenerator
             key={activeItem !== null ? activeItem.form_name : data.forms[0].form_name}
-            metadata={activeItem !== null ? activeItem : data.forms[0]}
-            patientIdentifier={patientIdentifier}
-            setPatientIdentifier={setPatientIdentifier} />
+            metadata={activeItem ?? data.forms[0]} />
         </Grid.Column>
       </Grid>
     </Segment>

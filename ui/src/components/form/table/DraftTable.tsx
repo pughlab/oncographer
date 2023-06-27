@@ -122,7 +122,9 @@ const DraftTableContents = ({ drafts, headers, setLastDraftUpdate, fillForm }) =
                   <Table.Row key={draft.draft_id} onClick={() => {
                     fillForm({
                       fields: data,
-                      IDs: Object.keys(ids).map((key) => { return { [key]: ids[key] } })
+                      // IDs: Object.keys(ids).map((key) => { return { [key]: ids[key] } })
+                      primaryIDs: patientId,
+                      secondaryIDs: secondaryIds
                     })
                   }}>{
                       Object.keys(headers()).map((key) => {

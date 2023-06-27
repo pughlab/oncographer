@@ -1,7 +1,9 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { Icon, Form, Segment, Divider, Header } from 'semantic-ui-react'
+import { PatientIdentifierContext } from '../Portal'
 
-const PatientSearchForm = ({ patientIdentifier, setPatientIdentifier }) => {
+const PatientSearchForm = () => {
+  const { patientIdentifier, setPatientIdentifier } = useContext(PatientIdentifierContext)
   return (
     <Segment color='teal'>
       <Divider horizontal>

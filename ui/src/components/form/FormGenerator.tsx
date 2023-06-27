@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useState } from "react";
+import React, { useEffect, useReducer, useState, useContext } from "react";
 import { useQuery, useMutation, useLazyQuery } from "@apollo/client";
 import * as R from "remeda";
 import { Form, Divider, Header, Icon, Button } from "semantic-ui-react";
@@ -31,6 +31,7 @@ import { PrimaryIDField, SecondaryIDField } from "./fields/id";
 import { DateInputField, InputField } from "./fields/input";
 import { TextAreaField } from "./fields/textarea";
 import { LargeSelectField, SmallSelectField } from "./fields/select";
+import { PatientIdentifierContext } from "../Portal";
 
 const initialState = {
   validators: {},
@@ -105,11 +106,13 @@ const formReducer = (state, action) => {
           ...state,
           primaryIDs: {
             ...state.primaryIDs,
-            ...action.payload.IDs.filter((id) => Object.keys(state.primaryIDs).includes(id))
+            // ...action.payload.IDs.filter((id) => Object.keys(state.primaryIDs).includes(id))
+            ...action.payload.primaryIDs
           },
           secondaryIDs: {
             ...state.secondaryIDs,
-            ...action.payload.IDs.filter((id) => Object.keys(state.secondaryIDs).includes(id))
+            //...action.payload.IDs.filter((id) => Object.keys(state.secondaryIDs).includes(id))
+            ...action.payload.secondaryIDs
           },
           fields: {
             ...state.fields,
@@ -121,7 +124,7 @@ const formReducer = (state, action) => {
   }
 }
 
-export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifier }) {
+export function FormGenerator({ metadata }) {
   
   const relationalCardinalityToRoot = metadata.form_relationship_cardinality
   const [coherentConnections, setConnection] = useState(false); // all references keys that are being used exist
@@ -134,6 +137,7 @@ export function FormGenerator({ metadata, patientIdentifier, setPatientIdentifie
   const [createDraft] = useMutation(CreateDraft)
   const [createNode] = useMutation(CreateNode);
   const [createKeycloakSubmitterConnection] = useMutation(CreateKeycloakSubmitterConnection)
+  const { patientIdentifier, setPatientIdentifier } = useContext(PatientIdentifierContext)
 
   function updateValidators(validators) {
     dispatch({

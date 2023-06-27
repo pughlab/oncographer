@@ -7,7 +7,7 @@ function TableContents({ headers, forms, sortFields, onRowClicked }) {
     <>
       <Table.Header style={{ position: "sticky", top: 0, background: 0.0, opacity: 1 }}>
         <Table.Row >
-          {headers.map((p: String) => {
+          {headers.map((p: string) => {
             return <Table.HeaderCell key={p}>{toTitle(p, '_')}</Table.HeaderCell>;
           })}
         </Table.Row>
@@ -118,7 +118,7 @@ export default function TableToolDisplay({
     })
     fillForm({
       fields: fields,
-      IDs: Object.keys(ids).map((key) => { return { [key]: ids[key] }})
+      secondaryIDs: Object.keys(ids).map((key) => { return { [key]: ids[key] }})
     })
   };
 

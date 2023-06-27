@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, createContext } from "react";
 import { Sticky, Menu, Divider, Label, Popup, Header, Icon } from 'semantic-ui-react'
 import useKeycloakMeMutation from '../hooks/useKeycloakMeMutation'
 import dayjs from 'dayjs'
@@ -12,6 +12,8 @@ import PortalNavBarIntro, {HOME_MENU_ELEMENT_ID} from './intros/PortalNavBarIntr
 
 import FormFactory  from './layout/FormFactory';
 import PatientSearchForm from './layout/PatientSearchForm'
+
+export const PatientIdentifierContext = createContext()
 
 const DocsLink = () => {
   return (
@@ -71,12 +73,14 @@ export default function Portal () {
     </Sticky>
 
     <Divider horizontal />
-    <div style={{padding: '1em'}}>
-      <PatientSearchForm patientIdentifier={patientIdentifier} setPatientIdentifier={setPatientIdentifier}/>
-      <Divider horizontal />
+      <PatientIdentifierContext.Provider value={{patientIdentifier, setPatientIdentifier }}>
+        <div style={{padding: '1em'}}>
+          <PatientSearchForm />
+          <Divider horizontal />
 
-      <FormFactory patientIdentifier={patientIdentifier} setPatientIdentifier={setPatientIdentifier}/>
-    </div>
+          <FormFactory />
+        </div>
+      </PatientIdentifierContext.Provider>
     </>
   )
 }
