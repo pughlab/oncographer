@@ -13,7 +13,7 @@ type DraftSearchInfo = {
 }
 
 export function DraftTable({ 
-  metadata,
+  formID,
   headers,
   patientIdentifier,
   setLastDraftUpdate,
@@ -21,7 +21,7 @@ export function DraftTable({
 }) {
   // attempt to find drafts for the current form/patient combination
   const draftInfo: DraftSearchInfo = { 
-    form_id: metadata.form_id,
+    form_id: formID,
     patient_id: JSON.stringify(patientIdentifier)
   }
 
@@ -92,7 +92,7 @@ const DraftTableContents = ({ drafts, headers, setLastDraftUpdate, fillForm }) =
           <Table.Header>
             <Table.Row>
               {
-                Object.values(headers()).map((header: any) => {
+                Object.values(headers).map((header: any) => {
                   return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
                 })
               }
@@ -122,12 +122,11 @@ const DraftTableContents = ({ drafts, headers, setLastDraftUpdate, fillForm }) =
                   <Table.Row key={draft.draft_id} onClick={() => {
                     fillForm({
                       fields: data,
-                      // IDs: Object.keys(ids).map((key) => { return { [key]: ids[key] } })
-                      primaryIDs: patientId,
-                      secondaryIDs: secondaryIds
+                      patientID: patientId,
+                      formIDs: secondaryIds
                     })
                   }}>{
-                      Object.keys(headers()).map((key) => {
+                      Object.keys(headers).map((key) => {
                         let value = row.hasOwnProperty(key) ? row[key] : ""
 
                         const isDate = re.test(value)

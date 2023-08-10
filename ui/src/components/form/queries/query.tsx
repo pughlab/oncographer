@@ -1,12 +1,19 @@
 import { gql } from "@apollo/client";
 
-export const Forms = gql`
-  query Forms($where: FormWhere = {form_name: "Donor"}) {
-    forms(where: $where) {
+export const RootForm = gql`
+  query RootForm {
+    GetRootForm {
+      form_id
+      form_name
+      form_relationship_cardinality
+    }
+  }
+`;
+
+export const FormTree = gql`
+  query FormTree {
+    GetRootForm {
       ...FormID
-      ...Identifier
-      ...PrimaryKey
-      ...ForeignKey
       ...FormRecursive
     }
   }
@@ -22,96 +29,57 @@ export const Forms = gql`
     }
   }
 
-  fragment Identifier on Form {
-    identifier {
-      component
-      conditionals
-      description
-      label
-      name
-      placeholder
-      regex
-      required
-      set
-      type
-      value
-    }
-  }
-
-  fragment PrimaryKey on Form {
-    primary_key {
-      component
-      conditionals
-      description
-      label
-      name
-      placeholder
-      regex
-      required
-      set
-      type
-      value
-      primaryFormIdentifiers {
-        form_id
-        form_relationship_cardinality
-      }
-    }
-  }
-
-  fragment ForeignKey on Form {
-    foreign_keyConnection {
-      edges {
-        relationship_cardinality
-        override
-        node {
-          component
-          conditionals
-          description
-          label
-          name
-          placeholder
-          regex
-          required
-          set
-          type
-          value
-          primaryFormIdentifiers {
-            form_id
-            form_relationship_cardinality
-          } 
-        }
-      }
-    }
-  }
-
   fragment FormRecursive on Form {
     next_form {
       ...FormID
-      ...Identifier
-      ...PrimaryKey
-      ...ForeignKey
       next_form {
         ...FormID
-        ...Identifier
-        ...PrimaryKey
-        ...ForeignKey
         next_form {
           ...FormID
-          ...Identifier
-          ...PrimaryKey
-          ...ForeignKey
         }
       }
     }
   }
 `;
 
+export const FormIDFields = gql`
+  query FormIDFields($where: FormWhere) {
+    forms(where: $where) {
+      form_id
+      form_name
+      fieldsConnection(where: {
+        edge: {
+          isID: true
+        }
+      }) {
+        edges {
+          isID
+          override
+          node {
+            component
+            conditionals
+            description
+            label
+            name
+            regex
+            required
+            set
+            type
+            value
+            filter
+          }
+        }
+      }
+    }
+}
+`;
+
 export const FieldData = gql`
-  query PopulateForm($id: String!) {
+  query GetFormFields($id: String!) {
     # using static query take the form id 
     # and get all connected fields metadata
     # so it can populate the frontend
-    PopulateForm(id: $id) {
+    GetFormFields(id: $id) {
       component
       conditionals
       description
@@ -126,6 +94,45 @@ export const FieldData = gql`
     }
   }
 `;
+
+export const FindPatients = gql`
+  query GetPatient($where: PatientWhere!) {
+    patients (where: $where) {
+      patient_id
+      program_id
+      study
+    }
+  }
+`
+
+export const FindOrCreatePatient = gql`
+  mutation FindOrCreatePatient($patientID: String!, $programID: String!, $study: String) {
+    findOrCreatePatient(patientID: $patientID, programID: $programID, study: $study) {
+      patient_id
+      program_id
+      study
+    }
+  }
+`
+
+export const FindSubmissions = gql`
+  query GetSubmissions($where: SubmissionWhere!) {
+    submissions(where: $where) {
+      submission_id
+      form_id
+      fields {
+        key
+        value
+      }
+      patient {
+        patient_id
+        submitter_donor_id: patient_id
+        program_id
+        study
+      }
+    }
+  }
+`
 
 export const NodeExist = gql`
 query ($where: SubmitterWhere) {
@@ -229,6 +236,14 @@ export const CreateKeycloakSubmitterConnection = gql `
   }
 `
 
+export const CreateUserSubmissionConnection = gql`
+  mutation AssignUserSubmissionConnection($submissionID: ID!) {
+    assignKeycloakUserToSubmission(submissionID: $submissionID) {
+      keycloakUserID
+    }
+  }
+`
+
 export const FindDraft = gql`
   query FindDraft($where: FormDraftWhere) {
     formDrafts(where: $where) {
@@ -259,6 +274,26 @@ export const DeleteDraft = gql`
     deleteFormDrafts(where: $where) {
       nodesDeleted
       relationshipsDeleted
+    }
+  }
+`
+
+export const CreateSubmission = gql`
+  mutation CreateSubmissions($input: [SubmissionCreateInput!]!) {
+    createSubmissions(input: $input) {
+      submissions {
+        submission_id
+        form_id
+        patient {
+          patient_id
+          program_id
+          study
+        }
+        fields {
+          key
+          value
+        }
+      }
     }
   }
 `

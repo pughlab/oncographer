@@ -2,7 +2,7 @@ import * as React from 'react'
 import * as R from 'remeda'
 import { useQuery } from "@apollo/client";
 import { Segment, List, Grid } from "semantic-ui-react";
-import { Forms } from "../form/queries/query";
+import { FormTree } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
@@ -42,32 +42,27 @@ function ListMenuItem({
 }
 
 function ListMenu({ 
-  items,
+  root,
   activeItem,
   setActiveItem
 }) {
-  const menuItems = items.map((item) => {
-    return (
-      <ListMenuItem
-        key={item.form_id}
-        item={item}
-        activeItem={activeItem} 
-        setActiveItem={setActiveItem}
-      />
-    )
-  })
 
   return (
     <Segment basic>
     <List link size="large">
-      {menuItems}
+      <ListMenuItem
+        key={root.form_id}
+        item={root}
+        activeItem={activeItem} 
+        setActiveItem={setActiveItem}
+      />
     </List>
     </Segment>
   )
 }
 
 export default function FormFactory() {
-  const { loading, error, data } = useQuery(Forms)
+  const { loading, error, data } = useQuery(FormTree)
   const [ activeItem, setActiveItem ] = React.useState(null)
 
   if (loading) {
@@ -87,15 +82,16 @@ export default function FormFactory() {
       <Grid>
         <Grid.Column width={3}>
           <ListMenu
-            items={data.forms}
+            root={data.GetRootForm}
             activeItem={activeItem}
             setActiveItem={setActiveItem}
           />
         </Grid.Column>
         <Grid.Column width={13}>
           <FormGenerator
-            key={activeItem !== null ? activeItem.form_name : data.forms[0].form_name}
-            metadata={activeItem ?? data.forms[0]} />
+            key={activeItem !== null ? activeItem.form_name : data.GetRootForm.form_name}
+            formMetadata={activeItem ?? data.GetRootForm}
+          />
         </Grid.Column>
       </Grid>
     </Segment>

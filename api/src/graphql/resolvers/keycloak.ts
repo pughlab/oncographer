@@ -58,6 +58,33 @@ export const resolvers = {
       } catch (error) {
         throw new ApolloError('mutation.me error')
       }
+    },
+    assignKeycloakUserToSubmission: async (obj, { submissionID }, { driver, kauth }) => {
+      const session = driver.session()
+      try {
+        const { sub: keycloakUserID, email, name }  = kauth.accessToken.content
+        const keycloakUser = { keycloakUserID, email, name }
+
+        const existingUser = await session.run(
+          'MATCH (a:KeycloakUser {keycloakUserID: $keycloakUserID}) RETURN a',
+          { keycloakUserID }
+        )
+
+        if (existingUser.records.length > 0) {
+          await session.run(
+            "MATCH (s:Submission {submission_id: $submissionID}), (k:KeycloakUser {keycloakUserID: $keycloakUserID}) MERGE (s)-[:SUBMITTED_BY]->(k) RETURN s, k",
+            { submissionID, keycloakUserID }
+          )
+
+          return keycloakUser
+        } else {
+          throw new ApolloError('Error: The user does not exist')
+        }
+      } catch (error) {
+        throw new Error(`Could not assign the user data to the submission. Caused by: ${error}`)
+      } finally {
+        session.close()
+      }
     }
   },
 }

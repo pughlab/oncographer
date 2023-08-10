@@ -2,11 +2,47 @@ import { v4 as uuidv4 } from "uuid";
 import { ParseError } from "./validate/validator";
 import {z} from 'zod';
 
+export const validateInputs = (
+  state,
+  updateErrorMessages
+) => {
+  const form = {
+    ...state.patientID,
+    ...state.formIDs,
+    ...state.fields
+  }
+  let validationSuccessful = true
+  for (const key in state.validators) {
+    if (
+      state.conditions[key] 
+      && doesFieldNotMeetAllConditions(state.conditions[key], state.fields)
+    ) {
+      continue
+    }
+    let value = form[key]
+    if (
+      z.optional()._def.typeName === state.validators[key]._def.typeName
+      && value === ''
+    ) {
+      value = undefined
+    }
+
+    const validation = state.validators[key].safeParse(value)
+
+    if (!validation.success) {
+      validationSuccessful = false
+      updateErrorMessages({[key]: ParseError(validation.error.issues)})
+    } else if (state.errorMessages[key] !== null) {
+      updateErrorMessages({ [key]: null })
+    }
+  }
+  return validationSuccessful
+}
+
 export const validateFormFieldInputs = (
   uniqueIdsFormState,
   globalFormState,
   conditionalsFields,
-  context,
   validationObject,
   errordisplay,
   setErrorDisplay
@@ -19,8 +55,7 @@ export const validateFormFieldInputs = (
       conditionalsFields[key] &&
       doesFieldNotMeetAllConditions(
         conditionalsFields[key],
-        globalFormState,
-        context
+        globalFormState
       )
     ) {
       continue;
@@ -56,7 +91,7 @@ export const doesSubmitterExist = (data) => {
  * @param {*} ctx (context) An object type, which allows the form to handle inter connection to other form
  * @returns (boolean) if there contains a false condition then some condition within the field is not met
  */
-export const doesFieldNotMeetAllConditions = (conditionals, gfs, ctx={}) => {
+export const doesFieldNotMeetAllConditions = (conditionals, gfs) => {
   // =====================
   // Conditional Handler
   // =====================
@@ -70,15 +105,12 @@ export const doesFieldNotMeetAllConditions = (conditionals, gfs, ctx={}) => {
   if (conditionals === null) return false
   
   Object.keys(conditionals).forEach((key) => {
-      if (gfs[key] === undefined && ctx[key] === undefined) 
-           check.push(false)
-      
+      if (gfs[key] === undefined) 
+          check.push(false)
       else {
-        
-        
         Array.isArray(conditionals[key]) ? 
-        check.push(conditionals[key].includes(gfs[key]) || conditionals[key].includes(ctx[key]) ) :
-        check.push(conditionals[key] === gfs[key] || ctx[key] === conditionals[key] );
+        check.push(conditionals[key].includes(gfs[key])) :
+        check.push(conditionals[key] === gfs[key]);
       }
     });
 
@@ -106,9 +138,11 @@ export const getKeyValuePairs = (keys, object) => {
 
   // look through the array of keys
   // and store it in temp object.
-  keys.forEach((key) => {
-    tempObject[key] = object[key] || "" // with the given keys assign key and value within that object
-  })
+  if (keys) {
+    keys.forEach((key) => {
+      tempObject[key] = object[key] || "" // with the given keys assign key and value within that object
+    })
+  }
   return tempObject
 }
 
@@ -191,6 +225,35 @@ export const ParseFormToGraphQL = (form, fields) => {
             }
           } : {}
          };
+}
+
+export const createSubmissionInput = (formID, state) => {
+  const fields = Object.fromEntries(
+    Object.entries({
+      ...state.formIDs,
+      ...state.fields
+    }).filter(([_key, value]) => value && value !== '')
+  )
+  return {
+    "form_id": formID,
+    "patient": {
+      "connect": {
+        "where": {
+          "node": {
+            patient_id: state.patientID.submitter_donor_id,
+            program_id: state.patientID.program_id
+          }
+        }
+      }
+    },
+    "fields": {
+      "create": Object.keys(fields).map(
+        function(key) { 
+          return { "node": { 'key': key, 'value': fields[key] }}
+        }
+      )
+    }
+  }
 }
 
 /**
