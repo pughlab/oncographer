@@ -3,7 +3,7 @@ import DatePicker from "react-datepicker"
 import { Form, Icon, Popup } from "semantic-ui-react"
 import "react-datepicker/dist/react-datepicker.css"
 
-export function DateInputField({ field, value, isDisabled, errorMessage, validator, updateErrorMessage, updateGlobalState }) {
+export function DateInputField({ field, value, isDisabled, errorMessage, validator, updateErrorMessage, updateValue }) {
     return (
         <Form.Field disabled={isDisabled} error={errorMessage}>
             <div>
@@ -31,7 +31,7 @@ export function DateInputField({ field, value, isDisabled, errorMessage, validat
                             [field.name]: null,
                         });
                     }
-                    updateGlobalState({
+                    updateValue({
                         /* 
                          * we create a structure similar to the event object
                          * so we don't need to rewrite the handler in the reducer
@@ -53,7 +53,7 @@ export function DateInputField({ field, value, isDisabled, errorMessage, validat
     )
 }
 
-export function InputField({ field, value, isDisabled, errorMessage, validator, updateErrorMessage, updateGlobalState }) {
+export function InputField({ field, value, isDisabled, errorMessage, validator, updateErrorMessage, updateValue }) {
     return (
         <Form.Field disabled={isDisabled} error={errorMessage}>
             <div>
@@ -89,7 +89,7 @@ export function InputField({ field, value, isDisabled, errorMessage, validator, 
                             [field.name]: null,
                         });
                     }
-                    updateGlobalState(e);
+                    updateValue(e);
                 }}
                 error={errorMessage}
             />

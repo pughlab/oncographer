@@ -3,7 +3,7 @@ import { Form, Divider, Header, Icon, Button } from "semantic-ui-react"
 import { useMutation, useQuery } from "@apollo/client"
 
 import { validateInputs, doesFieldNotMeetAllConditions, createSubmissionInput } from './utils'
-import { CreateDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FormIDFields, RootForm } from "./queries/query"
+import { CreateDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields, RootForm } from "./queries/query"
 import { SubmissionTable } from "./table/SubmissionTable"
 import { DraftTable } from "./table/DraftTable"
 import { PatientIdentifierContext } from "../Portal"
@@ -154,13 +154,6 @@ export function FormGenerator({ formMetadata }) {
     })
   }
 
-  function updateFields(field) {
-    dispatch({
-      type: 'UPDATE_FIELDS',
-      payload: field
-    })
-  }
-
   function fillForm(payload) {
     dispatch({
       type: 'FILL_FORM',
@@ -195,6 +188,7 @@ export function FormGenerator({ formMetadata }) {
   // Query and mutation variables.
   // Also, helper variables that depend on query results,
   // and helper functions that use these queries/mutations
+  const [findOrCreatePatient] = useMutation(FindOrCreatePatient)
   const [createDraft] = useMutation(CreateDraft)
   const [createSubmission] = useMutation(CreateSubmission)
   const [createUserSubmissionConnection] = useMutation(CreateUserSubmissionConnection)
@@ -315,6 +309,14 @@ export function FormGenerator({ formMetadata }) {
     console.log(submissionInput)
 
     // run the mutation(s)
+    if (isRootForm) {
+      findOrCreatePatient({
+        variables: {
+          patient_id: patientIdentifier.submitter_donor_id,
+          program_id: patientIdentifier.program_id
+        }
+      })
+    }
     createSubmission({
       variables: { input: submissionInput },
       onCompleted: (submission) => {
@@ -323,15 +325,15 @@ export function FormGenerator({ formMetadata }) {
             submissionID: submission.createSubmissions.submissions[0].submission_id
           }
         })
-          .then(() => {
-            console.log(
-              'Connected user to submission '
-              + submission.createSubmissions.submissions[0].submission_id
-            )
-          })
-          .catch(() => {
-            console.log('Could not connect user to submission')
-          })
+        .then(() => {
+          console.log(
+            'Connected user to submission '
+            + submission.createSubmissions.submissions[0].submission_id
+          )
+        })
+        .catch(() => {
+          console.log('Could not connect user to submission')
+        })
 
         setLastSubmissionUpdate(`Submissions-${new Date().toUTCString()}`)
         alert('Form submitted!')
@@ -480,16 +482,18 @@ export function FormGenerator({ formMetadata }) {
               case "input":
                 if (field.type === "month") {
                   component = <DateInputField
+                    key={field.name}
                     field={field}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
                     errorMessage={errorMessage}
                     validator={state.validators[field.name]}
                     updateErrorMessage={updateErrorMessages}
-                    updateGlobalState={handleFieldChange}
+                    updateValue={handleFieldChange}
                   />
                 } else if (field.type === "textarea") {
                   component = <TextAreaField
+                    key={field.name}
                     field={field}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
@@ -500,13 +504,14 @@ export function FormGenerator({ formMetadata }) {
                   />
                 } else {
                   component = <InputField
+                    key={field.name}
                     field={field}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
                     validator={state.validators[field.name]}
                     errorMessage={errorMessage}
                     updateErrorMessage={updateErrorMessages}
-                    updateGlobalState={handleFieldChange}
+                    updateValue={handleFieldChange}
                   />
                 }
                 break
@@ -515,6 +520,7 @@ export function FormGenerator({ formMetadata }) {
 
                 if (state.options[field.name].length <= 4) {
                   component = <SmallSelectField
+                    key={field.name}
                     field={field}
                     isDisabled={isDisabled}
                     errorMessage={errorMessage}
@@ -522,10 +528,11 @@ export function FormGenerator({ formMetadata }) {
                     validator={state.validators[field.name]}
                     value={state.fields[field.name]}
                     updateErrorMessage={updateErrorMessages}
-                    updateGlobalState={handleFieldChange}
+                    updateValue={handleFieldChange}
                   />
                 } else {
                   component = <LargeSelectField
+                    key={field.name}
                     field={field}
                     isDisabled={isDisabled}
                     errorMessage={errorMessage}
@@ -533,7 +540,7 @@ export function FormGenerator({ formMetadata }) {
                     validator={state.validators[field.name]}
                     value={state.fields[field.name]}
                     updateErrorMessage={updateErrorMessages}
-                    updateGlobalState={handleFieldChange}
+                    updateValue={handleFieldChange}
                   />
                 }
                 break

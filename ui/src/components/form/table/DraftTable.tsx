@@ -40,7 +40,7 @@ export function DraftTable({
     return <BasicErrorMessage />
   }
 
-  return (
+  return drafts.formDrafts.length === 0 ? <></> : (
     <>
       <Divider hidden />
       <Divider horizontal>

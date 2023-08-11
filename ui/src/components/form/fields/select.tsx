@@ -3,7 +3,7 @@ import { Form, Icon, Popup } from "semantic-ui-react";
 import * as R from "remeda";
 import { constructDropdown } from '../utils'
 
-export function SmallSelectField({ field, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateGlobalState }) {
+export function SmallSelectField({ field, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
     const processedOptions = constructDropdown(options)
     return (
         <Form.Field disabled={isDisabled} error={errorMessage}>
@@ -39,7 +39,7 @@ export function SmallSelectField({ field, isDisabled, errorMessage, options, val
                                         [field.name]: null,
                                     });
                                 }
-                                updateGlobalState({
+                                updateValue({
                                     target: {
                                         name: field.name,
                                         value: option.value
@@ -57,7 +57,7 @@ export function SmallSelectField({ field, isDisabled, errorMessage, options, val
     )
 }
 
-export function LargeSelectField({ field, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateGlobalState }) {
+export function LargeSelectField({ field, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
     const processedOptions = useMemo(() => {
         return constructDropdown(options)
     }, [options])
@@ -94,7 +94,7 @@ export function LargeSelectField({ field, isDisabled, errorMessage, options, val
                             [field.name]: null,
                         });
                     }
-                    updateGlobalState({
+                    updateValue({
                         target: {
                             name: name,
                             value: value

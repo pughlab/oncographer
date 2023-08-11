@@ -108,25 +108,25 @@ export const resolvers = {
   }),
   Mutation: {
     findOrCreatePatient: async (_obj, args, { driver }) => {
-      const { patientID, programID, study } = args
+      const { patient_id, program_id, study } = args
       const session = driver.session()
 
       try {
         let command = study 
-          ? "MATCH (p:Patient { patient_id: $patientID, program_id: $programID, study: $study }) RETURN p"
-          : "MATCH (p:Patient { patient_id: $patientID, program_id: $programID }) RETURN p"
-        const result = await session.run(command, study ? { patientID, programID, study } : { patientID, programID })
+          ? "MATCH (p:Patient { patient_id: $patient_id, program_id: $program_id, study: $study }) RETURN p"
+          : "MATCH (p:Patient { patient_id: $patient_id, program_id: $program_id }) RETURN p"
+        const result = await session.run(command, study ? { patient_id, program_id, study } : { patient_id, program_id })
 
         if (result.records.length > 0 ) {
           return result.records[0].get('p').properties
         }
 
         command = study
-          ? "CREATE (p:Patient { patient_id: $patientID, program_id: $programID, study: $study }) return p"
-          : "CREATE (p:Patient { patient_id: $patientID, program_id: $programID }) return p"
+          ? "CREATE (p:Patient { patient_id: $patient_id, program_id: $program_id, study: $study }) return p"
+          : "CREATE (p:Patient { patient_id: $patient_id, program_id: $program_id }) return p"
         const createPatient = await session.run(
           command,
-          study ? { patientID, programID, study } : { patientID, programID }
+          study ? { patient_id, program_id, study } : { patient_id, program_id }
         )
 
         return createPatient.records[0].get(0).properties
