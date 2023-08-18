@@ -6,9 +6,11 @@ import { FormTree } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
+import { PatientIdentifierContext } from '../Portal';
 
 function ListMenuItem({
   item,
+  study,
   activeItem,
   setActiveItem
 }) {
@@ -23,13 +25,14 @@ function ListMenuItem({
       <List.Content>
         <a style={isActive ? { color: "#02B5AE" } : {}} onClick={() => {
           setActiveItem(item)
-        }}>{item.form_name}</a>
+        }}>{item.display_name ? item.display_name[study] : item.form_name}</a>
         <List.List>
           {
             item.next_form.map((subform) => {
               return <ListMenuItem
                 key={subform.form_id}
                 item={subform}
+                study={study}
                 activeItem={activeItem}
                 setActiveItem={setActiveItem}
               />
@@ -43,6 +46,7 @@ function ListMenuItem({
 
 function ListMenu({ 
   root,
+  study,
   activeItem,
   setActiveItem
 }) {
@@ -53,6 +57,7 @@ function ListMenu({
       <ListMenuItem
         key={root.form_id}
         item={root}
+        study={study}
         activeItem={activeItem} 
         setActiveItem={setActiveItem}
       />
@@ -62,7 +67,13 @@ function ListMenu({
 }
 
 export default function FormFactory() {
-  const { loading, error, data } = useQuery(FormTree)
+  const defaultStudy = 'mohccn'
+  const { patientIdentifier } = React.useContext(PatientIdentifierContext)
+  const { loading, error, data } = useQuery(FormTree, {
+    variables: {
+      study: patientIdentifier.study ? patientIdentifier.study : defaultStudy
+    }
+  })
   const [ activeItem, setActiveItem ] = React.useState(null)
 
   if (loading) {
@@ -83,6 +94,7 @@ export default function FormFactory() {
         <Grid.Column width={3}>
           <ListMenu
             root={data.GetRootForm}
+            study={patientIdentifier.study ? patientIdentifier.study : defaultStudy}
             activeItem={activeItem}
             setActiveItem={setActiveItem}
           />
@@ -90,6 +102,7 @@ export default function FormFactory() {
         <Grid.Column width={13}>
           <FormGenerator
             key={activeItem !== null ? activeItem.form_name : data.GetRootForm.form_name}
+            root={data.GetRootForm}
             formMetadata={activeItem ?? data.GetRootForm}
           />
         </Grid.Column>

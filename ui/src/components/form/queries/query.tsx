@@ -1,18 +1,19 @@
 import { gql } from "@apollo/client";
 
 export const RootForm = gql`
-  query RootForm {
-    GetRootForm {
+  query RootForm($study: String!) {
+    GetRootForm(study: $study) {
       form_id
       form_name
       form_relationship_cardinality
+      studies
     }
   }
 `;
 
 export const FormTree = gql`
-  query FormTree {
-    GetRootForm {
+  query FormTree($study: String!) {
+    GetRootForm(study: $study) {
       ...FormID
       ...FormRecursive
     }
@@ -22,10 +23,14 @@ export const FormTree = gql`
     form_id
     form_name
     form_relationship_cardinality
+    studies
+    display_name
     next_form {
       form_id
       form_name
       form_relationship_cardinality
+      studies
+      display_name
     }
   }
 
@@ -67,6 +72,7 @@ export const FormIDFields = gql`
             type
             value
             filter
+            display_name
           }
         }
       }
@@ -91,6 +97,7 @@ export const FieldData = gql`
       type
       value
       filter
+      display_name
     }
   }
 `;

@@ -3,7 +3,7 @@ import { Form, Divider, Header, Icon, Button } from "semantic-ui-react"
 import { useMutation, useQuery } from "@apollo/client"
 
 import { validateInputs, doesFieldNotMeetAllConditions, createSubmissionInput } from './utils'
-import { CreateDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields, RootForm } from "./queries/query"
+import { CreateDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields } from "./queries/query"
 import { SubmissionTable } from "./table/SubmissionTable"
 import { DraftTable } from "./table/DraftTable"
 import { PatientIdentifierContext } from "../Portal"
@@ -103,7 +103,7 @@ const formReducer = (state, action) => {
   }
 }
 
-export function FormGenerator({ formMetadata }) {
+export function FormGenerator({ formMetadata, root }) {
 
   // State and context variables
   const [lastDraftUpdate, setLastDraftUpdate] = useState(`Drafts-${new Date().toUTCString()}`)
@@ -188,11 +188,11 @@ export function FormGenerator({ formMetadata }) {
   // Query and mutation variables.
   // Also, helper variables that depend on query results,
   // and helper functions that use these queries/mutations
+  const isRootForm = formMetadata.form_id === root.form_id
   const [findOrCreatePatient] = useMutation(FindOrCreatePatient)
   const [createDraft] = useMutation(CreateDraft)
   const [createSubmission] = useMutation(CreateSubmission)
   const [createUserSubmissionConnection] = useMutation(CreateUserSubmissionConnection)
-  const { loading: rootFormLoading, error: rootFormError, data: rootForm } = useQuery(RootForm)
   const {
     loading: patientIDFieldsLoading,
     error: patientIDFieldsError,
@@ -200,11 +200,10 @@ export function FormGenerator({ formMetadata }) {
   } = useQuery(FormIDFields, {
     variables: {
       where: {
-        form_id: rootForm.GetRootForm.form_id
+        form_id: root.form_id
       }
     }
   })
-  const isRootForm = formMetadata.form_id === rootForm.GetRootForm.form_id
   const {
     loading: formIDFieldsLoading,
     error: formIDFieldsError,
@@ -306,14 +305,14 @@ export function FormGenerator({ formMetadata }) {
 
     // create the submission input for the graphql mutation(s)
     const submissionInput = createSubmissionInput(formMetadata.form_id, state)
-    console.log(submissionInput)
 
     // run the mutation(s)
     if (isRootForm) {
       findOrCreatePatient({
         variables: {
           patient_id: patientIdentifier.submitter_donor_id,
-          program_id: patientIdentifier.program_id
+          program_id: patientIdentifier.program_id,
+          study: patientIdentifier.study
         }
       })
     }
@@ -339,23 +338,21 @@ export function FormGenerator({ formMetadata }) {
         alert('Form submitted!')
       }
     })
-      .catch((error) => {
-        alert(`There was an error when submitting the form: ${error}`)
-      })
+    .catch((error) => {
+      alert(`There was an error when submitting the form: ${error}`)
+    })
 
   }
 
   // Rendering control variables
   const formIsLoading = (
-    rootFormLoading
-    || patientIDFieldsLoading
+    patientIDFieldsLoading
     || formIDFieldsLoading
     || formFieldsLoading
   )
 
   const formQueriesError = (
-    rootFormError
-    ?? patientIDFieldsError
+    patientIDFieldsError
     ?? formIDFieldsError
     ?? formFieldsError
   )
@@ -429,6 +426,7 @@ export function FormGenerator({ formMetadata }) {
             patientIDFields.forms[0].fieldsConnection.edges.map((field) => <PrimaryIDField
               key={field.node.name}
               field={field}
+              study={patientIdentifier.study}
               validator={state.validators[field.node.name]}
               value={state.patientID[field.node.name] ?? ''}
               errorMessage={state.errorMessages[field.node.name]}
@@ -443,6 +441,7 @@ export function FormGenerator({ formMetadata }) {
               (field) => <SecondaryIDField
                 key={field.name}
                 field={field}
+                study={patientIdentifier.study}
                 override={field.wasOverridden ?? false}
                 validator={state.validators[field.name]}
                 value={state.formIDs[field.name]}
@@ -484,6 +483,7 @@ export function FormGenerator({ formMetadata }) {
                   component = <DateInputField
                     key={field.name}
                     field={field}
+                    study={patientIdentifier.study}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
                     errorMessage={errorMessage}
@@ -495,6 +495,7 @@ export function FormGenerator({ formMetadata }) {
                   component = <TextAreaField
                     key={field.name}
                     field={field}
+                    study={patientIdentifier.study}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
                     validator={state.validators[field.name]}
@@ -506,6 +507,7 @@ export function FormGenerator({ formMetadata }) {
                   component = <InputField
                     key={field.name}
                     field={field}
+                    study={patientIdentifier.study}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
                     validator={state.validators[field.name]}
@@ -522,6 +524,7 @@ export function FormGenerator({ formMetadata }) {
                   component = <SmallSelectField
                     key={field.name}
                     field={field}
+                    study={patientIdentifier.study}
                     isDisabled={isDisabled}
                     errorMessage={errorMessage}
                     options={state.options[field.name]}
@@ -534,6 +537,7 @@ export function FormGenerator({ formMetadata }) {
                   component = <LargeSelectField
                     key={field.name}
                     field={field}
+                    study={patientIdentifier.study}
                     isDisabled={isDisabled}
                     errorMessage={errorMessage}
                     options={state.options[field.name]}

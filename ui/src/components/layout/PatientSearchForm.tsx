@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React, { useContext, useEffect } from 'react'
 import { Icon, Form, Segment, Divider, Header } from 'semantic-ui-react'
 import { PatientIdentifierContext } from '../Portal'
 
@@ -6,9 +6,15 @@ const studies = [
   { key: 'mohccn', text: 'MOHCCN', value: 'mohccn' },
   { key: 'charm', text: 'CHARM', value: 'charm'},
 ]
+const defaultStudy = 'mohccn'
 
 const PatientSearchForm = () => {
   const { patientIdentifier, setPatientIdentifier } = useContext(PatientIdentifierContext)
+
+  useEffect(() => {
+    setPatientIdentifier((id) => ({ ...id, study: defaultStudy }))
+  }, []) // set the default study
+
   return (
     <Segment color='teal'>
       <Divider horizontal>
@@ -41,8 +47,21 @@ const PatientSearchForm = () => {
             width={2}
             options={studies}
             placeholder='Study'
+            defaultValue={defaultStudy}
+            onChange={(_e, { value }) => { setPatientIdentifier((id) => ({ ...id, study: value })) }}
           />
-          <Form.Button size='large' onClick={() => { setPatientIdentifier({ submitter_donor_id: '', program_id: '' }) }} fluid inverted icon='trash' color='red' content='CLEAR FORMS' width={2} />
+          <Form.Button
+            size='large' 
+            onClick={
+              () => { setPatientIdentifier({ submitter_donor_id: '', program_id: '', study: defaultStudy }) }
+            }
+            fluid
+            inverted
+            icon='trash'
+            color='red'
+            content='CLEAR FORMS'
+            width={2}
+          />
         </Form.Group>
       </Form>
     </Segment>

@@ -38,7 +38,7 @@ export default function Portal () {
   const {navigate, location, isActivePathElement} = useRouter()
   const [meMutationState] = useKeycloakMeMutation()
 
-  const [patientIdentifier, setPatientIdentifier] = useState({submitter_donor_id: '', program_id: ''})
+  const [patientIdentifier, setPatientIdentifier] = useState({submitter_donor_id: '', program_id: '', study: ''})
 
   const routes = [
     {path: '/', icon: 'info circle', introID: HOME_MENU_ELEMENT_ID},

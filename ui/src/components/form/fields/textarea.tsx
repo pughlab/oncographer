@@ -3,6 +3,7 @@ import { Form, Icon, Popup } from "semantic-ui-react";
 
 export function TextAreaField({
     field,
+    study,
     isDisabled,
     validator,
     value,
@@ -19,7 +20,7 @@ export function TextAreaField({
                     position='top center'
                     inverted
                 />
-                <label style={{ marginRight: '5px' }}>{field.label}</label>
+                <label style={{ marginRight: '5px' }}>{field.display_name ? field.display_name[study] : field.label}</label>
                 <Popup
                     trigger={!isDisabled && <Icon name='help circle' />}
                     content={field.description}

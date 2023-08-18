@@ -52,9 +52,11 @@
     form_id                       : String
     form_name                     : String
     form_relationship_cardinality : FormValue
-    next_form                     : [Form!]!  @relationship(type : "NEXT_FORM", direction : OUT)
+    next_form: [Form!]!  @relationship(type : "NEXT_FORM", direction : OUT, properties: "Studies")
+    display_name: Parser
     fields: [Field!] @relationship(type: "BELONGS_TO", direction: IN, properties: "IsID")
     has_next_question: [Field] @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
+    studies: [String]
   }
 
   type Field {
@@ -74,6 +76,7 @@
     conditionals      : Parser
     placeholder       : String
     filter            : Parser
+    display_name: Parser
     has_next_question: Field @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
     belongs_to(isID: Boolean): Form! @relationship(type: "BELONGS_TO", direction: OUT)
   }
@@ -83,6 +86,10 @@
     override: Parser
   }
 
+  interface Studies @relationshipProperties {
+    studies: [String]
+  }
+
 
   type Query {
 
@@ -90,9 +97,10 @@
     @cypher( statement: """ 
     MATCH (:Form {form_id : $id})-[:HAS_NEXT_QUESTION*]->(f:Field) RETURN f
     """)
-    GetRootForm: Form @cypher(statement: """
+    GetRootForm(study: String!): Form @cypher(statement: """
     MATCH (f:Form)
     WHERE NOT ()-[:NEXT_FORM]->(f)
+    AND single(x IN f.studies WHERE x = $study)
     RETURN f
     """)
     GetPatientID: [Field!]! @cypher(statement:"""

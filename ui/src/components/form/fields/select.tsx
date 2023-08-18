@@ -3,7 +3,7 @@ import { Form, Icon, Popup } from "semantic-ui-react";
 import * as R from "remeda";
 import { constructDropdown } from '../utils'
 
-export function SmallSelectField({ field, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
+export function SmallSelectField({ field, study, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
     const processedOptions = constructDropdown(options)
     return (
         <Form.Field disabled={isDisabled} error={errorMessage}>
@@ -14,7 +14,7 @@ export function SmallSelectField({ field, isDisabled, errorMessage, options, val
                     position='top center'
                     inverted
                 />
-                <label style={{ marginRight: '5px' }}>{field.label}</label>
+                <label style={{ marginRight: '5px' }}>{field.display_name ? field.display_name[study] :field.label}</label>
                 <Popup
                     trigger={!isDisabled && <Icon name='help circle' />}
                     content={field.description}
@@ -57,7 +57,7 @@ export function SmallSelectField({ field, isDisabled, errorMessage, options, val
     )
 }
 
-export function LargeSelectField({ field, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
+export function LargeSelectField({ field, study, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
     const processedOptions = useMemo(() => {
         return constructDropdown(options)
     }, [options])
@@ -70,7 +70,7 @@ export function LargeSelectField({ field, isDisabled, errorMessage, options, val
                     position='top center'
                     inverted
                 />
-                <label style={{ marginRight: '5px' }}>{field.label}</label>
+                <label style={{ marginRight: '5px' }}>{field.display_name ? field.display_name[study] :field.label}</label>
                 <Popup
                     trigger={!isDisabled && <Icon name='help circle' />}
                     content={field.description}

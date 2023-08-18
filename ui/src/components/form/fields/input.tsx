@@ -3,7 +3,7 @@ import DatePicker from "react-datepicker"
 import { Form, Icon, Popup } from "semantic-ui-react"
 import "react-datepicker/dist/react-datepicker.css"
 
-export function DateInputField({ field, value, isDisabled, errorMessage, validator, updateErrorMessage, updateValue }) {
+export function DateInputField({ field, study, value, isDisabled, errorMessage, validator, updateErrorMessage, updateValue }) {
     return (
         <Form.Field disabled={isDisabled} error={errorMessage}>
             <div>
@@ -13,7 +13,7 @@ export function DateInputField({ field, value, isDisabled, errorMessage, validat
                     position='top center'
                     inverted
                 />
-                <label style={{ marginRight: '5px' }}>{field.label}</label>
+                <label style={{ marginRight: '5px' }}>{field.display_name ? field.display_name[study] : field.label}</label>
                 <Popup
                     trigger={!isDisabled && <Icon name='help circle' />}
                     content={field.description}
@@ -53,7 +53,7 @@ export function DateInputField({ field, value, isDisabled, errorMessage, validat
     )
 }
 
-export function InputField({ field, value, isDisabled, errorMessage, validator, updateErrorMessage, updateValue }) {
+export function InputField({ field, study, value, isDisabled, errorMessage, validator, updateErrorMessage, updateValue }) {
     return (
         <Form.Field disabled={isDisabled} error={errorMessage}>
             <div>
@@ -63,7 +63,7 @@ export function InputField({ field, value, isDisabled, errorMessage, validator, 
                     position='top center'
                     inverted
                 />
-                <label style={{ marginRight: '5px' }}>{field.label}</label>
+                <label style={{ marginRight: '5px' }}>{field.display_name ? field.display_name[study] :field.label}</label>
                 <Popup
                     trigger={!isDisabled && <Icon name='help circle' />}
                     content={field.description}
