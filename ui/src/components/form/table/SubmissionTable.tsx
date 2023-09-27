@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useContext } from "react"
 import { LoadingSegment } from "../../common/LoadingSegment"
 import { Divider, Header, Table, Icon, List } from "semantic-ui-react"
 import { useQuery } from "@apollo/client"
@@ -6,6 +6,7 @@ import { useQuery } from "@apollo/client"
 import { toTitle, toDateString } from './utils'
 import { FindSubmissions } from "../queries/query"
 import { BasicErrorMessage } from "../../common/BasicErrorMessage"
+import { ActiveSubmissionContext } from "../../Portal"
 
 export function SubmissionTable({
     formID,
@@ -14,11 +15,14 @@ export function SubmissionTable({
     patientIdentifier,
     fillForm
 }) {
+    const { setActiveSubmission } = useContext(ActiveSubmissionContext)
+    
     const submissionSearchInfo = {
         form_id: formID,
         patient: {
             patient_id: patientIdentifier.submitter_donor_id,
-            program_id: patientIdentifier.program_id
+            program_id: patientIdentifier.program_id,
+            study: patientIdentifier.study
         }
     }
 
@@ -97,7 +101,7 @@ export function SubmissionTable({
                                         }, {})
                                 }
                                 return (
-                                    <Table.Row key={submission.submission_id} onClick={() => { fillForm(formData) }}>
+                                    <Table.Row key={submission.submission_id} onClick={() => { fillForm(formData); setActiveSubmission(submission) }}>
                                         {
                                             Object.keys(headers).map((key) => {
                                                 let value = row.hasOwnProperty(key) ? row[key]: ""

@@ -13,7 +13,8 @@ import PortalNavBarIntro, {HOME_MENU_ELEMENT_ID} from './intros/PortalNavBarIntr
 import FormFactory  from './layout/FormFactory';
 import PatientSearchForm from './layout/PatientSearchForm'
 
-export const PatientIdentifierContext = createContext()
+export const PatientIdentifierContext = createContext({})
+export const ActiveSubmissionContext = createContext({})
 
 const DocsLink = () => {
   return (
@@ -39,6 +40,7 @@ export default function Portal () {
   const [meMutationState] = useKeycloakMeMutation()
 
   const [patientIdentifier, setPatientIdentifier] = useState({submitter_donor_id: '', program_id: '', study: ''})
+  const [activeSubmission, setActiveSubmission] = useState({})
 
   const routes = [
     {path: '/', icon: 'info circle', introID: HOME_MENU_ELEMENT_ID},
@@ -74,12 +76,13 @@ export default function Portal () {
 
     <Divider horizontal />
       <PatientIdentifierContext.Provider value={{patientIdentifier, setPatientIdentifier }}>
-        <div style={{padding: '1em'}}>
-          <PatientSearchForm />
-          <Divider horizontal />
-
-          <FormFactory />
-        </div>
+        <ActiveSubmissionContext.Provider value={{activeSubmission, setActiveSubmission}}>
+          <div style={{padding: '1em'}}>
+            <PatientSearchForm />
+            <Divider horizontal />
+            <FormFactory />
+          </div>
+        </ActiveSubmissionContext.Provider>
       </PatientIdentifierContext.Provider>
     </>
   )

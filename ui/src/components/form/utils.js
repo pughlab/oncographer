@@ -100,7 +100,8 @@ export const createSubmissionInput = (formID, state) => {
         "where": {
           "node": {
             patient_id: state.patientID.submitter_donor_id,
-            program_id: state.patientID.program_id
+            program_id: state.patientID.program_id,
+            study: state.patientID.study
           }
         }
       }
@@ -111,6 +112,38 @@ export const createSubmissionInput = (formID, state) => {
           return { "node": { 'key': key, 'value': fields[key] }}
         }
       )
+    }
+  }
+}
+
+function getBranchFieldLabel(labelContainer, branchFields, submissionFields) {
+  for (const branch of branchFields) {
+    for (const field of submissionFields) {
+      if (field.key === branch) {
+        return labelContainer[field.value]
+      }
+    }
+  }
+}
+
+export function findDisplayName(field, study, activeSubmission, parentForm) {
+  if (!field.display_name) {
+    return field.label
+  }
+  if (typeof field.display_name === "string") {
+    return field.display_name
+  }
+  for (const key in field.display_name) {
+    if (key === study && typeof field.display_name[key] === "string") {
+      return field.display_name[key]
+    } else if (
+      typeof field.display_name[key] === "object"
+      && activeSubmission
+      && parentForm
+      && parentForm.branch_fields
+      && activeSubmission.form_id === parentForm.form_id
+    ) {
+      return getBranchFieldLabel(field.display_name[key], parentForm.branch_fields, activeSubmission.fields)
     }
   }
 }

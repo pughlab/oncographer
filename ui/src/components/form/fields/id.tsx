@@ -1,7 +1,7 @@
 import React from "react";
 import { Form, Icon, Popup } from "semantic-ui-react";
 
-export function PrimaryIDField({ field, study, validator, value, errorMessage, updateErrorMessage, updateValue }) {
+export function PrimaryIDField({ field, label, validator, value, errorMessage, updateErrorMessage, updateValue }) {
     return (
         <Form.Field key={field.node.name}>
             <div>
@@ -11,7 +11,7 @@ export function PrimaryIDField({ field, study, validator, value, errorMessage, u
                     position='top center'
                     inverted
                 />
-                <label style={{ marginRight: '5px' }}>{field.node.display_name ? field.node.display_name[study]: field.node.label}</label>
+                <label style={{ marginRight: '5px' }}>{label}</label>
                 <Popup
                     trigger={<Icon name='help circle' />}
                     content={field.node.description}
@@ -37,7 +37,7 @@ export function PrimaryIDField({ field, study, validator, value, errorMessage, u
     )
 }
 
-export function SecondaryIDField({ field, study, override, validator, value, errorMessage, updateErrorMessage, updateValue }) {
+export function SecondaryIDField({ field, label, override, validator, value, errorMessage, updateErrorMessage, updateValue }) {
     return (
         <Form.Field key={field.name}>
             <div>
@@ -50,7 +50,7 @@ export function SecondaryIDField({ field, study, override, validator, value, err
                     position='top center'
                     inverted
                 />
-                <label style={{ marginRight: '5px' }}>{field.display_name ? field.display_name[study]: field.label}</label>
+                <label style={{ marginRight: '5px' }}>{label}</label>
                 <Popup
                     trigger={<Icon name='help circle' />}
                     content={field.description}

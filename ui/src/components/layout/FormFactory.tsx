@@ -30,7 +30,7 @@ function ListMenuItem({
           {
             item.next_form.map((subform) => {
               return <ListMenuItem
-                key={subform.form_id}
+                key={`${subform.form_name}-${subform.form_id}`}
                 item={subform}
                 study={study}
                 activeItem={activeItem}
@@ -55,7 +55,7 @@ function ListMenu({
     <Segment basic>
     <List link size="large">
       <ListMenuItem
-        key={root.form_id}
+        key={`${root.form_name}-${root.form_id}`}
         item={root}
         study={study}
         activeItem={activeItem} 

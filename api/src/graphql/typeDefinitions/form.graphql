@@ -57,6 +57,7 @@
     fields: [Field!] @relationship(type: "BELONGS_TO", direction: IN, properties: "IsID")
     has_next_question: [Field] @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
     studies: [String]
+    branch_fields: [String]
   }
 
   type Field {
@@ -77,6 +78,7 @@
     placeholder       : String
     filter            : Parser
     display_name: Parser
+    studies: [String]
     has_next_question: Field @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
     belongs_to(isID: Boolean): Form! @relationship(type: "BELONGS_TO", direction: OUT)
   }
@@ -93,9 +95,11 @@
 
   type Query {
 
-    GetFormFields(id : String!) : [Field]
+    GetFormFields(id: String!, study: String) : [Field]
     @cypher( statement: """ 
-    MATCH (:Form {form_id : $id})-[:HAS_NEXT_QUESTION*]->(f:Field) RETURN f
+    MATCH (:Form {form_id : $id})-[:HAS_NEXT_QUESTION*]->(f:Field)
+    WHERE single(x in f.studies WHERE x = $study)
+    RETURN f
     """)
     GetRootForm(study: String!): Form @cypher(statement: """
     MATCH (f:Form)
@@ -110,6 +114,10 @@
     MATCH (n:Field)-[r:BELONGS_TO]->(f)
     WHERE r.isID = true
     RETURN n
+    """)
+    GetParentForm(id: String!): Form @cypher(statement: """
+    MATCH (parent:Form)-[:NEXT_FORM]->(f:Form { form_id: $id })
+    RETURN parent
     """)
   }
 

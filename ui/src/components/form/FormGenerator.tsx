@@ -2,11 +2,11 @@ import React, { useContext, useEffect, useReducer, useState } from "react"
 import { Form, Divider, Header, Icon, Button } from "semantic-ui-react"
 import { useMutation, useQuery } from "@apollo/client"
 
-import { validateInputs, doesFieldNotMeetAllConditions, createSubmissionInput } from './utils'
-import { CreateDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields } from "./queries/query"
+import { validateInputs, doesFieldNotMeetAllConditions, createSubmissionInput, findDisplayName } from './utils'
+import { CreateDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields, ParentForm } from "./queries/query"
 import { SubmissionTable } from "./table/SubmissionTable"
 import { DraftTable } from "./table/DraftTable"
-import { PatientIdentifierContext } from "../Portal"
+import { ActiveSubmissionContext, PatientIdentifierContext } from "../Portal"
 import { zodifyField } from "./validate/validator"
 import { BasicErrorMessage } from "../common/BasicErrorMessage"
 import { PrimaryIDField, SecondaryIDField } from "./fields/id"
@@ -109,6 +109,7 @@ export function FormGenerator({ formMetadata, root }) {
   const [lastDraftUpdate, setLastDraftUpdate] = useState(`Drafts-${new Date().toUTCString()}`)
   const [lastSubmissionUpdate, setLastSubmissionUpdate] = useState(`Submissions-${new Date().toUTCString()}`)
   const { patientIdentifier } = useContext(PatientIdentifierContext)
+  const { activeSubmission } = useContext(ActiveSubmissionContext)
 
   // Reducer variables and associated functions
   const [state, dispatch] = useReducer(formReducer, initialState)
@@ -236,7 +237,8 @@ export function FormGenerator({ formMetadata, root }) {
     data: formFields
   } = useQuery(FieldData, {
     variables: {
-      id: formMetadata.form_id
+      id: formMetadata.form_id,
+      study: patientIdentifier.study
     },
     onCompleted: (data) => {
       data.GetFormFields.map((field) => {
@@ -257,6 +259,15 @@ export function FormGenerator({ formMetadata, root }) {
           })
         }
       })
+    }
+  })
+  const { 
+    loading: formParentLoading,
+    error: formParentError,
+    data: formParent
+  } = isRootForm ? { loading: null, error: null, data: null } : useQuery(ParentForm, {
+    variables: {
+      id: formMetadata.form_id
     }
   })
 
@@ -349,12 +360,14 @@ export function FormGenerator({ formMetadata, root }) {
     patientIDFieldsLoading
     || formIDFieldsLoading
     || formFieldsLoading
+    || formParentLoading
   )
 
   const formQueriesError = (
     patientIDFieldsError
     ?? formIDFieldsError
     ?? formFieldsError
+    ?? formParentError
   )
 
   if (formIsLoading) {
@@ -374,15 +387,21 @@ export function FormGenerator({ formMetadata, root }) {
   )
 
   // generate the column headers for the draft and submissions tables
+  // and set labels for each field depending on the current study or previous submissions.
+  // the label property in each field is used as a fallback
   const tableHeaders: any = {}
+  const labels: any = {}
   patientIDFields.forms[0].fieldsConnection.edges.forEach((field) => {
     tableHeaders[field.node.name] = field.node.label
+    labels[field.node?.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, formParent?.GetParentForm)
   })
   renderedFormIDFields.forEach((field) => {
     tableHeaders[field.node.name] = field.node.label
+    labels[field.node.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, formParent?.GetParentForm)
   })
   formFields.GetFormFields.forEach((field) => {
     tableHeaders[field.name] = field.label
+    labels[field.name] = findDisplayName(field, patientIdentifier.study, activeSubmission, formParent?.GetParentForm)
   })
 
   // apply overrides to rendered ID fields
@@ -426,7 +445,7 @@ export function FormGenerator({ formMetadata, root }) {
             patientIDFields.forms[0].fieldsConnection.edges.map((field) => <PrimaryIDField
               key={field.node.name}
               field={field}
-              study={patientIdentifier.study}
+              label={labels[field.node.name]}
               validator={state.validators[field.node.name]}
               value={state.patientID[field.node.name] ?? ''}
               errorMessage={state.errorMessages[field.node.name]}
@@ -441,7 +460,7 @@ export function FormGenerator({ formMetadata, root }) {
               (field) => <SecondaryIDField
                 key={field.name}
                 field={field}
-                study={patientIdentifier.study}
+                label={labels[field.name]}
                 override={field.wasOverridden ?? false}
                 validator={state.validators[field.name]}
                 value={state.formIDs[field.name]}
@@ -483,7 +502,7 @@ export function FormGenerator({ formMetadata, root }) {
                   component = <DateInputField
                     key={field.name}
                     field={field}
-                    study={patientIdentifier.study}
+                    label={labels[field.name]}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
                     errorMessage={errorMessage}
@@ -495,7 +514,7 @@ export function FormGenerator({ formMetadata, root }) {
                   component = <TextAreaField
                     key={field.name}
                     field={field}
-                    study={patientIdentifier.study}
+                    label={labels[field.name]}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
                     validator={state.validators[field.name]}
@@ -507,7 +526,7 @@ export function FormGenerator({ formMetadata, root }) {
                   component = <InputField
                     key={field.name}
                     field={field}
-                    study={patientIdentifier.study}
+                    label={labels[field.name]}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
                     validator={state.validators[field.name]}
@@ -524,7 +543,7 @@ export function FormGenerator({ formMetadata, root }) {
                   component = <SmallSelectField
                     key={field.name}
                     field={field}
-                    study={patientIdentifier.study}
+                    label={labels[field.name]}
                     isDisabled={isDisabled}
                     errorMessage={errorMessage}
                     options={state.options[field.name]}
@@ -537,7 +556,7 @@ export function FormGenerator({ formMetadata, root }) {
                   component = <LargeSelectField
                     key={field.name}
                     field={field}
-                    study={patientIdentifier.study}
+                    label={labels[field.name]}
                     isDisabled={isDisabled}
                     errorMessage={errorMessage}
                     options={state.options[field.name]}

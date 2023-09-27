@@ -7,9 +7,21 @@ export const RootForm = gql`
       form_name
       form_relationship_cardinality
       studies
+      branch_fields
     }
   }
 `;
+
+export const ParentForm = gql`
+  query ParentForm($id: String!) {
+    GetParentForm(id: $id) {
+      form_id
+      form_name
+      studies
+      branch_fields
+    }
+  }
+`
 
 export const FormTree = gql`
   query FormTree($study: String!) {
@@ -25,12 +37,14 @@ export const FormTree = gql`
     form_relationship_cardinality
     studies
     display_name
+    branch_fields
     next_form {
       form_id
       form_name
       form_relationship_cardinality
       studies
       display_name
+      branch_fields
     }
   }
 
@@ -52,6 +66,7 @@ export const FormIDFields = gql`
     forms(where: $where) {
       form_id
       form_name
+      branch_fields
       fieldsConnection(where: {
         edge: {
           isID: true
@@ -81,11 +96,11 @@ export const FormIDFields = gql`
 `;
 
 export const FieldData = gql`
-  query GetFormFields($id: String!) {
+  query GetFormFields($id: String!, $study: String) {
     # using static query take the form id 
     # and get all connected fields metadata
     # so it can populate the frontend
-    GetFormFields(id: $id) {
+    GetFormFields(id: $id, study: $study) {
       component
       conditionals
       description
