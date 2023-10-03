@@ -6,7 +6,9 @@ import { FormTree } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
-import { PatientIdentifierContext } from '../Portal';
+import { ActiveSubmissionContext, PatientIdentifierContext } from '../Portal';
+import { findDisplayName } from "../form/utils"
+import { ParentSubmissionTable } from '../form/table/ParentSubmissionTable';
 
 function ListMenuItem({
   item,
@@ -18,6 +20,7 @@ function ListMenuItem({
   const isActive = activeItem === item
   const hasSubForms = item.next_form.length > 0
   const isActiveAndHasSubForms = isActive && hasSubForms
+  const { activeSubmission } = React.useContext(ActiveSubmissionContext)
 
   return (
     <List.Item active={isActive}  >
@@ -25,7 +28,7 @@ function ListMenuItem({
       <List.Content>
         <a style={isActive ? { color: "#02B5AE" } : {}} onClick={() => {
           setActiveItem(item)
-        }}>{item.display_name ? item.display_name[study] : item.form_name}</a>
+        }}>{ findDisplayName(item, study, activeSubmission, item) }</a>
         <List.List>
           {
             item.next_form.map((subform) => {
@@ -71,7 +74,7 @@ export default function FormFactory() {
   const { patientIdentifier } = React.useContext(PatientIdentifierContext)
   const { loading, error, data } = useQuery(FormTree, {
     variables: {
-      study: patientIdentifier.study ? patientIdentifier.study : defaultStudy
+      study: patientIdentifier.study ?? defaultStudy
     }
   })
   const [ activeItem, setActiveItem ] = React.useState(null)
@@ -94,14 +97,19 @@ export default function FormFactory() {
         <Grid.Column width={3}>
           <ListMenu
             root={data.GetRootForm}
-            study={patientIdentifier.study ? patientIdentifier.study : defaultStudy}
+            study={patientIdentifier.study ?? defaultStudy}
             activeItem={activeItem}
             setActiveItem={setActiveItem}
           />
         </Grid.Column>
         <Grid.Column width={13}>
+          {
+            activeItem && activeItem !== data.GetRootForm
+            ? <ParentSubmissionTable formID={activeItem.form_id} patientIdentifier={patientIdentifier} />
+            : <></>
+          }
           <FormGenerator
-            key={activeItem !== null ? activeItem.form_name : data.GetRootForm.form_name}
+            key={activeItem ? activeItem.form_name : data.GetRootForm.form_name}
             root={data.GetRootForm}
             formMetadata={activeItem ?? data.GetRootForm}
           />

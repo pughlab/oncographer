@@ -392,16 +392,16 @@ export function FormGenerator({ formMetadata, root }) {
   const tableHeaders: any = {}
   const labels: any = {}
   patientIDFields.forms[0].fieldsConnection.edges.forEach((field) => {
-    tableHeaders[field.node.name] = field.node.label
     labels[field.node?.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, formParent?.GetParentForm)
+    tableHeaders[field.node.name] = labels[field.node.name] ?? field.node.label
   })
   renderedFormIDFields.forEach((field) => {
-    tableHeaders[field.node.name] = field.node.label
     labels[field.node.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, formParent?.GetParentForm)
+    tableHeaders[field.node.name] = labels[field.node.name] ?? field.node.label
   })
   formFields.GetFormFields.forEach((field) => {
-    tableHeaders[field.name] = field.label
     labels[field.name] = findDisplayName(field, patientIdentifier.study, activeSubmission, formParent?.GetParentForm)
+    tableHeaders[field.name] = labels[field.name] ?? field.label
   })
 
   // apply overrides to rendered ID fields

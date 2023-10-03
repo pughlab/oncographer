@@ -128,7 +128,7 @@ function getBranchFieldLabel(labelContainer, branchFields, submissionFields) {
 
 export function findDisplayName(field, study, activeSubmission, parentForm) {
   if (!field.display_name) {
-    return field.label
+    return field.__typename.toLowerCase() === "field" ? field.label : field.form_name
   }
   if (typeof field.display_name === "string") {
     return field.display_name
