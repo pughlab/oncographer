@@ -146,6 +146,7 @@ export function findDisplayName(field, study, activeSubmission, parentForm) {
       return getBranchFieldLabel(field.display_name[key], parentForm.branch_fields, activeSubmission.fields)
     }
   }
+  return field.display_name[study].hasOwnProperty('default') ? field.display_name[study]['default'] : null
 }
 
 export function getParentForm(root, form) {
