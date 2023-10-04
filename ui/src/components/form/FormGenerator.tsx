@@ -2,8 +2,8 @@ import React, { useContext, useEffect, useReducer, useState } from "react"
 import { Form, Divider, Header, Icon, Button } from "semantic-ui-react"
 import { useMutation, useQuery } from "@apollo/client"
 
-import { validateInputs, doesFieldNotMeetAllConditions, createSubmissionInput, findDisplayName } from './utils'
-import { CreateDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields, ParentForm } from "./queries/query"
+import { validateInputs, doesFieldNotMeetAllConditions, createSubmissionInput, findDisplayName, getParentForm } from './utils'
+import { CreateDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields } from "./queries/query"
 import { SubmissionTable } from "./table/SubmissionTable"
 import { DraftTable } from "./table/DraftTable"
 import { ActiveSubmissionContext, PatientIdentifierContext } from "../Portal"
@@ -261,15 +261,6 @@ export function FormGenerator({ formMetadata, root }) {
       })
     }
   })
-  const { 
-    loading: formParentLoading,
-    error: formParentError,
-    data: formParent
-  } = isRootForm ? { loading: null, error: null, data: null } : useQuery(ParentForm, {
-    variables: {
-      id: formMetadata.form_id
-    }
-  })
 
   // Component effects
   // updates the reducer's patientID every time the context patientIdentifier changes
@@ -360,14 +351,12 @@ export function FormGenerator({ formMetadata, root }) {
     patientIDFieldsLoading
     || formIDFieldsLoading
     || formFieldsLoading
-    || formParentLoading
   )
 
   const formQueriesError = (
     patientIDFieldsError
     ?? formIDFieldsError
     ?? formFieldsError
-    ?? formParentError
   )
 
   if (formIsLoading) {
@@ -389,18 +378,19 @@ export function FormGenerator({ formMetadata, root }) {
   // generate the column headers for the draft and submissions tables
   // and set labels for each field depending on the current study or previous submissions.
   // the label property in each field is used as a fallback
+  const parentForm = getParentForm(root, formMetadata)
   const tableHeaders: any = {}
   const labels: any = {}
   patientIDFields.forms[0].fieldsConnection.edges.forEach((field) => {
-    labels[field.node?.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, formParent?.GetParentForm)
+    labels[field.node?.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, parentForm)
     tableHeaders[field.node.name] = labels[field.node.name] ?? field.node.label
   })
   renderedFormIDFields.forEach((field) => {
-    labels[field.node.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, formParent?.GetParentForm)
+    labels[field.node.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, parentForm)
     tableHeaders[field.node.name] = labels[field.node.name] ?? field.node.label
   })
   formFields.GetFormFields.forEach((field) => {
-    labels[field.name] = findDisplayName(field, patientIdentifier.study, activeSubmission, formParent?.GetParentForm)
+    labels[field.name] = findDisplayName(field, patientIdentifier.study, activeSubmission, parentForm)
     tableHeaders[field.name] = labels[field.name] ?? field.label
   })
 

@@ -15,7 +15,7 @@ export function ParentSubmissionTable({
     const { activeSubmission, setActiveSubmission } = useContext(ActiveSubmissionContext)
     
     const submissionSearchInfo = {
-        form_id: activeSubmission ? activeSubmission.form_id :formID,
+        form_id: formID,
         patient: {
             patient_id: patientIdentifier.submitter_donor_id,
             program_id: patientIdentifier.program_id,

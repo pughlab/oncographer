@@ -12,17 +12,6 @@ export const RootForm = gql`
   }
 `;
 
-export const ParentForm = gql`
-  query ParentForm($id: String!) {
-    GetParentForm(id: $id) {
-      form_id
-      form_name
-      studies
-      branch_fields
-    }
-  }
-`
-
 export const FormTree = gql`
   query FormTree($study: String!) {
     GetRootForm(study: $study) {

@@ -7,7 +7,7 @@ import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
 import { ActiveSubmissionContext, PatientIdentifierContext } from '../Portal';
-import { findDisplayName } from "../form/utils"
+import { findDisplayName, getParentForm } from "../form/utils"
 import { ParentSubmissionTable } from '../form/table/ParentSubmissionTable';
 
 function ListMenuItem({
@@ -105,7 +105,11 @@ export default function FormFactory() {
         <Grid.Column width={13}>
           {
             activeItem && activeItem !== data.GetRootForm
-            ? <ParentSubmissionTable formID={activeItem.form_id} patientIdentifier={patientIdentifier} />
+            ? <ParentSubmissionTable 
+                key={activeItem}
+                formID={getParentForm(data.GetRootForm, activeItem)?.form_id}
+                patientIdentifier={patientIdentifier}
+              />
             : <></>
           }
           <FormGenerator

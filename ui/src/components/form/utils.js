@@ -147,3 +147,15 @@ export function findDisplayName(field, study, activeSubmission, parentForm) {
     }
   }
 }
+
+export function getParentForm(root, form) {
+  const stack = [ root ]
+  while (stack.length) {
+    const node = stack.pop()
+    if (node.next_form.includes(form)) { 
+      return node
+    }
+    stack.push(...node.next_form)
+  }
+  return null
+}
