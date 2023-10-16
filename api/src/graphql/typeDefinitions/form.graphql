@@ -72,7 +72,7 @@
     regex             : String
     value             : FormValue
     set               : SampleSet
-    required          : Boolean
+    required          : FormValue
     component         : String
     conditionals      : Parser
     placeholder       : String

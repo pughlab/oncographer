@@ -1,12 +1,13 @@
 import React from "react";
 import { Form, Icon, Popup } from "semantic-ui-react";
+import { fieldIsRequired } from "../utils"
 
-export function PrimaryIDField({ field, label, validator, value, errorMessage, updateErrorMessage, updateValue }) {
+export function PrimaryIDField({ field, study, label, validator, value, errorMessage, updateErrorMessage, updateValue }) {
     return (
-        <Form.Field key={field.node.name}>
+        <Form.Field key={field.name} error={errorMessage !== null}>
             <div>
                 <Popup
-                    trigger={<span style={field.node.required ? { color: 'red' } : { display: 'none' }}>* </span>}
+                    trigger={<span style={fieldIsRequired(field, study) ? { color: 'red' } : { display: 'none' }}>* </span>}
                     content={"Required field."}
                     position='top center'
                     inverted
@@ -14,20 +15,20 @@ export function PrimaryIDField({ field, label, validator, value, errorMessage, u
                 <label style={{ marginRight: '5px' }}>{label}</label>
                 <Popup
                     trigger={<Icon name='help circle' />}
-                    content={field.node.description}
+                    content={field.description}
                     position='top center'
                     inverted
                 />
             </div>
             <Form.Input
-                name={field.node.name}
+                name={field.name}
                 value={value}
-                type={field.node.type}
-                placeholder={field.node.placeholder}
+                type={field.type}
+                placeholder={field.placeholder}
                 onChange={(e) => {
                     const recheckValueValidation = validator.safeParse(e.target.value);
                     if (recheckValueValidation.success) {
-                        updateErrorMessage({ [field.node.name]: null });
+                        updateErrorMessage({ [field.name]: null });
                     }
                     updateValue(e)
                 }}
@@ -37,14 +38,14 @@ export function PrimaryIDField({ field, label, validator, value, errorMessage, u
     )
 }
 
-export function SecondaryIDField({ field, label, override, validator, value, errorMessage, updateErrorMessage, updateValue }) {
+export function SecondaryIDField({ field, study, label, override, validator, value, errorMessage, updateErrorMessage, updateValue }) {
     return (
-        <Form.Field key={field.name}>
+        <Form.Field key={field.name} error={errorMessage !== null}>
             <div>
                 <Popup
                     trigger={
                         <span style={
-                            field.required && override === null ? { color: 'red' } : { display: 'none' }
+                            fieldIsRequired(field, study) && override === null ? { color: 'red' } : { display: 'none' }
                         }>* </span>}
                     content={"Required field."}
                     position='top center'

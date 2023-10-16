@@ -222,7 +222,7 @@ export function FormGenerator({ formMetadata, root }) {
             [field.node.name]: ''
           })
           updateValidators({
-            [field.node.name]: zodifyField(field.node)
+            [field.node.name]: zodifyField(field.node, patientIdentifier.study)
           })
           updateErrorMessages({
             [field.node.name]: null
@@ -243,7 +243,7 @@ export function FormGenerator({ formMetadata, root }) {
     onCompleted: (data) => {
       data.GetFormFields.map((field) => {
         updateValidators({
-          [field.name]: zodifyField(field)
+          [field.name]: zodifyField(field, patientIdentifier.study)
         })
         updateErrorMessages({
           [field.name]: null
@@ -434,7 +434,8 @@ export function FormGenerator({ formMetadata, root }) {
           {
             patientIDFields.forms[0].fieldsConnection.edges.map((field) => <PrimaryIDField
               key={field.node.name}
-              field={field}
+              field={field.node}
+              study={patientIdentifier.study}
               label={labels[field.node.name]}
               validator={state.validators[field.node.name]}
               value={state.patientID[field.node.name] ?? ''}
@@ -450,6 +451,7 @@ export function FormGenerator({ formMetadata, root }) {
               (field) => <SecondaryIDField
                 key={field.name}
                 field={field}
+                study={patientIdentifier.study}
                 label={labels[field.name]}
                 override={field.wasOverridden ?? false}
                 validator={state.validators[field.name]}
@@ -492,6 +494,7 @@ export function FormGenerator({ formMetadata, root }) {
                   component = <DateInputField
                     key={field.name}
                     field={field}
+                    study={patientIdentifier.study}
                     label={labels[field.name]}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
@@ -504,6 +507,7 @@ export function FormGenerator({ formMetadata, root }) {
                   component = <TextAreaField
                     key={field.name}
                     field={field}
+                    study={patientIdentifier.study}
                     label={labels[field.name]}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
@@ -516,6 +520,7 @@ export function FormGenerator({ formMetadata, root }) {
                   component = <InputField
                     key={field.name}
                     field={field}
+                    study={patientIdentifier.study}
                     label={labels[field.name]}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
@@ -533,6 +538,7 @@ export function FormGenerator({ formMetadata, root }) {
                   component = <SmallSelectField
                     key={field.name}
                     field={field}
+                    study={patientIdentifier.study}
                     label={labels[field.name]}
                     isDisabled={isDisabled}
                     errorMessage={errorMessage}
@@ -546,6 +552,7 @@ export function FormGenerator({ formMetadata, root }) {
                   component = <LargeSelectField
                     key={field.name}
                     field={field}
+                    study={patientIdentifier.study}
                     label={labels[field.name]}
                     isDisabled={isDisabled}
                     errorMessage={errorMessage}

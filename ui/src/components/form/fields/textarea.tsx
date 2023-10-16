@@ -1,8 +1,10 @@
 import React from "react"
 import { Form, Icon, Popup } from "semantic-ui-react";
+import { fieldIsRequired } from "../utils"
 
 export function TextAreaField({
     field,
+    study,
     label,
     isDisabled,
     validator,
@@ -12,10 +14,10 @@ export function TextAreaField({
     updateValue
 }) {
     return (
-        <Form.Field disabled={isDisabled} error={errorMessage}>
+        <Form.Field disabled={isDisabled} error={errorMessage !== null}>
             <div>
                 <Popup
-                    trigger={<span style={field.required && !isDisabled ? { color: 'red' } : { display: 'none' }}>* </span>}
+                    trigger={<span style={fieldIsRequired(field, study) && !isDisabled ? { color: 'red' } : { display: 'none' }}>* </span>}
                     content={"Required field."}
                     position='top center'
                     inverted

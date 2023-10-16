@@ -160,3 +160,7 @@ export function getParentForm(root, form) {
   }
   return null
 }
+
+export function fieldIsRequired(field, study) {
+  return typeof field.required === "boolean" ? field.required : JSON.parse(field.required)[study]
+}

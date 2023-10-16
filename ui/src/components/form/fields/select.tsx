@@ -1,15 +1,15 @@
 import React, { useMemo } from "react"
 import { Form, Icon, Popup } from "semantic-ui-react";
 import * as R from "remeda";
-import { constructDropdown } from '../utils'
+import { constructDropdown, fieldIsRequired } from '../utils'
 
-export function SmallSelectField({ field, label, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
+export function SmallSelectField({ field, study, label, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
     const processedOptions = constructDropdown(options)
     return (
-        <Form.Field disabled={isDisabled} error={errorMessage}>
+        <Form.Field disabled={isDisabled} error={errorMessage !== null}>
             <div>
                 <Popup
-                    trigger={<span style={field.required && !isDisabled ? { color: 'red' } : { display: 'none' }}>* </span>}
+                    trigger={<span style={fieldIsRequired(field, study) && !isDisabled ? { color: 'red' } : { display: 'none' }}>* </span>}
                     content={"Required field."}
                     position='top center'
                     inverted
@@ -57,15 +57,15 @@ export function SmallSelectField({ field, label, isDisabled, errorMessage, optio
     )
 }
 
-export function LargeSelectField({ field, label, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
+export function LargeSelectField({ field, study, label, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
     const processedOptions = useMemo(() => {
         return constructDropdown(options)
     }, [options])
     return (
-        <Form.Field disabled={isDisabled} error={errorMessage}>
+        <Form.Field disabled={isDisabled} error={errorMessage !== null}>
             <div>
                 <Popup
-                    trigger={<span style={field.required && !isDisabled ? { color: 'red' } : { display: 'none' }}>* </span>}
+                    trigger={<span style={fieldIsRequired(field, study) && !isDisabled ? { color: 'red' } : { display: 'none' }}>* </span>}
                     content={"Required field."}
                     position='top center'
                     inverted
