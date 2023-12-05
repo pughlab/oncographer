@@ -6,7 +6,7 @@ import { validateInputs, doesFieldNotMeetAllConditions, createSubmissionInput, f
 import { CreateDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields } from "./queries/query"
 import { SubmissionTable } from "./table/SubmissionTable"
 import { DraftTable } from "./table/DraftTable"
-import { ActiveSubmissionContext, PatientIdentifierContext } from "../Portal"
+import { ActiveSubmissionContext, PatientFoundContext, PatientIdentifierContext } from "../Portal"
 import { zodifyField } from "./validate/validator"
 import { BasicErrorMessage } from "../common/BasicErrorMessage"
 import { IDField } from "./fields/id"
@@ -110,6 +110,7 @@ export function FormGenerator({ formMetadata, root }) {
   const [lastSubmissionUpdate, setLastSubmissionUpdate] = useState(`Submissions-${new Date().toUTCString()}`)
   const { patientIdentifier } = useContext(PatientIdentifierContext)
   const { activeSubmission } = useContext(ActiveSubmissionContext)
+  const { patientFound } = useContext(PatientFoundContext)
 
   // Reducer variables and associated functions
   const [state, dispatch] = useReducer(formReducer, initialState)
@@ -182,6 +183,7 @@ export function FormGenerator({ formMetadata, root }) {
   // Also, helper variables that depend on query results,
   // and helper functions that use these queries/mutations
   const isRootForm = formMetadata.form_id === root.form_id
+  let canSubmit = isRootForm || patientFound
   const [findOrCreatePatient] = useMutation(FindOrCreatePatient)
   const [createDraft] = useMutation(CreateDraft)
   const [createSubmission] = useMutation(CreateSubmission)
@@ -191,6 +193,16 @@ export function FormGenerator({ formMetadata, root }) {
       where: {
         form_id: root.form_id
       }
+    },
+    onCompleted: (data) => {
+      data.forms[0].fieldsConnection.edges.map((field) => {
+        updateValidators({
+          [field.node.name]: zodifyField(field.node, patientIdentifier.study)
+        })
+        updateErrorMessages({
+          [field.node.name]: null
+        })
+      })
     }
   })
   const {
@@ -255,6 +267,12 @@ export function FormGenerator({ formMetadata, root }) {
   useEffect(() => {
     updatePatientID(patientIdentifier)
   }, [patientIdentifier])
+
+  // allows the form to be submitted if it's the root form
+  // or the patient already exists
+  useEffect(() => {
+    canSubmit = isRootForm || patientFound
+  }, [patientFound])
 
   // Event handlers
   // Handler for saving a form draft
@@ -550,6 +568,7 @@ export function FormGenerator({ formMetadata, root }) {
           <Button content="SAVE DRAFT" color="black" icon="save" onClick={() => { saveDraft() }} />
           <Button.Or />
           <Button icon="send" size="huge" content="FINALIZE" color="teal"
+            disabled={!canSubmit}
             onClick={() => {
               submitForm()
             }}

@@ -15,6 +15,7 @@ import PatientSearchForm from './layout/PatientSearchForm'
 
 export const PatientIdentifierContext = createContext({})
 export const ActiveSubmissionContext = createContext({})
+export const PatientFoundContext = createContext({})
 
 const DocsLink = () => {
   return (
@@ -41,6 +42,7 @@ export default function Portal () {
 
   const [patientIdentifier, setPatientIdentifier] = useState({submitter_donor_id: '', program_id: '', study: ''})
   const [activeSubmission, setActiveSubmission] = useState({})
+  const [patientFound, setPatientFound] = useState(false)
 
   const routes = [
     {path: '/', icon: 'info circle', introID: HOME_MENU_ELEMENT_ID},
@@ -77,11 +79,13 @@ export default function Portal () {
     <Divider horizontal />
       <PatientIdentifierContext.Provider value={{patientIdentifier, setPatientIdentifier }}>
         <ActiveSubmissionContext.Provider value={{activeSubmission, setActiveSubmission}}>
-          <div style={{padding: '1em'}}>
-            <PatientSearchForm />
-            <Divider horizontal />
-            <FormFactory />
-          </div>
+          <PatientFoundContext.Provider value={{patientFound, setPatientFound}}>
+            <div style={{padding: '1em'}}>
+              <PatientSearchForm />
+              <Divider horizontal />
+              <FormFactory />
+            </div>
+          </PatientFoundContext.Provider>
         </ActiveSubmissionContext.Provider>
       </PatientIdentifierContext.Provider>
     </>
