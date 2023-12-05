@@ -1,10 +1,16 @@
 import React from "react"
 import DatePicker from "react-datepicker"
+import dayjs from 'dayjs'
 import { Form, Icon, Popup } from "semantic-ui-react"
 import "react-datepicker/dist/react-datepicker.css"
 import { fieldIsRequired } from "../utils"
 
-export function DateInputField({ field, study, label, value, isDisabled, errorMessage, validator, updateErrorMessage, updateValue }) {
+
+export function DateInputField({ field, study, label, value, comparingDate = null, isDisabled, errorMessage, validator, updateErrorMessage, updateValue }) {
+    // calculate time difference in years between the current value and a given date
+    const otherDate = comparingDate ?? new Date()
+    const difference = dayjs(otherDate).diff(dayjs(value), 'years')
+
     return (
         <Form.Field disabled={isDisabled} error={errorMessage !== null}>
             <div>
@@ -21,6 +27,7 @@ export function DateInputField({ field, study, label, value, isDisabled, errorMe
                     position='top center'
                     inverted
                 />
+                <Popup trigger={field.info && value && <Icon name='exclamation circle' />} content={`${field.info} ${difference}`} />
             </div>
             <DatePicker
                 selected={value}

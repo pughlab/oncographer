@@ -102,6 +102,7 @@ export const FieldData = gql`
       value
       filter
       display_name
+      info
     }
   }
 `;

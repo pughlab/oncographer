@@ -9,7 +9,7 @@ import { DraftTable } from "./table/DraftTable"
 import { ActiveSubmissionContext, PatientIdentifierContext } from "../Portal"
 import { zodifyField } from "./validate/validator"
 import { BasicErrorMessage } from "../common/BasicErrorMessage"
-import { PrimaryIDField, SecondaryIDField } from "./fields/id"
+import { IDField } from "./fields/id"
 import { DateInputField, InputField } from "./fields/input"
 import { TextAreaField } from "./fields/textarea"
 import { LargeSelectField, SmallSelectField } from "./fields/select"
@@ -162,14 +162,6 @@ export function FormGenerator({ formMetadata, root }) {
     })
   }
 
-  function handlePatientIDChange(e) {
-    const { name, value } = e.target
-    dispatch({
-      type: 'UPDATE_PATIENT_ID',
-      payload: { [name]: value }
-    })
-  }
-
   function handleFormIDChange(e) {
     const { name, value } = e.target
     dispatch({
@@ -194,11 +186,7 @@ export function FormGenerator({ formMetadata, root }) {
   const [createDraft] = useMutation(CreateDraft)
   const [createSubmission] = useMutation(CreateSubmission)
   const [createUserSubmissionConnection] = useMutation(CreateUserSubmissionConnection)
-  const {
-    loading: patientIDFieldsLoading,
-    error: patientIDFieldsError,
-    data: patientIDFields
-  } = useQuery(FormIDFields, {
+  const { data: patientIDFields } = useQuery(FormIDFields, {
     variables: {
       where: {
         form_id: root.form_id
@@ -306,7 +294,36 @@ export function FormGenerator({ formMetadata, root }) {
     }
 
     // create the submission input for the graphql mutation(s)
+    // and the submission function
     const submissionInput = createSubmissionInput(formMetadata.form_id, state)
+
+    const doSubmit = () => {
+      createSubmission({
+        variables: { input: submissionInput },
+        onCompleted: (submission) => {
+          createUserSubmissionConnection({
+            variables: {
+              submissionID: submission.createSubmissions.submissions[0].submission_id
+            }
+          })
+          .then(() => {
+            console.log(
+              'Connected user to submission '
+              + submission.createSubmissions.submissions[0].submission_id
+            )
+          })
+          .catch(() => {
+            console.log('Could not connect user to submission')
+          })
+  
+          setLastSubmissionUpdate(`Submissions-${new Date().toUTCString()}`)
+          alert('Form submitted!')
+        }
+      })
+      .catch((error) => {
+        alert(`There was an error when submitting the form: ${error}`)
+      })
+    }
 
     // run the mutation(s)
     if (isRootForm) {
@@ -317,47 +334,17 @@ export function FormGenerator({ formMetadata, root }) {
           study: patientIdentifier.study
         }
       })
+      .then(() => doSubmit())
+    } else {
+      doSubmit()
     }
-    createSubmission({
-      variables: { input: submissionInput },
-      onCompleted: (submission) => {
-        createUserSubmissionConnection({
-          variables: {
-            submissionID: submission.createSubmissions.submissions[0].submission_id
-          }
-        })
-        .then(() => {
-          console.log(
-            'Connected user to submission '
-            + submission.createSubmissions.submissions[0].submission_id
-          )
-        })
-        .catch(() => {
-          console.log('Could not connect user to submission')
-        })
-
-        setLastSubmissionUpdate(`Submissions-${new Date().toUTCString()}`)
-        alert('Form submitted!')
-      }
-    })
-    .catch((error) => {
-      alert(`There was an error when submitting the form: ${error}`)
-    })
 
   }
 
   // Rendering control variables
-  const formIsLoading = (
-    patientIDFieldsLoading
-    || formIDFieldsLoading
-    || formFieldsLoading
-  )
+  const formIsLoading = formIDFieldsLoading || formFieldsLoading
 
-  const formQueriesError = (
-    patientIDFieldsError
-    ?? formIDFieldsError
-    ?? formFieldsError
-  )
+  const formQueriesError = formIDFieldsError ?? formFieldsError
 
   if (formIsLoading) {
     return <></>
@@ -424,31 +411,20 @@ export function FormGenerator({ formMetadata, root }) {
           event.preventDefault()
         }}
       >
-        <Divider horizontal>
-          <Header as="h4">
-            <Icon name="id card" />
-            IDs
-          </Header>
-        </Divider>
-        <Form.Group widths={"equal"}>
-          {
-            patientIDFields.forms[0].fieldsConnection.edges.map((field) => <PrimaryIDField
-              key={field.node.name}
-              field={field.node}
-              study={patientIdentifier.study}
-              label={labels[field.node.name]}
-              validator={state.validators[field.node.name]}
-              value={state.patientID[field.node.name] ?? ''}
-              errorMessage={state.errorMessages[field.node.name]}
-              updateErrorMessage={updateErrorMessages}
-              updateValue={handlePatientIDChange}
-            />)
-          }
-        </Form.Group>
+        {
+          isRootForm
+          ? <></> 
+          : <Divider horizontal>
+              <Header as="h4">
+                <Icon name="id card" />
+                IDs
+              </Header>
+            </Divider>
+        }
         <Form.Group widths={"equal"}>
           {
             renderedFormIDFields.map(
-              (field) => <SecondaryIDField
+              (field) => <IDField
                 key={field.name}
                 field={field}
                 study={patientIdentifier.study}
@@ -573,7 +549,7 @@ export function FormGenerator({ formMetadata, root }) {
         <Button.Group size="large" fluid>
           <Button content="SAVE DRAFT" color="black" icon="save" onClick={() => { saveDraft() }} />
           <Button.Or />
-          <Button icon="send" size="huge" content="SUBMIT" color="teal"
+          <Button icon="send" size="huge" content="FINALIZE" color="teal"
             onClick={() => {
               submitForm()
             }}
