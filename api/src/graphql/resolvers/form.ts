@@ -135,6 +135,21 @@ export const resolvers = {
       } finally {
         session.close()
       }
+    },
+    updateOrCreateDraft: async (_obj, args, { driver }) => {
+      const { form_id, patient_id, data } = args.input
+      const session = driver.session()
+
+      try {
+        let command = "MERGE (d:FormDraft { form_id: $form_id, patient_id: $patient_id }) SET d.data = $data RETURN d"
+        const createDraft = await session.run(command, { form_id, patient_id, data })
+
+        return createDraft.records[0].get(0).properties
+      } catch (error) {
+        throw new Error(`Could not find or create draft. Caused by ${error}`)
+      } finally {
+        session.close()
+      }
     }
   }
 };
