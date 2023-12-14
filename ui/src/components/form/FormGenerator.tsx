@@ -106,8 +106,8 @@ const formReducer = (state, action) => {
 export function FormGenerator({ formMetadata, root }) {
 
   // State and context variables
-  const [lastDraftUpdate, setLastDraftUpdate] = useState(`Drafts-${new Date().toUTCString()}`)
-  const [lastSubmissionUpdate, setLastSubmissionUpdate] = useState(`Submissions-${new Date().toUTCString()}`)
+  const [lastDraftUpdate, setLastDraftUpdate] = useState(new Date())
+  const [lastSubmissionUpdate, setLastSubmissionUpdate] = useState(new Date())
   const { patientIdentifier } = useContext(PatientIdentifierContext)
   const { activeSubmission } = useContext(ActiveSubmissionContext)
   const { patientFound } = useContext(PatientFoundContext)
@@ -297,7 +297,7 @@ export function FormGenerator({ formMetadata, root }) {
       variables: { input: draftInfo },
       onCompleted: () => {
         alert('Draft saved')
-        setLastDraftUpdate(`Drafts-${new Date().toUTCString()}`)
+        setLastDraftUpdate(new Date())
       }
     })
   }
@@ -333,9 +333,9 @@ export function FormGenerator({ formMetadata, root }) {
           .catch(() => {
             console.log('Could not connect user to submission')
           })
-  
-          setLastSubmissionUpdate(`Submissions-${new Date().toUTCString()}`)
+
           alert('Form submitted!')
+          setLastSubmissionUpdate(new Date())
         }
       })
       .catch((error) => {
@@ -458,7 +458,7 @@ export function FormGenerator({ formMetadata, root }) {
           }
         </Form.Group>
         <DraftTable
-          key={`Drafts-${lastDraftUpdate}`}
+          key={`Drafts-${lastDraftUpdate.toUTCString()}`}
           formID={formMetadata.form_id}
           headers={tableHeaders}
           patientIdentifier={patientIdentifier}
@@ -466,7 +466,7 @@ export function FormGenerator({ formMetadata, root }) {
           setLastDraftUpdate={setLastDraftUpdate}
         />
         <SubmissionTable
-          key={`Submissions-${lastSubmissionUpdate}`}
+          key={`Submissions-${lastSubmissionUpdate.toUTCString()}`}
           formID={formMetadata.form_id}
           formIDKeys={renderedFormIDFields.map((field) => field.name)}
           headers={tableHeaders}
