@@ -105,6 +105,36 @@ export const resolvers = {
         throw new ApolloError('value');
       }
     }
-  })
+  }),
+  Mutation: {
+    findOrCreatePatient: async (_obj, args, { driver }) => {
+      const { patient_id, program_id, study } = args
+      const session = driver.session()
 
+      try {
+        let command = study 
+          ? "MATCH (p:Patient { patient_id: $patient_id, program_id: $program_id, study: $study }) RETURN p"
+          : "MATCH (p:Patient { patient_id: $patient_id, program_id: $program_id }) RETURN p"
+        const result = await session.run(command, study ? { patient_id, program_id, study } : { patient_id, program_id })
+
+        if (result.records.length > 0 ) {
+          return result.records[0].get('p').properties
+        }
+
+        command = study
+          ? "CREATE (p:Patient { patient_id: $patient_id, program_id: $program_id, study: $study }) return p"
+          : "CREATE (p:Patient { patient_id: $patient_id, program_id: $program_id }) return p"
+        const createPatient = await session.run(
+          command,
+          study ? { patient_id, program_id, study } : { patient_id, program_id }
+        )
+
+        return createPatient.records[0].get(0).properties
+      } catch (error) {
+        throw new Error(`Could not find or create Patient. Caused by ${error}`)
+      } finally {
+        session.close()
+      }
+    }
+  }
 };

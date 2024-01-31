@@ -5,13 +5,13 @@ import {z} from 'zod'
  * @param {field}   
  * @returns 
  */
- export function zodifyField(field) {  
+ export function zodifyField(field, study) {  
   
-    let schema : any = z
+    let schema : any = z // zod schema object that will be used to validate the field
   
     // NOTE: if you want to add a custom type then
     //       then it must be map to a zod type
-    //       so it can validated
+    //       so it can be validated
   
     // determine the primative type
     switch (field.type.toLowerCase()) {
@@ -43,12 +43,16 @@ import {z} from 'zod'
       schema = field.set.max === null ? schema : schema.max(field.set.max, { message : `The maximum number you can enter is ${field.set.max}`})
     }
   
-    // check if the field contain a regex
+    // check if the field contains a regex
     schema = field.regex === null ? schema : schema.regex(new RegExp(field.regex), { message : "The text you have filled in does not match the standard expression"})
-    // check if the field is not reuqired
-    schema = field.required ? schema : schema.optional()
+    // check if the field is not required
+    if (typeof field.required === "boolean") {
+      schema = field.required ? schema : schema.optional()
+    } else {
+      schema = JSON.parse(field.required)[study] ? schema : schema.optional()
+    }
     
-    return schema // return the zod object that will be paresed to vailidate schema
+    return schema
   }
 
 

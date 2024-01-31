@@ -1,128 +1,83 @@
 import * as React from 'react'
 import * as R from 'remeda'
 import { useQuery } from "@apollo/client";
-import { Segment, List, Grid, Divider } from "semantic-ui-react";
-import { Forms } from "../form/queries/query";
+import { Segment, List, Grid } from "semantic-ui-react";
+import { FormTree } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
-import { WelcomeMessage } from './WelcomeMessage';
+import { ActiveSubmissionContext, PatientIdentifierContext } from '../Portal';
+import { findDisplayName, getParentForm } from "../form/utils"
+import { ParentSubmissionTable } from '../form/table/ParentSubmissionTable';
 
 function ListMenuItem({
   item,
-  // setContent,
-  patientIdentifier,
-  setPatientIdentifier,
+  study,
   activeItem,
   setActiveItem
 }) {
-  let finalItem = null
 
   const isActive = activeItem === item
   const hasSubForms = item.next_form.length > 0
   const isActiveAndHasSubForms = isActive && hasSubForms
+  const { activeSubmission } = React.useContext(ActiveSubmissionContext)
 
-  console.log(item)
-  // if (!item.next_form) {
-  //   finalItem = (
-  //     <List.Item active={isActive}>
-  //       <List.Icon name="file" />
-  //       <List.Content>
-  //         <a onClick={() => {
-  //           setContent(
-  //             <FormGenerator
-  //               metadata={item}
-  //               patientIdentifier={patientIdentifier}
-  //               setPatientIdentifier={setPatientIdentifier}
-  //             />
-  //           )
-  //           setActiveItem(item)
-  //         }}>{item.form_name}</a>
-  //       </List.Content>
-  //     </List.Item>
-  //   )
-  // } else {
-    finalItem = (
-      <List.Item active={isActive}  >
-        <List.Icon name={isActiveAndHasSubForms ? "folder open" : hasSubForms ? "folder open outline" : isActive ? "file alternate" : "file outline"} color={isActive ? 'teal' : 'grey'} />
-        <List.Content>
-          <a style={isActive ? { color: "#02B5AE" } : {}} onClick={() => {
-            // setContent(
-            //   <FormGenerator
-            //     metadata={item}
-            //     patientIdentifier={patientIdentifier}
-            //     setPatientIdentifier={setPatientIdentifier}
-            //   />
-            // )
-            setActiveItem(item)
-          }}>{item.form_name}</a>
-          <List.List>
-            {
-              item.next_form.map((subform) => {
-                return <ListMenuItem
-                  key={subform.form_id}
-                  item={subform}
-                  // setContent={setContent}
-                  patientIdentifier={patientIdentifier}
-                  setPatientIdentifier={setPatientIdentifier}
-                  activeItem={activeItem}
-                  setActiveItem={setActiveItem}
-                />
-              })
-            }
-          </List.List>
-        </List.Content>
-      </List.Item>
-    )
-  // }
-
-  return finalItem
+  return (
+    <List.Item active={isActive}  >
+      <List.Icon name={isActiveAndHasSubForms ? "folder open" : hasSubForms ? "folder open outline" : isActive ? "file alternate" : "file outline"} color={isActive ? 'teal' : 'grey'} />
+      <List.Content>
+        <a style={isActive ? { color: "#02B5AE" } : {}} onClick={() => {
+          setActiveItem(item)
+        }}>{ findDisplayName(item, study, activeSubmission, item) }</a>
+        <List.List>
+          {
+            item.next_form.map((subform) => {
+              return <ListMenuItem
+                key={`${subform.form_name}-${subform.form_id}`}
+                item={subform}
+                study={study}
+                activeItem={activeItem}
+                setActiveItem={setActiveItem}
+              />
+            })
+          }
+        </List.List>
+      </List.Content>
+    </List.Item>
+  )
 }
 
 function ListMenu({ 
-  items,
-  // setContent,
-  patientIdentifier,
-  setPatientIdentifier,
+  root,
+  study,
   activeItem,
   setActiveItem
 }) {
-  const menuItems = items.map((item) => {
-    return (
-      <ListMenuItem
-        key={item.form_id}
-        item={item}
-        // setContent={setContent} 
-        patientIdentifier={patientIdentifier} 
-        setPatientIdentifier={setPatientIdentifier} 
-        activeItem={activeItem} 
-        setActiveItem={setActiveItem}
-      />
-    )
-  })
 
   return (
     <Segment basic>
     <List link size="large">
-      {menuItems}
+      <ListMenuItem
+        key={`${root.form_name}-${root.form_id}`}
+        item={root}
+        study={study}
+        activeItem={activeItem} 
+        setActiveItem={setActiveItem}
+      />
     </List>
     </Segment>
   )
 }
 
-export default function FormFactory({ patientIdentifier, setPatientIdentifier }) {
-  const { loading, error, data } = useQuery(Forms)
-  // const [ content, setContent ] = React.useState(<></>)
+export default function FormFactory() {
+  const defaultStudy = 'mohccn'
+  const { patientIdentifier } = React.useContext(PatientIdentifierContext)
+  const { loading, error, data } = useQuery(FormTree, {
+    variables: {
+      study: patientIdentifier.study ?? defaultStudy
+    }
+  })
   const [ activeItem, setActiveItem ] = React.useState(null)
-  
-  // React.useEffect(() => setContent(
-  //   data
-  //   ? <FormGenerator
-  //       metadata={activeItem !== null ? activeItem : data.forms[0]}
-  //       patientIdentifier={patientIdentifier}
-  //       setPatientIdentifier={setPatientIdentifier} />
-  //   : <WelcomeMessage />
-  // ), [patientIdentifier])
 
   if (loading) {
     return <LoadingSegment />
@@ -141,19 +96,27 @@ export default function FormFactory({ patientIdentifier, setPatientIdentifier })
       <Grid>
         <Grid.Column width={3}>
           <ListMenu
-            items={data.forms}
-            // setContent={setContent}
-            patientIdentifier={patientIdentifier}
-            setPatientIdentifier={setPatientIdentifier}
+            root={data.GetRootForm}
+            study={patientIdentifier.study ?? defaultStudy}
             activeItem={activeItem}
             setActiveItem={setActiveItem}
           />
         </Grid.Column>
         <Grid.Column width={13}>
+          {
+            activeItem && activeItem !== data.GetRootForm
+            ? <ParentSubmissionTable 
+                key={activeItem}
+                formID={getParentForm(data.GetRootForm, activeItem)?.form_id}
+                patientIdentifier={patientIdentifier}
+              />
+            : <></>
+          }
           <FormGenerator
-            metadata={activeItem !== null ? activeItem : data.forms[0]}
-            patientIdentifier={patientIdentifier}
-            setPatientIdentifier={setPatientIdentifier} />
+            key={activeItem ? activeItem.form_name : data.GetRootForm.form_name}
+            root={data.GetRootForm}
+            formMetadata={activeItem ?? data.GetRootForm}
+          />
         </Grid.Column>
       </Grid>
     </Segment>

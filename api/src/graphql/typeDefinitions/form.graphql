@@ -17,18 +17,19 @@
     value : FormValue!
   }
 
-  type Submitter{
-    """
-    
-    """
-    uuid                               : String!
-    form                               : String!
-    formPrimaryIdentifierKeys          : Parser
-    fields                             : [FieldKeyValuePair!]! @relationship(type : "HAS_FIELD_VALUE", direction : OUT)
-    formReferenceKeys                  : [Submitter!]! @relationship(type : "REFERENCE_PRIMARY_KEY", direction : OUT)
-    connectedFormsReferencingSubmitter : [Submitter!]! @relationship(type : "REFERENCE_PRIMARY_KEY", direction : IN)
-     
-    submittedByKeycloakUser            : KeycloakUser! @relationship(type : "SUBMITTED_BY", direction : OUT) 
+  type Patient {
+    patient_id: String!
+    program_id: String!
+    study: String
+    submissions: [Submission] @relationship(type: "DATA_FOR", direction: IN)
+  }
+
+  type Submission {
+    submission_id: ID! @id
+    form_id: String!
+    patient: Patient! @relationship(type: "DATA_FOR", direction: OUT)
+    fields: [FieldKeyValuePair!]! @relationship(type: "HAS_VALUE", direction: OUT)
+    submittedBy: KeycloakUser! @relationship(type: "SUBMITTED_BY", direction: OUT)
   }
 
   type FormDraft {
@@ -41,6 +42,7 @@
     patient_id: String!
     secondary_ids: String # Secondary IDs are fields that are unique to a form, but are not part of the patient's data
     data: String
+    createdBy: KeycloakUser @relationship(type: "CREATED_BY", direction: OUT) 
   }
 
   type Form {
@@ -50,14 +52,12 @@
     form_id                       : String
     form_name                     : String
     form_relationship_cardinality : FormValue
-    has_next_question             : Field @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
-    next_form                     : [Form!]!  @relationship(type : "NEXT_FORM", direction : OUT)
-    primary_key                   : [Field!]! @relationship(type : "HAS_PRIMARY_KEY", direction : OUT)
-    foreign_key                   : [Field!]! @relationship(type : "HAS_FOREIGN_KEY", properties : "reference", direction : OUT)
-    identifier                    : [Field!]! @cypher(statement: """ MATCH (f:Form)-[:HAS_PRIMARY_KEY]->(pk)
-                                                         WHERE NOT ()-[:NEXT_FORM]->(f)
-                                                         RETURN pk 
-                                                     """ )
+    next_form: [Form!]!  @relationship(type : "NEXT_FORM", direction : OUT, properties: "Studies")
+    display_name: Parser
+    fields: [Field!] @relationship(type: "BELONGS_TO", direction: IN, properties: "IsID")
+    has_next_question: [Field] @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
+    studies: [String]
+    branch_fields: [String]
   }
 
   type Field {
@@ -72,36 +72,52 @@
     regex             : String
     value             : FormValue
     set               : SampleSet
-    required          : Boolean
+    required          : FormValue
     component         : String
     conditionals      : Parser
     placeholder       : String
     filter            : Parser
-    has_next_question : Field @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
-    foreign_key_to    : [Form!]! @relationship(type : "HAS_FOREIGN_KEY",  direction : IN)
-    primaryFormIdentifiers    : Form @relationship(type : "HAS_PRIMARY_KEY", direction : IN)
+    info: String
+    display_name: Parser
+    studies: [String]
+    has_next_question: Field @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
+    belongs_to(isID: Boolean): Form! @relationship(type: "BELONGS_TO", direction: OUT)
   }
 
-  interface reference @relationshipProperties {
-    """
-    reference relation holds extra information to inter connection
-    Override: switches any metadata value within the field its connected to 
-    [EX: a reference key might not be required witin the current form but is set to required]
-    
-    relationship_cardinality : holds the how many time the referencekey can be allocated to another submitter
-    EX : Radiation has a relationship cardinality of 1 towards Treatment meaning that per each Treatment generated
-    we can only refernce the primary identifiers once
-    """
-    relationship_cardinality : FormValue
-    override                 : Parser
+  interface IsID @relationshipProperties {
+    isID: Boolean!
+    override: Parser
+  }
+
+  interface Studies @relationshipProperties {
+    studies: [String]
   }
 
 
   type Query {
 
-    PopulateForm(id : String!) : [Field]
+    GetFormFields(id: String!, study: String) : [Field]
     @cypher( statement: """ 
-    MATCH (:Form {form_id : $id})-[:HAS_NEXT_QUESTION*]->(f:Field) RETURN f
+    MATCH (:Form {form_id : $id})-[:HAS_NEXT_QUESTION*]->(f:Field)
+    WHERE single(x in f.studies WHERE x = $study)
+    RETURN f
     """)
+    GetRootForm(study: String!): Form @cypher(statement: """
+    MATCH (f:Form)
+    WHERE NOT ()-[:NEXT_FORM]->(f)
+    AND single(x IN f.studies WHERE x = $study)
+    RETURN f
+    """)
+    GetPatientID: [Field!]! @cypher(statement:"""
+    MATCH (f:Form)
+    WHERE NOT ()-[:NEXT_FORM]->(f)
+    WITH f
+    MATCH (n:Field)-[r:BELONGS_TO]->(f)
+    WHERE r.isID = true
+    RETURN n
+    """)
+  }
 
+  type Mutation {
+    findOrCreatePatient(patient_id: String!, program_id: String!, study: String): Patient
   }

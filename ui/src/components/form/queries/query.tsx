@@ -1,12 +1,21 @@
 import { gql } from "@apollo/client";
 
-export const Forms = gql`
-  query Forms($where: FormWhere = {form_name: "Donor"}) {
-    forms(where: $where) {
+export const RootForm = gql`
+  query RootForm($study: String!) {
+    GetRootForm(study: $study) {
+      form_id
+      form_name
+      form_relationship_cardinality
+      studies
+      branch_fields
+    }
+  }
+`;
+
+export const FormTree = gql`
+  query FormTree($study: String!) {
+    GetRootForm(study: $study) {
       ...FormID
-      ...Identifier
-      ...PrimaryKey
-      ...ForeignKey
       ...FormRecursive
     }
   }
@@ -15,103 +24,72 @@ export const Forms = gql`
     form_id
     form_name
     form_relationship_cardinality
+    studies
+    display_name
+    branch_fields
     next_form {
       form_id
       form_name
       form_relationship_cardinality
-    }
-  }
-
-  fragment Identifier on Form {
-    identifier {
-      component
-      conditionals
-      description
-      label
-      name
-      placeholder
-      regex
-      required
-      set
-      type
-      value
-    }
-  }
-
-  fragment PrimaryKey on Form {
-    primary_key {
-      component
-      conditionals
-      description
-      label
-      name
-      placeholder
-      regex
-      required
-      set
-      type
-      value
-      primaryFormIdentifiers {
-        form_id
-        form_relationship_cardinality
-      }
-    }
-  }
-
-  fragment ForeignKey on Form {
-    foreign_keyConnection {
-      edges {
-        relationship_cardinality
-        override
-        node {
-          component
-          conditionals
-          description
-          label
-          name
-          placeholder
-          regex
-          required
-          set
-          type
-          value
-          primaryFormIdentifiers {
-            form_id
-            form_relationship_cardinality
-          } 
-        }
-      }
+      studies
+      display_name
+      branch_fields
     }
   }
 
   fragment FormRecursive on Form {
     next_form {
       ...FormID
-      ...Identifier
-      ...PrimaryKey
-      ...ForeignKey
       next_form {
         ...FormID
-        ...Identifier
-        ...PrimaryKey
-        ...ForeignKey
         next_form {
           ...FormID
-          ...Identifier
-          ...PrimaryKey
-          ...ForeignKey
         }
       }
     }
   }
 `;
 
+export const FormIDFields = gql`
+  query FormIDFields($where: FormWhere) {
+    forms(where: $where) {
+      form_id
+      form_name
+      branch_fields
+      fieldsConnection(where: {
+        edge: {
+          isID: true
+        }
+      }) {
+        edges {
+          isID
+          override
+          node {
+            component
+            conditionals
+            description
+            label
+            name
+            regex
+            required
+            set
+            type
+            value
+            filter
+            display_name
+          }
+        }
+      }
+    }
+}
+`;
+
 export const FieldData = gql`
-  query PopulateForm($id: String!) {
+  query GetFormFields($id: String!, $study: String) {
     # using static query take the form id 
     # and get all connected fields metadata
     # so it can populate the frontend
-    PopulateForm(id: $id) {
+    GetFormFields(id: $id, study: $study) {
       component
       conditionals
       description
@@ -123,108 +101,55 @@ export const FieldData = gql`
       type
       value
       filter
+      display_name
+      info
     }
   }
 `;
 
-export const NodeExist = gql`
-query ($where: SubmitterWhere) {
-  exist: submitters(where: $where) {
-    uuid
-    form
-    formPrimaryIdentifierKeys
-    formReferenceKeys{
-      form
-      formPrimaryIdentifierKeys
+export const FindPatients = gql`
+  query GetPatient($where: PatientWhere!) {
+    patients (where: $where) {
+      patient_id
+      program_id
+      study
     }
   }
-}
-`;
+`
 
+export const FindOrCreatePatient = gql`
+  mutation FindOrCreatePatient($patient_id: String!, $program_id: String!, $study: String) {
+    findOrCreatePatient(patient_id: $patient_id, program_id: $program_id, study: $study) {
+      patient_id
+      program_id
+      study
+    }
+  }
+`
 
-export const submitterBundle = gql`
-query bundleFormMetadataChecks($self: SubmitterWhere, $root: SubmitterWhere, $references : SubmitterWhere, $form : SubmitterWhere) {
-  # count the amount of nodes that exist within reference to the root identifier.
-  # This would be use to check if the form identifiers entered already exist
-  root: submitters(where: $root){
-  connectedFormsReferencingSubmitterAggregate(where : $self){
-      count
-    }
-  }
-  # from the root get all referenced form within the current form being
-	# queried as well with the reference count how many times it has ben used
-	# under the form id; this is nessary to check if it still meets the relational cardinality of
-	# its referenced keys that are not the root 
-  ReferencesConnectionOfRoot : submitters(where : $root){
-    form
-    formPrimaryIdentifierKeys
-    connectedFormsReferencingSubmitter(where : $references){
-      form
-      formPrimaryIdentifierKeys
-      connectedFormsReferencingSubmitterAggregate(where : $form){
-        count
-      }
-    }
-  }
-  # now check the current relational cardinality of the root to the form
-  CurrentRelationalCardinalityOfFormToRoot : submitters(where: $root){
-      connectedFormsReferencingSubmitterAggregate(where : $form){
-      count
-    }
-  }
-}`
-
-export const NodeGetContext = gql`
-  query Submitters($root: SubmitterWhere, $references: SubmitterWhere) {
-    submitters(where: $root) {
-      formPrimaryIdentifierKeys
-      form
+export const FindSubmissions = gql`
+  query GetSubmissions($where: SubmissionWhere!) {
+    submissions(where: $where) {
+      submission_id
+      form_id
       fields {
         key
         value
       }
-      connectedFormsReferencingSubmitter(where: $references) {
-        form
-        uuid
-        formPrimaryIdentifierKeys
-        fields {
-          key
-          value
-        }
+      patient {
+        patient_id
+        submitter_donor_id: patient_id
+        program_id
+        study
       }
     }
   }
-`;
-
-// FIX LATER: change this to it's own resolver that just return boolean if the root exists 
-export const doesRootExist = gql`
-query doseRootExsit($self: SubmitterWhere) {
-  # count the amount of nodes that exist within reference to the root identifier.
-  # This would be use to check if the form identifiers entered already exist
-  root: submitters(where: $self){
-			form
-    }
-}
 `
 
-export const CreateNode = gql`
-  mutation Fields($input: [SubmitterCreateInput!]!) {
-    createSubmitters(input: $input) {
-      submitters {
-        fields {
-          key
-          value
-        }
-        uuid
-      }
-    }
-  }
-`;
-
-export const CreateKeycloakSubmitterConnection = gql `
-  mutation AssignKeycloakUserToSubmitter($submitterID: ID!) {
-    assignKeycloakUserToSubmitter(submitterID: $submitterID) {
-        keycloakUserID
+export const CreateUserSubmissionConnection = gql`
+  mutation AssignUserSubmissionConnection($submissionID: ID!) {
+    assignKeycloakUserToSubmission(submissionID: $submissionID) {
+      keycloakUserID
     }
   }
 `
@@ -259,6 +184,26 @@ export const DeleteDraft = gql`
     deleteFormDrafts(where: $where) {
       nodesDeleted
       relationshipsDeleted
+    }
+  }
+`
+
+export const CreateSubmission = gql`
+  mutation CreateSubmissions($input: [SubmissionCreateInput!]!) {
+    createSubmissions(input: $input) {
+      submissions {
+        submission_id
+        form_id
+        patient {
+          patient_id
+          program_id
+          study
+        }
+        fields {
+          key
+          value
+        }
+      }
     }
   }
 `
