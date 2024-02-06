@@ -3,9 +3,8 @@ import { Form, Divider, Header, Icon, Button } from "semantic-ui-react"
 import { useMutation, useQuery } from "@apollo/client"
 
 import { validateInputs, doesFieldNotMeetAllConditions, createSubmissionInput, findDisplayName, getParentForm } from './utils'
-import { CreateDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields } from "./queries/query"
+import { FindDraft, UpdateOrCreateDraft, DeleteDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields } from "./queries/query"
 import { SubmissionTable } from "./table/SubmissionTable"
-import { DraftTable } from "./table/DraftTable"
 import { ActiveSubmissionContext, PatientFoundContext, PatientIdentifierContext } from "../Portal"
 import { zodifyField } from "./validate/validator"
 import { BasicErrorMessage } from "../common/BasicErrorMessage"
@@ -22,6 +21,7 @@ const initialState = {
   patientID: {},
   formIDs: {},
   fields: {},
+  draftID: null
 }
 
 const formReducer = (state, action) => {
@@ -98,16 +98,34 @@ const formReducer = (state, action) => {
           ...action.payload.fields
         }
       }
+    case 'UPDATE_DRAFT_ID':
+      return {
+        ...state,
+        draftID: action.payload
+      }
     default:
       return state
   }
 }
 
+// helper functions
+function transformData(data: any, re: RegExp) {
+  Object.keys(data).forEach((key) => {
+    const isDate = re.test(data[key])
+    if (isDate) {
+      data[key] = new Date(data[key])
+    } else if (data[key] === "") {
+      data[key] = null
+    }
+  })
+}
+
 export function FormGenerator({ formMetadata, root }) {
 
   // State and context variables
-  const [lastDraftUpdate, setLastDraftUpdate] = useState(new Date())
-  const [lastSubmissionUpdate, setLastSubmissionUpdate] = useState(new Date())
+  const [lastSubmissionUpdate, setLastSubmissionUpdate] = useState(`Submissions-${new Date().toUTCString()}`)
+  const [draftModified, setDraftModified] = useState(false)
+
   const { patientIdentifier } = useContext(PatientIdentifierContext)
   const { activeSubmission } = useContext(ActiveSubmissionContext)
   const { patientFound } = useContext(PatientFoundContext)
@@ -169,6 +187,7 @@ export function FormGenerator({ formMetadata, root }) {
       type: 'UPDATE_FORM_IDS',
       payload: { [name]: value }
     })
+    setDraftModified(true)
   }
 
   function handleFieldChange(e) {
@@ -176,6 +195,14 @@ export function FormGenerator({ formMetadata, root }) {
     dispatch({
       type: 'UPDATE_FIELDS',
       payload: { [name]: value }
+    })
+    setDraftModified(true)
+  }
+
+  function updateDraftID(payload) {
+    dispatch({
+      type: 'UPDATE_DRAFT_ID',
+      payload: payload
     })
   }
 
@@ -185,7 +212,8 @@ export function FormGenerator({ formMetadata, root }) {
   const isRootForm = formMetadata.form_id === root.form_id
   let canSubmit = isRootForm || patientFound
   const [findOrCreatePatient] = useMutation(FindOrCreatePatient)
-  const [createDraft] = useMutation(CreateDraft)
+  const [updateOrCreateDraft] = useMutation(UpdateOrCreateDraft)
+  const [deleteDraft] = useMutation(DeleteDraft)
   const [createSubmission] = useMutation(CreateSubmission)
   const [createUserSubmissionConnection] = useMutation(CreateUserSubmissionConnection)
   const { data: patientIDFields } = useQuery(FormIDFields, {
@@ -262,6 +290,40 @@ export function FormGenerator({ formMetadata, root }) {
     }
   })
 
+  // find a draft for the current form/patient combination.
+  // if a draft is found, fill the form with its contents.
+  const draftInfo = {
+    form_id: formMetadata.form_id,
+    patient_id: JSON.stringify(patientIdentifier)
+  }
+
+  const { data: _drafts } = useQuery(FindDraft, {
+    variables: {
+      where: draftInfo
+    },
+    fetchPolicy: "network-only",
+    onCompleted: (data) => {
+      // regex to determine a date in the YYYY-MM-DD format
+      // It will also match anything after the YYYY-MM-DD match,
+      // so a date like "2023-02-01T05:00:00.000Z" (without the quotes) is a valid date 
+      const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
+
+      if (data.formDrafts.length > 0) {
+        const patientID = JSON.parse(data.formDrafts[0].patient_id)
+        const formIDs = JSON.parse(data.formDrafts[0].secondary_ids) || {}
+        const draftData = JSON.parse(data.formDrafts[0].data) // the data that is used to save the draft
+
+        transformData(draftData, re)
+
+        fillForm({
+          fields: draftData,
+          patientID: patientID,
+          formIDs: formIDs
+        })
+      }
+    }
+  })
+
   // Component effects
   // updates the reducer's patientID every time the context patientIdentifier changes
   useEffect(() => {
@@ -273,6 +335,23 @@ export function FormGenerator({ formMetadata, root }) {
   useEffect(() => {
     canSubmit = isRootForm || patientFound
   }, [patientFound])
+
+  // sets the interval for saving drafts
+  useEffect(() => {
+    const seconds = 10 // save the drafts every ten seconds (10 * 1000 milliseconds)
+    const draftSaveInterval = draftModified 
+    ? setInterval(() => {
+        saveDraft()
+        setDraftModified(false)
+      }, seconds * 1000)
+    : null
+
+    return () => {
+      if (draftSaveInterval) {
+        clearInterval(draftSaveInterval)
+      }
+    }
+  }, [draftModified])
 
   // Event handlers
   // Handler for saving a form draft
@@ -293,11 +372,10 @@ export function FormGenerator({ formMetadata, root }) {
         }, {})
       draftInfo['secondary_ids'] = JSON.stringify(formIDs)
     }
-    await createDraft({
+    await updateOrCreateDraft({
       variables: { input: draftInfo },
-      onCompleted: () => {
-        alert('Draft saved')
-        setLastDraftUpdate(new Date())
+      onCompleted: (data) => {
+        updateDraftID(data.updateOrCreateDraft.draft_id)
       }
     })
   }
@@ -319,6 +397,20 @@ export function FormGenerator({ formMetadata, root }) {
       createSubmission({
         variables: { input: submissionInput },
         onCompleted: (submission) => {
+          // delete the current draft
+          deleteDraft({
+            variables: {
+              where: {
+                'draft_id': state.draft_id
+              }
+            },
+            onCompleted: () => {
+              setDraftModified(false)
+              updateDraftID(null)
+            }
+          })
+
+          // connect the new submission to the currently logged in user
           createUserSubmissionConnection({
             variables: {
               submissionID: submission.createSubmissions.submissions[0].submission_id
@@ -334,8 +426,10 @@ export function FormGenerator({ formMetadata, root }) {
             console.log('Could not connect user to submission')
           })
 
+          // notify the user of the successful submission and force
+          // the submissions table to re-render
           alert('Form submitted!')
-          setLastSubmissionUpdate(new Date())
+          setLastSubmissionUpdate(`Submissions-${new Date().toUTCString()}`)
         }
       })
       .catch((error) => {
@@ -457,14 +551,6 @@ export function FormGenerator({ formMetadata, root }) {
             )
           }
         </Form.Group>
-        <DraftTable
-          key={`Drafts-${lastDraftUpdate.toUTCString()}`}
-          formID={formMetadata.form_id}
-          headers={tableHeaders}
-          patientIdentifier={patientIdentifier}
-          fillForm={fillForm}
-          setLastDraftUpdate={setLastDraftUpdate}
-        />
         <SubmissionTable
           key={`Submissions-${lastSubmissionUpdate.toUTCString()}`}
           formID={formMetadata.form_id}
@@ -565,8 +651,6 @@ export function FormGenerator({ formMetadata, root }) {
           })
         }
         <Button.Group size="large" fluid>
-          <Button content="SAVE DRAFT" color="black" icon="save" onClick={() => { saveDraft() }} />
-          <Button.Or />
           <Button icon="send" size="huge" content="FINALIZE" color="teal"
             disabled={!canSubmit}
             onClick={() => {

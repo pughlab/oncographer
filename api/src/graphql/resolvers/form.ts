@@ -1,5 +1,6 @@
 import { ApolloError } from 'apollo-server'
 import { GraphQLScalarType, Kind } from 'graphql'
+import { v4 as uuidv4 } from 'uuid'
 
 function value(value) {
   let vtype = null;
@@ -132,6 +133,26 @@ export const resolvers = {
         return createPatient.records[0].get(0).properties
       } catch (error) {
         throw new Error(`Could not find or create Patient. Caused by ${error}`)
+      } finally {
+        session.close()
+      }
+    },
+    updateOrCreateDraft: async (_obj, args, { driver }) => {
+      const { form_id, patient_id, draft_id, data } = args.input
+      const session = driver.session()
+
+      try {
+        let command = draft_id 
+          ? "MERGE (d:FormDraft { draft_id: $draft_id, form_id: $form_id, patient_id: $patient_id }) SET d.data = $data RETURN d"
+          : "MERGE (d:FormDraft { form_id: $form_id, patient_id: $patient_id }) SET d.draft_id = $draft_id, d.data = $data RETURN d"
+        const createDraft = await session.run(
+          command,
+          draft_id ? { form_id, patient_id, data } : { form_id, patient_id, draft_id: uuidv4(), data }
+        )
+
+        return createDraft.records[0].get(0).properties
+      } catch (error) {
+        throw new Error(`Could not find or create draft. Caused by ${error}`)
       } finally {
         session.close()
       }

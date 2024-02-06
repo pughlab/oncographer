@@ -179,6 +179,18 @@ export const CreateDraft = gql`
   }
 `
 
+export const UpdateOrCreateDraft = gql`
+  mutation UpdateOrCreateDraft($input: FormDraftCreateInput!) {
+    updateOrCreateDraft(input: $input) {
+      draft_id
+      form_id
+      patient_id
+      secondary_ids
+      data
+    }
+  }
+`
+
 export const DeleteDraft = gql`
   mutation DeleteDrafts($where: FormDraftWhere) {
     deleteFormDrafts(where: $where) {

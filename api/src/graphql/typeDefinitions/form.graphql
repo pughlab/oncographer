@@ -119,5 +119,6 @@
   }
 
   type Mutation {
-    findOrCreatePatient(patient_id: String!, program_id: String!, study: String): Patient
+    findOrCreatePatient(patient_id: String!, program_id: String!, study: String): Patient,
+    updateOrCreateDraft(input: FormDraftCreateInput!): FormDraft
   }
