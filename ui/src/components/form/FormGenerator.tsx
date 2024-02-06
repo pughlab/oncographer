@@ -123,7 +123,6 @@ function transformData(data: any, re: RegExp) {
 export function FormGenerator({ formMetadata, root }) {
 
   // State and context variables
-  const [lastDraftUpdate, setLastDraftUpdate] = useState(`Drafts-${new Date().toUTCString()}`)
   const [lastSubmissionUpdate, setLastSubmissionUpdate] = useState(`Submissions-${new Date().toUTCString()}`)
   const [draftModified, setDraftModified] = useState(false)
   const { patientIdentifier } = useContext(PatientIdentifierContext)
@@ -337,13 +336,13 @@ export function FormGenerator({ formMetadata, root }) {
   }, [patientFound])
 
   // sets the interval for saving drafts
-  // save the drafts every five seconds (5 * 1000 milliseconds)
   useEffect(() => {
+    const seconds = 10 // save the drafts every ten seconds (10 * 1000 milliseconds)
     const draftSaveInterval = draftModified 
     ? setInterval(() => {
         saveDraft()
         setDraftModified(false)
-      }, 5 * 1000)
+      }, seconds * 1000)
     : null
 
     return () => {
@@ -376,7 +375,6 @@ export function FormGenerator({ formMetadata, root }) {
       variables: { input: draftInfo },
       onCompleted: (data) => {
         updateDraftID(data.updateOrCreateDraft.draft_id)
-        setLastDraftUpdate(`Drafts-${new Date().toUTCString()}`)
       }
     })
   }
@@ -407,7 +405,7 @@ export function FormGenerator({ formMetadata, root }) {
             },
             onCompleted: () => {
               setDraftModified(false)
-              setLastDraftUpdate(new Date().toUTCString())
+              updateDraftID(null)
             }
           })
 
