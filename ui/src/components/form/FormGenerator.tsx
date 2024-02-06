@@ -125,6 +125,7 @@ export function FormGenerator({ formMetadata, root }) {
   // State and context variables
   const [lastSubmissionUpdate, setLastSubmissionUpdate] = useState(`Submissions-${new Date().toUTCString()}`)
   const [draftModified, setDraftModified] = useState(false)
+
   const { patientIdentifier } = useContext(PatientIdentifierContext)
   const { activeSubmission } = useContext(ActiveSubmissionContext)
   const { patientFound } = useContext(PatientFoundContext)
@@ -551,7 +552,7 @@ export function FormGenerator({ formMetadata, root }) {
           }
         </Form.Group>
         <SubmissionTable
-          key={`Submissions-${lastSubmissionUpdate}`}
+          key={`Submissions-${lastSubmissionUpdate.toUTCString()}`}
           formID={formMetadata.form_id}
           formIDKeys={renderedFormIDFields.map((field) => field.name)}
           headers={tableHeaders}

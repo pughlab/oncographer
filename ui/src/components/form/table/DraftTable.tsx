@@ -73,7 +73,7 @@ const DraftTableContents = ({ drafts, headers, setLastDraftUpdate, fillForm }) =
       },
       onCompleted: () => {
         alert('Draft deleted')
-        setLastDraftUpdate(new Date().toUTCString())
+        setLastDraftUpdate(new Date())
       }
     })
   }

@@ -33,7 +33,8 @@ export function SubmissionTable({
     } = useQuery(FindSubmissions, {
         variables: {
             where: submissionSearchInfo
-        }
+        },
+        fetchPolicy: "network-only"
     })
 
     if (submissionsLoading) {
@@ -46,11 +47,6 @@ export function SubmissionTable({
 
     if (submissionsInfo.submissions.length === 0) return <></>
 
-    // regex to determine a date in the YYYY-MM-DD format
-    // It will also match anything after the YYYY-MM-DD match,
-    // so a date like "2023-02-01T05:00:00.000Z" (without the quotes) is a valid date 
-    const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
-
     return (
         <>
             <Divider hidden />
@@ -60,79 +56,98 @@ export function SubmissionTable({
                     SUBMISSIONS
                 </Header>
             </Divider>
-            <Table fixed selectable aria-labelledby="header" striped>
-                <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
-                    <Table.Header>
-                        <Table.Row>
-                            {
-                                Object.values(headers).map((header: any) => {
-                                    return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
-                                })
-                            }
-                        </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
+            <SubmissionTableContents 
+                submissions={submissionsInfo.submissions}
+                idKeys={formIDKeys}
+                headers={headers}
+                fillForm={fillForm}
+                setActiveSubmission={setActiveSubmission}
+                patientIdentifier={patientIdentifier}
+            />
+        </>
+    )
+}
+
+const SubmissionTableContents = ({ submissions, idKeys, headers, fillForm, setActiveSubmission, patientIdentifier }) => {
+
+    // regex to determine a date in the YYYY-MM-DD format
+    // It will also match anything after the YYYY-MM-DD match,
+    // so a date like "2023-02-01T05:00:00.000Z" (without the quotes) is a valid date 
+    const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
+
+    return (
+        <Table fixed selectable aria-labelledby="header" striped>
+            <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
+                <Table.Header>
+                    <Table.Row>
                         {
-                            submissionsInfo.submissions.map((submission: any) => {
-                                const row: any = {}
-                                submission.fields.forEach((field) => {
-                                    row[field["key"]] = field["value"]
-                                })
-                                Object.keys(submission.patient).forEach((key) =>{
-                                    row[key] = submission.patient[key]
-                                })
-                                const formData = {
-                                    patientID: patientIdentifier,
-                                    formIDs: formIDKeys.reduce((obj, key) => {
-                                        return {
-                                            ...obj,
-                                            [submission.fields[key]]: submission.fields['value']
-                                        }
-                                    }, {}),
-                                    fields: submission.fields
-                                        .filter((field) => !formIDKeys.includes(field['key']))
-                                        .reduce((obj, field) => {
-                                            return {
-                                                ...obj,
-                                                [field['key']]: re.test(field['value']) 
-                                                    ? new Date(field['value']) 
-                                                    : field['value']
-                                            }
-                                        }, {})
-                                }
-                                return (
-                                    <Table.Row key={submission.submission_id} onClick={() => { fillForm(formData); setActiveSubmission(submission) }}>
-                                        {
-                                            Object.keys(headers).map((key) => {
-                                                let value = row.hasOwnProperty(key) ? row[key]: ""
-
-                                                const isDate = re.test(value)
-
-                                                if (isDate) {
-                                                    value = toDateString(value)
-                                                } else if (Array.isArray(value)) {
-                                                    value = (
-                                                        <List>{ 
-                                                            value.map(
-                                                                (item) => <List.Item key={item}>{item}</List.Item>
-                                                            )
-                                                        }</List>)
-                                                }
-
-                                                return (
-                                                    <Table.Cell key={`${submission.submission_id}-${key}-${value}`}>
-                                                        {value}
-                                                    </Table.Cell>
-                                                )
-                                            })
-                                        }
-                                    </Table.Row>
-                                )
+                            Object.values(headers).map((header: any) => {
+                                return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
                             })
                         }
-                    </Table.Body>
-                </div>
-            </Table>
-        </>
+                    </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                    {
+                        submissions.map((submission: any) => {
+                            const row: any = {}
+                            submission.fields.forEach((field) => {
+                                row[field["key"]] = field["value"]
+                            })
+                            Object.keys(submission.patient).forEach((key) =>{
+                                row[key] = submission.patient[key]
+                            })
+                            const formData = {
+                                patientID: patientIdentifier,
+                                formIDs: idKeys.reduce((obj, key) => {
+                                    return {
+                                        ...obj,
+                                        [submission.fields[key]]: submission.fields['value']
+                                    }
+                                }, {}),
+                                fields: submission.fields
+                                    .filter((field) => !idKeys.includes(field['key']))
+                                    .reduce((obj, field) => {
+                                        return {
+                                            ...obj,
+                                            [field['key']]: re.test(field['value']) 
+                                                ? new Date(field['value']) 
+                                                : field['value']
+                                        }
+                                    }, {})
+                            }
+                            return (
+                                <Table.Row key={submission.submission_id} onClick={() => { fillForm(formData); setActiveSubmission(submission) }}>
+                                    {
+                                        Object.keys(headers).map((key) => {
+                                            let value = row.hasOwnProperty(key) ? row[key]: ""
+
+                                            const isDate = re.test(value)
+
+                                            if (isDate) {
+                                                value = toDateString(value)
+                                            } else if (Array.isArray(value)) {
+                                                value = (
+                                                    <List>{ 
+                                                        value.map(
+                                                            (item) => <List.Item key={item}>{item}</List.Item>
+                                                        )
+                                                    }</List>)
+                                            }
+
+                                            return (
+                                                <Table.Cell key={`${submission.submission_id}-${key}-${value}`}>
+                                                    {value}
+                                                </Table.Cell>
+                                            )
+                                        })
+                                    }
+                                </Table.Row>
+                            )
+                        })
+                    }
+                </Table.Body>
+            </div>
+        </Table>
     )
 }
