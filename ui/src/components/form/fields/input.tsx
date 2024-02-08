@@ -6,7 +6,7 @@ import "react-datepicker/dist/react-datepicker.css"
 import { fieldIsRequired } from "../utils"
 
 
-export function DateInputField({ field, study, label, value, comparingDate = null, isDisabled, errorMessage, validator, updateErrorMessage, updateValue }) {
+export function DateInputField({ field, study, label, value, comparingDate = null, isDisabled, isReadonly, errorMessage, validator, updateErrorMessage, updateValue }) {
     // calculate time difference in years between the current value and a given date
     const otherDate = comparingDate ?? new Date()
     const difference = dayjs(otherDate).diff(dayjs(value), 'years')
@@ -56,12 +56,13 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
                 showMonthYearPicker
                 showFullMonthYearPicker
                 showFourColumnMonthYearPicker
+                readOnly={isReadonly}
             />
         </Form.Field>
     )
 }
 
-export function InputField({ field, study, label, value, isDisabled, errorMessage, validator, updateErrorMessage, updateValue }) {
+export function InputField({ field, study, label, value, isDisabled, isReadonly, errorMessage, validator, updateErrorMessage, updateValue }) {
     return (
         <Form.Field disabled={isDisabled} error={errorMessage !== null}>
             <div>
@@ -83,6 +84,7 @@ export function InputField({ field, study, label, value, isDisabled, errorMessag
                 name={field.name}
                 value={value ?? ''}
                 type={field.type}
+                readOnly={isReadonly}
                 placeholder={field.placeholder}
                 onChange={(e) => {
                     let newValue = ["number", "integer"].includes(field.type.toLowerCase())

@@ -7,6 +7,7 @@ export function TextAreaField({
     study,
     label,
     isDisabled,
+    isReadonly,
     validator,
     value,
     errorMessage,
@@ -14,7 +15,7 @@ export function TextAreaField({
     updateValue
 }) {
     return (
-        <Form.Field disabled={isDisabled} error={errorMessage !== null}>
+        <Form.Field disabled={isDisabled} readOnly={isReadonly} error={errorMessage !== null}>
             <div>
                 <Popup
                     trigger={<span style={fieldIsRequired(field, study) && !isDisabled ? { color: 'red' } : { display: 'none' }}>* </span>}

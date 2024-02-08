@@ -120,9 +120,23 @@ function transformData(data: any, re: RegExp) {
   })
 }
 
+function formatDraftDate(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  const ampm = date.toLocaleString('en-US', { timeZoneName: 'short' }).split(' ')[2]
+  const timeZone = date.toLocaleString('en-US', { timeZoneName: 'short' }).split(' ')[3]
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} ${ampm} ${timeZone}`
+}
+
 export function FormGenerator({ formMetadata, root }) {
 
   // State and context variables
+  const [lastDraftUpdate, setLastDraftUpdate] = useState("")
   const [lastSubmissionUpdate, setLastSubmissionUpdate] = useState(`Submissions-${new Date().toUTCString()}`)
   const [draftModified, setDraftModified] = useState(false)
 
@@ -339,10 +353,12 @@ export function FormGenerator({ formMetadata, root }) {
   // sets the interval for saving drafts
   useEffect(() => {
     const seconds = 10 // save the drafts every ten seconds (10 * 1000 milliseconds)
-    const draftSaveInterval = draftModified 
+    const validPatient = !!patientIdentifier.submitter_donor_id && !!patientIdentifier.program_id
+    const draftSaveInterval = draftModified && validPatient
     ? setInterval(() => {
         saveDraft()
         setDraftModified(false)
+        setLastDraftUpdate(formatDraftDate(new Date()))
       }, seconds * 1000)
     : null
 
@@ -407,6 +423,7 @@ export function FormGenerator({ formMetadata, root }) {
             onCompleted: () => {
               setDraftModified(false)
               updateDraftID(null)
+              setLastDraftUpdate("")
             }
           })
 
@@ -517,6 +534,7 @@ export function FormGenerator({ formMetadata, root }) {
   // final render
   return (
     <div key={formMetadata.form_name} style={{ paddingLeft: "60px", paddingRight: "60px" }}>
+      { lastDraftUpdate !== "" ? <><span style={{float: 'right'}}>Last autosaved at: {lastDraftUpdate}</span><br/></> : <></> }
       <Form
         size="small"
         onSubmit={(event) => {
@@ -552,7 +570,7 @@ export function FormGenerator({ formMetadata, root }) {
           }
         </Form.Group>
         <SubmissionTable
-          key={`Submissions-${lastSubmissionUpdate.toUTCString()}`}
+          key={`Submissions-${lastSubmissionUpdate}`}
           formID={formMetadata.form_id}
           formIDKeys={renderedFormIDFields.map((field) => field.name)}
           headers={tableHeaders}
@@ -566,6 +584,7 @@ export function FormGenerator({ formMetadata, root }) {
             const isDisabled = field.conditionals === null
               ? false
               : doesFieldNotMeetAllConditions(field.conditionals, state.fields)
+            const isReadonly = field.readonly ?? false
             const errorMessage = isDisabled ? null : state.errorMessages[field.name]
 
             switch (String(field.component).toLowerCase()) {
@@ -578,6 +597,7 @@ export function FormGenerator({ formMetadata, root }) {
                     label={labels[field.name]}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
+                    isReadonly={isReadonly}
                     errorMessage={errorMessage}
                     validator={state.validators[field.name]}
                     updateErrorMessage={updateErrorMessages}
@@ -591,6 +611,7 @@ export function FormGenerator({ formMetadata, root }) {
                     label={labels[field.name]}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
+                    isReadonly={isReadonly}
                     validator={state.validators[field.name]}
                     errorMessage={errorMessage}
                     updateErrorMessage={updateErrorMessages}
@@ -604,6 +625,7 @@ export function FormGenerator({ formMetadata, root }) {
                     label={labels[field.name]}
                     value={state.fields[field.name]}
                     isDisabled={isDisabled}
+                    isReadonly={isReadonly}
                     validator={state.validators[field.name]}
                     errorMessage={errorMessage}
                     updateErrorMessage={updateErrorMessages}
@@ -621,6 +643,7 @@ export function FormGenerator({ formMetadata, root }) {
                     study={patientIdentifier.study}
                     label={labels[field.name]}
                     isDisabled={isDisabled}
+                    isReadonly={isReadonly}
                     errorMessage={errorMessage}
                     options={state.options[field.name]}
                     validator={state.validators[field.name]}
@@ -635,6 +658,7 @@ export function FormGenerator({ formMetadata, root }) {
                     study={patientIdentifier.study}
                     label={labels[field.name]}
                     isDisabled={isDisabled}
+                    isReadonly={isReadonly}
                     errorMessage={errorMessage}
                     options={state.options[field.name]}
                     validator={state.validators[field.name]}
