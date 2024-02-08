@@ -3,10 +3,10 @@ import { Form, Icon, Popup } from "semantic-ui-react";
 import * as R from "remeda";
 import { constructDropdown, fieldIsRequired } from '../utils'
 
-export function SmallSelectField({ field, study, label, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
+export function SmallSelectField({ field, study, label, isDisabled, isReadonly, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
     const processedOptions = constructDropdown(options)
     return (
-        <Form.Field disabled={isDisabled} error={errorMessage !== null}>
+        <Form.Field disabled={isDisabled} readOnly={isReadonly} error={errorMessage !== null}>
             <div>
                 <Popup
                     trigger={<span style={fieldIsRequired(field, study) && !isDisabled ? { color: 'red' } : { display: 'none' }}>* </span>}
@@ -22,7 +22,7 @@ export function SmallSelectField({ field, study, label, isDisabled, errorMessage
                     inverted
                 />
             </div>
-            <Form.Group widths={options.length}>
+            <Form.Group widths={options.length !== 1 ? options.length : "equal"}>
                 {R.map(processedOptions, (option) => {
                     const isActive = value === option.value;
                     return (
@@ -57,12 +57,12 @@ export function SmallSelectField({ field, study, label, isDisabled, errorMessage
     )
 }
 
-export function LargeSelectField({ field, study, label, isDisabled, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
+export function LargeSelectField({ field, study, label, isDisabled, isReadonly, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
     const processedOptions = useMemo(() => {
         return constructDropdown(options)
     }, [options])
     return (
-        <Form.Field disabled={isDisabled} error={errorMessage !== null}>
+        <Form.Field disabled={isDisabled} readOnly={isReadonly} error={errorMessage !== null}>
             <div>
                 <Popup
                     trigger={<span style={fieldIsRequired(field, study) && !isDisabled ? { color: 'red' } : { display: 'none' }}>* </span>}

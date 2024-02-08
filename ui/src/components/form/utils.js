@@ -64,7 +64,7 @@ export const doesFieldNotMeetAllConditions = (conditionals, gfs) => {
       else {
         Array.isArray(conditionals[key]) ? 
         check.push(conditionals[key].includes(gfs[key])) :
-        check.push(conditionals[key] === gfs[key]);
+        check.push(conditionals[key] === gfs[key] || conditionals[key] === Boolean(gfs[key]));
       }
     });
 
