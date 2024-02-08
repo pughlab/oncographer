@@ -142,7 +142,7 @@ export function FormGenerator({ formMetadata, root }) {
 
   const { patientIdentifier } = useContext(PatientIdentifierContext)
   const { activeSubmission } = useContext(ActiveSubmissionContext)
-  const { patientFound } = useContext(PatientFoundContext)
+  const { patientFound, setPatientFound } = useContext(PatientFoundContext)
 
   // Reducer variables and associated functions
   const [state, dispatch] = useReducer(formReducer, initialState)
@@ -208,7 +208,7 @@ export function FormGenerator({ formMetadata, root }) {
     const { name, value } = e.target
     dispatch({
       type: 'UPDATE_FIELDS',
-      payload: { [name]: value }
+      payload: { [name]: value instanceof Date || isNaN(value) ? value : Number(value) }
     })
     setDraftModified(true)
   }
@@ -447,6 +447,7 @@ export function FormGenerator({ formMetadata, root }) {
           // the submissions table to re-render
           alert('Form submitted!')
           setLastSubmissionUpdate(`Submissions-${new Date().toUTCString()}`)
+          setPatientFound(true)
         }
       })
       .catch((error) => {
@@ -534,7 +535,16 @@ export function FormGenerator({ formMetadata, root }) {
   // final render
   return (
     <div key={formMetadata.form_name} style={{ paddingLeft: "60px", paddingRight: "60px" }}>
-      { lastDraftUpdate !== "" ? <><span style={{float: 'right'}}>Last autosaved at: {lastDraftUpdate}</span><br/></> : <></> }
+      { 
+        lastDraftUpdate !== "" 
+        ? <>
+            <span style={{float: 'right'}}>
+              Patient {patientIdentifier.submitter_donor_id}: {formMetadata.form_name} form last autosaved at: {lastDraftUpdate}
+            </span>
+            <br/>
+          </>
+        : <></>
+      }
       <Form
         size="small"
         onSubmit={(event) => {
