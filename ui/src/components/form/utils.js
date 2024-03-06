@@ -126,6 +126,21 @@ function getBranchFieldLabel(labelContainer, branchFields, submissionFields) {
   }
 }
 
+export function findDescription(field, study) {
+  let description = ""
+  if (typeof field.description === "string") {
+    try {
+      const descriptionObject = JSON.parse(field.description)
+      description = descriptionObject[study]
+    } catch (_error) {
+      description = field.description
+    }
+  } else if (typeof field.description === "object") {
+    description = field.description[study]
+  }
+  return description
+}
+
 export function findDisplayName(field, study, activeSubmission, parentForm) {
   if (!field.display_name) {
     return field.__typename.toLowerCase() === "field" ? field.label : field.form_name
@@ -153,10 +168,11 @@ export function getParentForm(root, form) {
   const stack = [ root ]
   while (stack.length) {
     const node = stack.pop()
-    if (node.next_form.includes(form)) { 
+    const item = node.node ? node.node : node
+    if (item.next_formConnection.edges.includes(form)) { 
       return node
     }
-    stack.push(...node.next_form)
+    stack.push(...item.next_formConnection.edges)
   }
   return null
 }

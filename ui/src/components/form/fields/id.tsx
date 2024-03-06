@@ -1,8 +1,9 @@
 import React from "react";
 import { Form, Icon, Popup } from "semantic-ui-react";
-import { fieldIsRequired } from "../utils"
+import { fieldIsRequired, findDescription } from "../utils"
 
 export function IDField({ field, study, label, override, validator, value, errorMessage, updateErrorMessage, updateValue }) {
+    const description = findDescription(field, study)
     return (
         <Form.Field key={field.name} error={errorMessage !== null}>
             <div>
@@ -16,12 +17,16 @@ export function IDField({ field, study, label, override, validator, value, error
                     inverted
                 />
                 <label style={{ marginRight: '5px' }}>{label}</label>
-                <Popup
-                    trigger={<Icon name='help circle' />}
-                    content={field.description}
-                    position='top center'
-                    inverted
-                />
+                {
+                    description 
+                    ? <Popup
+                        trigger={<Icon name='help circle' />}
+                        content={description}
+                        position='top center'
+                        inverted
+                    />
+                    : <></>
+                }
             </div>
             <Form.Input
                 name={field.name}

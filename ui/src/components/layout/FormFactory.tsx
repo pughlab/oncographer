@@ -1,7 +1,7 @@
 import * as React from 'react'
 import * as R from 'remeda'
 import { useQuery } from "@apollo/client";
-import { Segment, List, Grid } from "semantic-ui-react";
+import { Segment, List, Grid, SemanticICONS, SemanticCOLORS } from "semantic-ui-react";
 import { FormTree } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
@@ -10,6 +10,21 @@ import { ActiveSubmissionContext, PatientIdentifierContext } from '../Portal';
 import { findDisplayName, getParentForm } from "../form/utils"
 import { ParentSubmissionTable } from '../form/table/ParentSubmissionTable';
 
+// helper functions
+function compareForms(a, b) {
+  let result = 0
+  const aLength = a.node.next_formConnection.edges.length
+  const bLength = b.node.next_formConnection.edges.length
+
+  if (aLength === 0 && bLength > 0) {
+    result = 1
+  } else if (aLength > 0 && bLength === 0) {
+    result = -1
+  }
+  return result
+}
+
+// components
 function ListMenuItem({
   item,
   study,
@@ -17,23 +32,39 @@ function ListMenuItem({
   setActiveItem
 }) {
 
-  const isActive = activeItem === item
-  const hasSubForms = item.next_form.length > 0
+  const node = item.node ? item.node : item
+  const isActive = activeItem === node 
+  const hasSubForms = node.next_formConnection.edges.length > 0
   const isActiveAndHasSubForms = isActive && hasSubForms
   const { activeSubmission } = React.useContext(ActiveSubmissionContext)
+  const itemBelongsToStudy = node.studies.includes(study)
+  const subForms = [...node.next_formConnection.edges].sort(compareForms)
+  let iconName : SemanticICONS = "file outline"
+  let iconColor : SemanticCOLORS = "grey"
 
-  return (
+  if (isActiveAndHasSubForms) {
+    iconName = "folder open"
+  } else if (hasSubForms) {
+    iconName = "folder open outline"
+  } else if (isActive) {
+    iconName = "file alternate"
+    iconColor = "teal"
+  }
+
+  return itemBelongsToStudy
+  ? (
     <List.Item active={isActive}  >
-      <List.Icon name={isActiveAndHasSubForms ? "folder open" : hasSubForms ? "folder open outline" : isActive ? "file alternate" : "file outline"} color={isActive ? 'teal' : 'grey'} />
+      <List.Icon name={iconName} color={iconColor} />
       <List.Content>
         <a style={isActive ? { color: "#02B5AE" } : {}} onClick={() => {
-          setActiveItem(item)
-        }}>{ findDisplayName(item, study, activeSubmission, item) }</a>
+          setActiveItem(node)
+        }}>{ findDisplayName(node, study, activeSubmission, node) }</a>
         <List.List>
           {
-            item.next_form.map((subform) => {
+            subForms.map((subform) => {
+              const currentSubform = subform.node ? subform.node : subform
               return <ListMenuItem
-                key={`${subform.form_name}-${subform.form_id}`}
+                key={`${currentSubform.form_name}-${currentSubform.form_id}`}
                 item={subform}
                 study={study}
                 activeItem={activeItem}
@@ -45,6 +76,7 @@ function ListMenuItem({
       </List.Content>
     </List.Item>
   )
+  : <></>
 }
 
 function ListMenu({ 
@@ -53,13 +85,13 @@ function ListMenu({
   activeItem,
   setActiveItem
 }) {
-
+  const node = root.node ? root.node : root
   return (
     <Segment basic>
     <List link size="large">
       <ListMenuItem
-        key={`${root.form_name}-${root.form_id}`}
-        item={root}
+        key={`${node.form_name}-${node.form_id}`}
+        item={node}
         study={study}
         activeItem={activeItem} 
         setActiveItem={setActiveItem}
@@ -69,6 +101,7 @@ function ListMenu({
   )
 }
 
+// main component
 export default function FormFactory() {
   const defaultStudy = 'mohccn'
   const { patientIdentifier } = React.useContext(PatientIdentifierContext)
@@ -91,12 +124,14 @@ export default function FormFactory() {
     return null
   }
 
+  const root =  data.forms[0]
+
   return (
     <Segment>
       <Grid>
         <Grid.Column width={3}>
           <ListMenu
-            root={data.GetRootForm}
+            root={root}
             study={patientIdentifier.study ?? defaultStudy}
             activeItem={activeItem}
             setActiveItem={setActiveItem}
@@ -104,18 +139,18 @@ export default function FormFactory() {
         </Grid.Column>
         <Grid.Column width={13}>
           {
-            activeItem && activeItem !== data.GetRootForm
+            activeItem && activeItem !== root
             ? <ParentSubmissionTable 
                 key={activeItem}
-                formID={getParentForm(data.GetRootForm, activeItem)?.form_id}
+                formID={getParentForm(root, activeItem)?.form_id}
                 patientIdentifier={patientIdentifier}
               />
             : <></>
           }
           <FormGenerator
-            key={activeItem ? activeItem.form_name : data.GetRootForm.form_name}
-            root={data.GetRootForm}
-            formMetadata={activeItem ?? data.GetRootForm}
+            key={activeItem ? activeItem.form_name : root.form_name}
+            root={root}
+            formMetadata={activeItem ?? root}
           />
         </Grid.Column>
       </Grid>

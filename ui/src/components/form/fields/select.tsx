@@ -1,10 +1,11 @@
 import React, { useMemo } from "react"
 import { Form, Icon, Popup } from "semantic-ui-react";
 import * as R from "remeda";
-import { constructDropdown, fieldIsRequired } from '../utils'
+import { constructDropdown, fieldIsRequired, findDescription } from '../utils'
 
 export function SmallSelectField({ field, study, label, isDisabled, isReadonly, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
     const processedOptions = constructDropdown(options)
+    const description = findDescription(field, study)
     return (
         <Form.Field disabled={isDisabled} readOnly={isReadonly} error={errorMessage !== null}>
             <div>
@@ -15,12 +16,16 @@ export function SmallSelectField({ field, study, label, isDisabled, isReadonly, 
                     inverted
                 />
                 <label style={{ marginRight: '5px' }}>{label}</label>
-                <Popup
-                    trigger={!isDisabled && <Icon name='help circle' />}
-                    content={field.description}
-                    position='top center'
-                    inverted
-                />
+                {
+                    description
+                    ? <Popup
+                        trigger={!isDisabled && <Icon name='help circle' />}
+                        content={description}
+                        position='top center'
+                        inverted
+                    />
+                    : <></>
+                }
             </div>
             <Form.Group widths={options.length !== 1 ? options.length : "equal"}>
                 {R.map(processedOptions, (option) => {
@@ -61,6 +66,7 @@ export function LargeSelectField({ field, study, label, isDisabled, isReadonly, 
     const processedOptions = useMemo(() => {
         return constructDropdown(options)
     }, [options])
+    const description = findDescription(field, study)
     return (
         <Form.Field disabled={isDisabled} readOnly={isReadonly} error={errorMessage !== null}>
             <div>
@@ -71,12 +77,16 @@ export function LargeSelectField({ field, study, label, isDisabled, isReadonly, 
                     inverted
                 />
                 <label style={{ marginRight: '5px' }}>{label}</label>
-                <Popup
-                    trigger={!isDisabled && <Icon name='help circle' />}
-                    content={field.description}
-                    position='top center'
-                    inverted
-                />
+                {
+                    description
+                    ? <Popup
+                        trigger={!isDisabled && <Icon name='help circle' />}
+                        content={description}
+                        position='top center'
+                        inverted
+                    />
+                    : <></>
+                }
             </div>
             <Form.Select
                 key={field.name}

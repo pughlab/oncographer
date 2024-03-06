@@ -3,13 +3,14 @@ import DatePicker from "react-datepicker"
 import dayjs from 'dayjs'
 import { Form, Icon, Popup } from "semantic-ui-react"
 import "react-datepicker/dist/react-datepicker.css"
-import { fieldIsRequired } from "../utils"
+import { fieldIsRequired, findDescription } from "../utils"
 
 
 export function DateInputField({ field, study, label, value, comparingDate = null, isDisabled, isReadonly, errorMessage, validator, updateErrorMessage, updateValue }) {
     // calculate time difference in years between the current value and a given date
     const otherDate = comparingDate ?? new Date()
     const difference = dayjs(otherDate).diff(dayjs(value), 'years')
+    const description = findDescription(field, study)
 
     return (
         <Form.Field disabled={isDisabled} error={errorMessage !== null}>
@@ -21,12 +22,16 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
                     inverted
                 />
                 <label style={{ marginRight: '5px' }}>{label}</label>
-                <Popup
-                    trigger={!isDisabled && <Icon name='help circle' />}
-                    content={field.description}
-                    position='top center'
-                    inverted
-                />
+                {
+                    description
+                    ? <Popup
+                        trigger={!isDisabled && <Icon name='help circle' />}
+                        content={description}
+                        position='top center'
+                        inverted
+                    />
+                    : <></>
+                }
                 <Popup trigger={field.info && value && <Icon name='exclamation circle' />} content={`${field.info} ${difference}`} />
             </div>
             <DatePicker
@@ -63,6 +68,7 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
 }
 
 export function InputField({ field, study, label, value, isDisabled, isReadonly, errorMessage, validator, updateErrorMessage, updateValue }) {
+    const description = findDescription(field, study)
     return (
         <Form.Field disabled={isDisabled} error={errorMessage !== null}>
             <div>
@@ -73,12 +79,16 @@ export function InputField({ field, study, label, value, isDisabled, isReadonly,
                     inverted
                 />
                 <label style={{ marginRight: '5px' }}>{label}</label>
-                <Popup
-                    trigger={!isDisabled && <Icon name='help circle' />}
-                    content={field.description}
-                    position='top center'
-                    inverted
-                />
+                {
+                    description
+                    ? <Popup
+                        trigger={!isDisabled && <Icon name='help circle' />}
+                        content={description}
+                        position='top center'
+                        inverted
+                    />
+                    : <></>
+                }
             </div>
             <Form.Input
                 name={field.name}

@@ -1,6 +1,6 @@
 import React from "react"
 import { Form, Icon, Popup } from "semantic-ui-react";
-import { fieldIsRequired } from "../utils"
+import { fieldIsRequired, findDescription } from "../utils"
 
 export function TextAreaField({
     field,
@@ -14,6 +14,7 @@ export function TextAreaField({
     updateErrorMessage,
     updateValue
 }) {
+    const description = findDescription(field, study)
     return (
         <Form.Field disabled={isDisabled} readOnly={isReadonly} error={errorMessage !== null}>
             <div>
@@ -24,12 +25,16 @@ export function TextAreaField({
                     inverted
                 />
                 <label style={{ marginRight: '5px' }}>{label}</label>
-                <Popup
-                    trigger={!isDisabled && <Icon name='help circle' />}
-                    content={field.description}
-                    position='top center'
-                    inverted
-                />
+                {
+                    description
+                    ? <Popup
+                        trigger={!isDisabled && <Icon name='help circle' />}
+                        content={description}
+                        position='top center'
+                        inverted
+                    />
+                    : <></>
+                }
             </div>
             <Form.TextArea
                 name={field.name}

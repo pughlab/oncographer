@@ -103,6 +103,13 @@ const formReducer = (state, action) => {
         ...state,
         draftID: action.payload
       }
+    case 'CLEAR_FORM':
+      return {
+        ...state,
+        formIDs: {},
+        fields: {},
+        draftID: null
+      }
     default:
       return state
   }
@@ -218,6 +225,13 @@ export function FormGenerator({ formMetadata, root }) {
       type: 'UPDATE_DRAFT_ID',
       payload: payload
     })
+  }
+
+  function clearForm() {
+    dispatch({
+      type: 'CLEAR_FORM'
+    })
+    setDraftModified(false)
   }
 
   // Query and mutation variables.
@@ -342,6 +356,7 @@ export function FormGenerator({ formMetadata, root }) {
   // updates the reducer's patientID every time the context patientIdentifier changes
   useEffect(() => {
     updatePatientID(patientIdentifier)
+    clearForm()
   }, [patientIdentifier])
 
   // allows the form to be submitted if it's the root form
@@ -498,6 +513,7 @@ export function FormGenerator({ formMetadata, root }) {
   const parentForm = getParentForm(root, formMetadata)
   const tableHeaders: any = {}
   const labels: any = {}
+  const visibleFields = formFields.GetFormFields.filter((field) => field.studies.includes(patientIdentifier.study))
   patientIDFields.forms[0].fieldsConnection.edges.forEach((field) => {
     labels[field.node?.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, parentForm)
     tableHeaders[field.node.name] = labels[field.node.name] ?? field.node.label
@@ -506,7 +522,7 @@ export function FormGenerator({ formMetadata, root }) {
     labels[field.node.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, parentForm)
     tableHeaders[field.node.name] = labels[field.node.name] ?? field.node.label
   })
-  formFields.GetFormFields.forEach((field) => {
+  visibleFields.forEach((field) => {
     labels[field.name] = findDisplayName(field, patientIdentifier.study, activeSubmission, parentForm)
     tableHeaders[field.name] = labels[field.name] ?? field.label
   })
@@ -588,7 +604,7 @@ export function FormGenerator({ formMetadata, root }) {
           fillForm={fillForm}
         />
         { // render regular form fields
-          formFields.GetFormFields.map((field) => {
+          visibleFields.map((field) => {
             let component = <></>
 
             const isDisabled = field.conditionals === null

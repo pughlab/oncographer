@@ -57,7 +57,7 @@ const PatientSearchForm = () => {
             icon='id card outline'
             iconPosition='left'
             type='text'
-            placeholder='Submitter Donor Id'
+            placeholder={patientIdentifier.study !== defaultStudy ? 'Submitter Participant ID' : 'Submitter Donor Id'}
             onChange={(e) => { setPatientIdentifier((f) => ({ ...f, submitter_donor_id: e.target.value })) }}
           />
           <Form.Input
