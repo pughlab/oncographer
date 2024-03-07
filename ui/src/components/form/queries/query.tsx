@@ -15,64 +15,56 @@ export const RootForm = gql`
 export const FormTree = gql`
   query Forms($where: FormWhere = {form_name: "Donor"}, $study: String) {
     forms(where: $where) {
-      form_id
-      form_name
-      form_relationship_cardinality
-      studies
-      display_name
-    	next_formConnection (where: {
-        edge: {
-          studies_INCLUDES: $study
-        }
-      }) {
-      	edges {
-          studies
-          node { 
-            form_id
-            form_name
-            form_relationship_cardinality
-            studies
-            display_name
-            next_formConnection (where: {
-              edge: {
-                studies_INCLUDES: $study
-              }
-            }){
-              edges {
-                studies
-                node { 
-                  form_id
-                  form_name
-                  form_relationship_cardinality
-                  studies
-                  display_name
-                  next_formConnection (where: {
-                    edge: {
-                      studies_INCLUDES: $study
-                    }
-                  }){
-                    edges {
-                      studies
-                      node { 
-                        form_id
-                        form_name
-                        form_relationship_cardinality
-                        studies
-                        display_name
-                        next_formConnection (where: {
-                          edge: {
-                            studies_INCLUDES: $study
-                          }
-                        }){
-                          edges {
-                            studies
-                            node { 
-                              form_id
-                              form_name
-                              form_relationship_cardinality
-                              studies
-                              display_name
-                            }
+      ...FormID
+      ...FormEdges
+    }
+  }
+
+  fragment FormID on Form {
+    form_id
+    form_name
+    form_relationship_cardinality
+    studies
+    display_name
+  }
+
+  fragment FormEdges on Form {
+    next_formConnection (where: {
+      edge: {
+        studies_INCLUDES: $study
+      }
+    }) {
+      edges {
+        studies
+        node { 
+          ...FormID
+          next_formConnection (where: {
+            edge: {
+              studies_INCLUDES: $study
+            }
+          }){
+            edges {
+              studies
+              node { 
+                ...FormID
+                next_formConnection (where: {
+                  edge: {
+                    studies_INCLUDES: $study
+                  }
+                }){
+                  edges {
+                    studies
+                    node { 
+                      ...FormID
+                      next_formConnection (where: {
+                        edge: {
+                          studies_INCLUDES: $study
+                        }
+                      }){
+                        edges {
+                          studies
+                          node {
+                            ...FormID
                           }
                         }
                       }
@@ -83,7 +75,7 @@ export const FormTree = gql`
             }
           }
         }
-    	}
+      }
     }
   }
 `;
