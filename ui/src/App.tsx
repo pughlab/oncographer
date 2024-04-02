@@ -20,6 +20,8 @@ import { BrowserRouter } from 'react-router-dom'
 import RenderOnAuthenticated from './components/authentication/RenderOnAuthenticated'
 import LoadingAuthentication from './components/authentication/LoadingAuthentication'
 
+export const defaultStudy = "mohccn"
+
 const App = () => {
   
   return (

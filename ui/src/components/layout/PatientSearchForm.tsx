@@ -1,14 +1,15 @@
 import React, { useContext, useEffect } from 'react'
 import { Icon, Form, Segment, Divider, Header } from 'semantic-ui-react'
+import { useLazyQuery } from '@apollo/client'
+
+import { defaultStudy } from '../../App'
 import { PatientFoundContext, PatientIdentifierContext } from '../Portal'
 import { FindPatients } from '../form/queries/query'
-import { useLazyQuery } from '@apollo/client'
 
 const studies = [
   { key: 'mohccn', text: 'MOHCCN', value: 'mohccn' },
   { key: 'charm', text: 'CHARM', value: 'charm'},
 ]
-const defaultStudy = 'mohccn'
 
 const PatientSearchForm = () => {
   const { patientIdentifier, setPatientIdentifier } = useContext(PatientIdentifierContext)

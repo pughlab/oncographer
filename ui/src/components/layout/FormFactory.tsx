@@ -2,6 +2,8 @@ import * as React from 'react'
 import * as R from 'remeda'
 import { useQuery } from "@apollo/client";
 import { Segment, List, Grid, SemanticICONS, SemanticCOLORS } from "semantic-ui-react";
+
+import  { defaultStudy } from '../../App'
 import { FormTree } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
@@ -103,7 +105,6 @@ function ListMenu({
 
 // main component
 export default function FormFactory() {
-  const defaultStudy = 'mohccn'
   const { patientIdentifier } = React.useContext(PatientIdentifierContext)
   const { loading, error, data } = useQuery(FormTree, {
     variables: {

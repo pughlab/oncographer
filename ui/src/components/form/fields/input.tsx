@@ -12,6 +12,29 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
     const difference = dayjs(otherDate).diff(dayjs(value), 'years')
     const description = findDescription(field, study)
 
+    const monthFormat = "MM/yyyy"
+    const dayFormat = "dd/MM/yyyy"
+    let format = ""
+
+    if (field.format) {
+        switch (typeof field.format) {
+            case "string":
+                try {
+                    const formatObject = JSON.parse(field.format)
+                    format = formatObject[study] === "day" ? dayFormat : monthFormat
+                } catch (_error) {
+                    format = field.format === "day" ? dayFormat : monthFormat
+                }
+                break
+            case "object":
+                format = field.format[study] === "day" ? dayFormat : monthFormat
+            default:
+                format = monthFormat
+        }
+    } else {
+        format = monthFormat
+    }
+
     return (
         <Form.Field disabled={isDisabled} error={errorMessage !== null}>
             <div>
@@ -56,11 +79,11 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
                         }
                     })
                 }}
-                dateFormat="MM/yyyy"
+                dateFormat={format}
                 isClearable
-                showMonthYearPicker
-                showFullMonthYearPicker
-                showFourColumnMonthYearPicker
+                showMonthYearPicker={format === monthFormat}
+                showFullMonthYearPicker={format === monthFormat}
+                showFourColumnMonthYearPicker={format === monthFormat}
                 readOnly={isReadonly}
             />
         </Form.Field>

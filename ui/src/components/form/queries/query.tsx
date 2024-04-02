@@ -108,6 +108,7 @@ export const FormIDFields = gql`
             filter
             display_name
             studies
+            format
           }
         }
       }
@@ -135,6 +136,7 @@ export const FieldData = gql`
       display_name
       info
       studies
+      format
     }
   }
 `;

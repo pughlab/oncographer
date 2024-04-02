@@ -80,6 +80,7 @@
     info: String
     display_name: Parser
     studies: [String]
+    format: FormValue
     has_next_question: Field @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
     belongs_to(isID: Boolean): Form! @relationship(type: "BELONGS_TO", direction: OUT)
   }
