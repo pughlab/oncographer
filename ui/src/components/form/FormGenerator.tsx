@@ -701,6 +701,13 @@ export function FormGenerator({ formMetadata, root }) {
           })
         }
         <Button.Group size="large" fluid>
+        <Button content="SAVE DRAFT" color="black" icon="save" onClick={() => { 
+            saveDraft()
+            setDraftModified(false)
+            setLastDraftUpdate(formatDraftDate(new Date()))
+          }
+        } />
+          <Button.Or />
           <Button icon="send" size="huge" content="FINALIZE" color="teal"
             disabled={!canSubmit}
             onClick={() => {

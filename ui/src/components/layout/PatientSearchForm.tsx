@@ -11,6 +11,12 @@ const studies = [
   { key: 'charm', text: 'CHARM', value: 'charm'},
 ]
 
+function ignoreEnter(event) {
+  if (event.keyCode === 13) {
+    event.preventDefault()
+  }
+}
+
 const PatientSearchForm = () => {
   const { patientIdentifier, setPatientIdentifier } = useContext(PatientIdentifierContext)
   const { setPatientFound } = useContext(PatientFoundContext)
@@ -60,6 +66,7 @@ const PatientSearchForm = () => {
             type='text'
             placeholder={patientIdentifier.study !== defaultStudy ? 'Submitter Participant ID' : 'Submitter Donor Id'}
             onChange={(e) => { setPatientIdentifier((f) => ({ ...f, submitter_donor_id: e.target.value })) }}
+            onKeyDown={ignoreEnter}
           />
           <Form.Input
             width={4}
@@ -69,6 +76,7 @@ const PatientSearchForm = () => {
             type='text'
             placeholder='Program Id'
             onChange={(e) => { setPatientIdentifier((f) => ({ ...f, program_id: e.target.value })) }}
+            onKeyDown={ignoreEnter}
           />
           <Form.Button
             size='large' 

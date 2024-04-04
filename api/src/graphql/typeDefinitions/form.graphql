@@ -57,6 +57,7 @@
     fields: [Field!] @relationship(type: "BELONGS_TO", direction: IN, properties: "IsID")
     has_next_question: [Field] @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
     studies: [String]
+    weight: FormValue
     branch_fields: [String]
   }
 

@@ -15,12 +15,12 @@ import { ParentSubmissionTable } from '../form/table/ParentSubmissionTable';
 // helper functions
 function compareForms(a, b) {
   let result = 0
-  const aLength = a.node.next_formConnection.edges.length
-  const bLength = b.node.next_formConnection.edges.length
+  const aWeight = a.node.weight
+  const bWeight = b.node.weight
 
-  if (aLength === 0 && bLength > 0) {
+  if (aWeight > bWeight) {
     result = 1
-  } else if (aLength > 0 && bLength === 0) {
+  } else if (aWeight < bWeight) {
     result = -1
   }
   return result

@@ -8,6 +8,7 @@ export const RootForm = gql`
       form_relationship_cardinality
       studies
       branch_fields
+      weight
     }
   }
 `;
@@ -26,6 +27,7 @@ export const FormTree = gql`
     form_relationship_cardinality
     studies
     display_name
+    weight
   }
 
   fragment FormEdges on Form {
