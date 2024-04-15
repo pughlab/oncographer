@@ -195,6 +195,13 @@ export function FormGenerator({ formMetadata, root }) {
     })
   }
 
+  function updateFields(field) {
+    dispatch({
+      type: 'UPDATE_FIELDS',
+      payload: field
+    })
+  }
+
   function fillForm(payload) {
     dispatch({
       type: 'FILL_FORM',
@@ -384,6 +391,19 @@ export function FormGenerator({ formMetadata, root }) {
     }
   }, [draftModified])
 
+  // fills the form's fields with the active submission's fields
+  // that are available in this form
+  useEffect(() => {
+    activeSubmission?.fields?.forEach((field) => {
+      if (state.formIDs.hasOwnProperty(field.key)) {
+        updateFormIDs({ [field.key]: field.value})
+      }
+      if (state.fields.hasOwnProperty(field.key)) {
+        updateFields({ [field.key]: field.value})
+      }
+    })
+  }, [activeSubmission])
+
   // Event handlers
   // Handler for saving a form draft
   const saveDraft = async () => {
@@ -568,7 +588,7 @@ export function FormGenerator({ formMetadata, root }) {
         }}
       >
         {
-          isRootForm
+          isRootForm || renderedFormIDFields.length === 0
           ? <></> 
           : <Divider horizontal>
               <Header as="h4">

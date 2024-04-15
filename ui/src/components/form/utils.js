@@ -169,8 +169,10 @@ export function getParentForm(root, form) {
   while (stack.length) {
     const node = stack.pop()
     const item = node.node ? node.node : node
-    if (item.next_formConnection.edges.includes(form)) { 
-      return node
+    for (const edge of item.next_formConnection.edges) {
+      if (edge.node === form) {
+        return node
+      }
     }
     stack.push(...item.next_formConnection.edges)
   }

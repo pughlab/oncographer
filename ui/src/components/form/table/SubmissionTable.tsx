@@ -76,8 +76,8 @@ const SubmissionTableContents = ({ submissions, idKeys, headers, fillForm, setAc
     const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
 
     return (
-        <Table fixed selectable aria-labelledby="header" striped>
-            <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
+        <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
+            <Table fixed selectable aria-labelledby="header" striped>
                 <Table.Header>
                     <Table.Row>
                         {
@@ -147,7 +147,7 @@ const SubmissionTableContents = ({ submissions, idKeys, headers, fillForm, setAc
                         })
                     }
                 </Table.Body>
-            </div>
-        </Table>
+            </Table>
+        </div>
     )
 }

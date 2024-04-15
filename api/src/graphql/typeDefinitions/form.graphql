@@ -118,6 +118,12 @@
     WHERE r.isID = true
     RETURN n
     """)
+    ParentForm(id: String!): Form @cypher(statement: """
+    MATCH (f:Form {form_id: $id})
+    MATCH (x:Form)-[:NEXT_FORM]->(f)
+    RETURN x
+    LIMIT 1
+    """)
   }
 
   type Mutation {

@@ -142,8 +142,8 @@ export default function FormFactory() {
           {
             activeItem && activeItem !== root
             ? <ParentSubmissionTable 
-                key={activeItem}
-                formID={getParentForm(root, activeItem)?.form_id}
+                key={activeItem.form_id}
+                formID={activeItem.form_id}
                 patientIdentifier={patientIdentifier}
               />
             : <></>

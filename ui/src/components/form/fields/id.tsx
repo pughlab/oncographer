@@ -32,7 +32,7 @@ export function IDField({ field, study, label, override, validator, value, error
                 name={field.name}
                 value={value}
                 type={field.type}
-                placeholder={field.placeholder}
+                placeholder={field.placeholder ?? ""}
                 onChange={(e) => {
                     const recheckValueValidation = validator.safeParse(e.target.value)
                     if (recheckValueValidation.success) {

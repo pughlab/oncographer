@@ -182,6 +182,15 @@ export const FindSubmissions = gql`
   }
 `
 
+export const ParentForm = gql`
+  query ParentForm($id: String!) {
+    ParentForm(id: $id) {
+      form_id
+      form_name
+    }
+  }
+`
+
 export const CreateUserSubmissionConnection = gql`
   mutation AssignUserSubmissionConnection($submissionID: ID!) {
     assignKeycloakUserToSubmission(submissionID: $submissionID) {

@@ -6,7 +6,7 @@ import "react-datepicker/dist/react-datepicker.css"
 import { fieldIsRequired, findDescription } from "../utils"
 
 
-export function DateInputField({ field, study, label, value, comparingDate = null, isDisabled, isReadonly, errorMessage, validator, updateErrorMessage, updateValue }) {
+export function DateInputField({ field, study, label, value = null, comparingDate = null, isDisabled, isReadonly, errorMessage, validator, updateErrorMessage, updateValue }) {
     // calculate time difference in years between the current value and a given date
     const otherDate = comparingDate ?? new Date()
     const difference = dayjs(otherDate).diff(dayjs(value), 'years')
@@ -28,6 +28,7 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
                 break
             case "object":
                 format = field.format[study] === "day" ? dayFormat : monthFormat
+                break
             default:
                 format = monthFormat
         }
@@ -58,7 +59,7 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
                 <Popup trigger={field.info && value && <Icon name='exclamation circle' />} content={`${field.info} ${difference}`} />
             </div>
             <DatePicker
-                selected={value}
+                selected={typeof(value) === "string" ? new Date(value) : value}
                 placeholderText={field.placeholder}
                 onChange={(date) => {
                     const recheckValueValidation = validator.safeParse(date === null ? date : new Date(date));

@@ -1,10 +1,11 @@
-import React, { useContext } from "react"
+import React, { useContext, useEffect } from "react"
 import { LoadingSegment } from "../../common/LoadingSegment"
 import { Divider, Header, Table, Icon, List } from "semantic-ui-react"
 import { useQuery } from "@apollo/client"
 
 import { toTitle, toDateString } from './utils'
-import { FindSubmissions } from "../queries/query"
+import { findDisplayName } from '../utils'
+import { FindSubmissions, ParentForm, FieldData } from "../queries/query"
 import { BasicErrorMessage } from "../../common/BasicErrorMessage"
 import { ActiveSubmissionContext } from "../../Portal"
 
@@ -13,9 +14,32 @@ export function ParentSubmissionTable({
     patientIdentifier
 }) {
     const { activeSubmission, setActiveSubmission } = useContext(ActiveSubmissionContext)
-    
+
+    const {
+        loading: parentLoading,
+        error: parentError,
+        data: parentForm
+    } = useQuery(ParentForm, {
+        variables: {
+            id: formID
+        }
+    })
+
+    const {
+        loading: fieldsLoading,
+        error: fieldsError,
+        data: fields,
+        refetch: refetchFields
+    } = useQuery(FieldData, {
+        variables: {
+            id: parentForm?.ParentForm.form_id,
+            study: patientIdentifier.study
+        },
+        skip: !parentForm
+    })
+
     const submissionSearchInfo = {
-        form_id: formID,
+        form_id: parentForm?.ParentForm.form_id,
         patient: {
             patient_id: patientIdentifier.submitter_donor_id,
             program_id: patientIdentifier.program_id,
@@ -26,22 +50,33 @@ export function ParentSubmissionTable({
     const {
         loading: submissionsLoading,
         error: submissionsError,
-        data: submissionsInfo
+        data: submissionsInfo,
+        refetch: refetchSubmissions
     } = useQuery(FindSubmissions, {
         variables: {
             where: submissionSearchInfo
-        }
+        },
+        skip: !parentForm
     })
 
-    if (submissionsLoading) {
+    useEffect(() => {
+        if (parentForm && !fieldsLoading) {
+            refetchFields()
+        }
+        if (parentForm && !submissionsLoading) {
+            refetchSubmissions()
+        }
+    }, [parentForm, fieldsLoading, submissionsLoading, refetchFields, refetchSubmissions])
+
+    if (parentLoading || submissionsLoading || fieldsLoading) {
         return <LoadingSegment />
     }
 
-    if (submissionsError) {
+    if (parentError || submissionsError || fieldsError) {
         return <BasicErrorMessage />
     }
 
-    if (submissionsInfo.submissions.length === 0) return <></>
+    if (!parentForm || !fields || submissionsInfo.submissions.length === 0) return <></>
 
     // regex to determine a date in the YYYY-MM-DD format
     // It will also match anything after the YYYY-MM-DD match,
@@ -50,10 +85,13 @@ export function ParentSubmissionTable({
     
     // set names for the fields as table headers
     const excludedHeaders = ['__typename', 'patient_id', 'study'] // prevent these fields from showing on the table
-    const headers = Array.from(new Set([
-        ...Object.entries(submissionsInfo.submissions[0].patient).map(([key, _value]) => key),
-        ...submissionsInfo.submissions[0].fields.map((field) => field.key)
-    ].filter((header) => !excludedHeaders.includes(header))))
+    const headers = {}
+    fields.GetFormFields.forEach((field) => {
+        headers[field['name']] = findDisplayName(field, patientIdentifier.study, submissionsInfo.submissions[0], parentForm.ParentForm)
+    })
+    excludedHeaders.forEach((header) => {
+        delete headers[header]
+    })
 
     return (
         <>
@@ -64,13 +102,13 @@ export function ParentSubmissionTable({
                     PARENT SUBMISSIONS
                 </Header>
             </Divider>
-            <Table fixed selectable aria-labelledby="header" striped>
-                <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
+            <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
+                <Table fixed selectable aria-labelledby="header" striped>
                     <Table.Header>
                         <Table.Row>
                             {
-                                headers.map((header: any) => {
-                                    return <Table.HeaderCell key={header}>{toTitle(header, '_')}</Table.HeaderCell>
+                                Object.values(headers).map((header: any) => {
+                                    return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
                                 })
                             }
                         </Table.Row>
@@ -93,7 +131,7 @@ export function ParentSubmissionTable({
                                         active={isActive}
                                     >
                                         {
-                                            headers.map((field) => {
+                                            Object.keys(headers).map((field) => {
                                                 let value = row.hasOwnProperty(field) ? row[field]: ""
 
                                                 const isDate = re.test(value)
@@ -121,8 +159,8 @@ export function ParentSubmissionTable({
                             })
                         }
                     </Table.Body>
-                </div>
-            </Table>
+                </Table>
+            </div>
         </>
     )
 }
