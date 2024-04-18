@@ -6,10 +6,9 @@ import { defaultStudy } from '../../App'
 import { PatientFoundContext, PatientIdentifierContext } from '../Portal'
 import { FindPatients } from '../form/queries/query'
 
-const studies = [
-  { key: 'mohccn', text: 'MOHCCN', value: 'mohccn' },
-  { key: 'charm', text: 'CHARM', value: 'charm'},
-]
+import keycloak from '../../keycloak/keycloak'
+
+let studies = []
 
 function ignoreEnter(event) {
   if (event.keyCode === 13) {
@@ -35,6 +34,9 @@ const PatientSearchForm = () => {
 
   useEffect(() => {
     setPatientIdentifier((id) => ({ ...id, study: defaultStudy }))
+    keycloak.tokenParsed.resource_access['mcoder2-app']['roles'].forEach((role: String) => {
+      studies.push({ key: role, text: role.toUpperCase(), value: role })
+    })
   }, []) // set the default study when first loading the form
 
   useEffect(() => {
