@@ -34,7 +34,7 @@ const PatientSearchForm = () => {
 
   useEffect(() => {
     setPatientIdentifier((id) => ({ ...id, study: defaultStudy }))
-    keycloak.tokenParsed.resource_access['mcoder2-app']['roles'].forEach((role: String) => {
+    keycloak.tokenParsed.resource_access['oncographer-app']['roles'].forEach((role: String) => {
       studies.push({ key: role, text: role.toUpperCase(), value: role })
     })
   }, []) // set the default study when first loading the form
