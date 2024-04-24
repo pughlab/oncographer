@@ -1,4 +1,4 @@
-mCODER2 readme here (how to start, how each service works)
+Oncographer readme here (how to start, how each service works)
 
 Requires Node 16 and Docker (should come with `docker compose` command)
 ```

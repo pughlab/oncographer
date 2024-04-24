@@ -222,7 +222,7 @@ export function FormGenerator({ formMetadata, root }) {
     const { name, value } = e.target
     dispatch({
       type: 'UPDATE_FIELDS',
-      payload: { [name]: value instanceof Date || isNaN(value) ? value : Number(value) }
+      payload: { [name]: value instanceof Date || isNaN(value) || value === '' ? value : Number(value) }
     })
     setDraftModified(true)
   }

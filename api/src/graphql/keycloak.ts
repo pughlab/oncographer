@@ -8,8 +8,8 @@ dotenv.config()
 
 const keycloakhost = process.env.KEYCLOAK_SERVER_HOST || '0.0.0.0'
 const keycloakport = process.env.KEYCLOAK_SERVER_PORT || '8085'
-const keycloakrealm = process.env.KEYCLOAK_SERVER_REALM || 'mcoder2'
-const keycloakclient = process.env.KEYCLOAK_SERVER_CLIENT || 'mcoder2-app'
+const keycloakrealm = process.env.KEYCLOAK_SERVER_REALM || 'oncographer'
+const keycloakclient = process.env.KEYCLOAK_SERVER_CLIENT || 'oncographer-app'
 const keycloakpublickey = process.env.KEYCLOAK_SERVER_PUBLIC_KEY || ''
 
 const auth_server_url = `https://${keycloakhost}:${keycloakport}/auth`

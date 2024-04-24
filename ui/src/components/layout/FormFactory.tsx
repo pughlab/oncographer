@@ -3,14 +3,15 @@ import * as R from 'remeda'
 import { useQuery } from "@apollo/client";
 import { Segment, List, Grid, SemanticICONS, SemanticCOLORS } from "semantic-ui-react";
 
-import  { defaultStudy } from '../../App'
+import keycloak from '../../keycloak/keycloak'
 import { FormTree } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
 import { ActiveSubmissionContext, PatientIdentifierContext } from '../Portal';
-import { findDisplayName, getParentForm } from "../form/utils"
+import { findDisplayName } from "../form/utils"
 import { ParentSubmissionTable } from '../form/table/ParentSubmissionTable';
+import { WelcomeMessage } from './WelcomeMessage';
 
 // helper functions
 function compareForms(a, b) {
@@ -108,7 +109,7 @@ export default function FormFactory() {
   const { patientIdentifier } = React.useContext(PatientIdentifierContext)
   const { loading, error, data } = useQuery(FormTree, {
     variables: {
-      study: patientIdentifier.study ?? defaultStudy
+      study: patientIdentifier.study
     }
   })
   const [ activeItem, setActiveItem ] = React.useState(null)
@@ -126,35 +127,43 @@ export default function FormFactory() {
   }
 
   const root =  data.forms[0]
+  const roles = keycloak?.tokenParsed?.resource_access['oncographer-app']?.roles || []
+  const validStudy = patientIdentifier.study !== ""
 
   return (
-    <Segment>
-      <Grid>
-        <Grid.Column width={3}>
-          <ListMenu
-            root={root}
-            study={patientIdentifier.study ?? defaultStudy}
-            activeItem={activeItem}
-            setActiveItem={setActiveItem}
-          />
-        </Grid.Column>
-        <Grid.Column width={13}>
-          {
-            activeItem && activeItem !== root
-            ? <ParentSubmissionTable 
-                key={activeItem.form_id}
-                formID={activeItem.form_id}
-                patientIdentifier={patientIdentifier}
-              />
-            : <></>
-          }
-          <FormGenerator
-            key={activeItem ? activeItem.form_name : root.form_name}
-            root={root}
-            formMetadata={activeItem ?? root}
-          />
-        </Grid.Column>
-      </Grid>
-    </Segment>
+    validStudy && roles.length > 0
+    ? <Segment>
+        <Grid>
+          <Grid.Column width={3}>
+            <ListMenu
+              root={root}
+              study={patientIdentifier.study}
+              activeItem={activeItem}
+              setActiveItem={setActiveItem}
+            />
+          </Grid.Column>
+          <Grid.Column width={13}>
+            {
+              activeItem && activeItem !== root
+              ? <ParentSubmissionTable 
+                  key={activeItem.form_id}
+                  formID={activeItem.form_id}
+                  patientIdentifier={patientIdentifier}
+                />
+              : <></>
+            }
+            {
+              validStudy
+              ? <FormGenerator
+                  key={activeItem ? activeItem.form_name : root.form_name}
+                  root={root}
+                  formMetadata={activeItem ?? root}
+                />
+              : <></>
+            }
+          </Grid.Column>
+        </Grid>
+      </Segment>
+    : <WelcomeMessage withRoles={roles.length > 0}/>
   )
 }

@@ -2,13 +2,12 @@ import React, { useContext, useEffect } from 'react'
 import { Icon, Form, Segment, Divider, Header } from 'semantic-ui-react'
 import { useLazyQuery } from '@apollo/client'
 
-import { defaultStudy } from '../../App'
 import { PatientFoundContext, PatientIdentifierContext } from '../Portal'
 import { FindPatients } from '../form/queries/query'
 
 import keycloak from '../../keycloak/keycloak'
 
-let studies = []
+let studies : { key: string, text: string, value: string }[] = []
 
 function ignoreEnter(event) {
   if (event.keyCode === 13) {
@@ -33,14 +32,18 @@ const PatientSearchForm = () => {
   })
 
   useEffect(() => {
-    setPatientIdentifier((id) => ({ ...id, study: defaultStudy }))
-    keycloak.tokenParsed.resource_access['oncographer-app']['roles'].forEach((role: String) => {
-      studies.push({ key: role, text: role.toUpperCase(), value: role })
-    })
+    const roles = keycloak?.tokenParsed?.resource_access['oncographer-app']?.roles || []
+    if (roles?.length > 0) {
+      roles.forEach((role: string) => {
+        studies.push({ key: role, text: role.toUpperCase(), value: role })
+      })
+    }
   }, []) // set the default study when first loading the form
 
   useEffect(() => {
-    findPatient()
+    if (patientIdentifier.study !== "") {
+      findPatient()
+    }
   }, [patientIdentifier]) // search patients every time the patient's information changes
 
   return (
@@ -56,8 +59,7 @@ const PatientSearchForm = () => {
           <Form.Select
             width={4}
             options={studies}
-            placeholder='Study'
-            defaultValue={defaultStudy}
+            placeholder={studies.length > 0 ? 'Study' : ''}
             onChange={(_e, { value }) => { setPatientIdentifier((id) => ({ ...id, study: value })) }}
           />
           <Form.Input
@@ -66,7 +68,7 @@ const PatientSearchForm = () => {
             icon='id card outline'
             iconPosition='left'
             type='text'
-            placeholder={patientIdentifier.study !== defaultStudy ? 'Submitter Participant ID' : 'Submitter Donor Id'}
+            placeholder={patientIdentifier.study !== 'mohccn' ? 'Submitter Participant ID' : 'Submitter Donor Id'}
             onChange={(e) => { setPatientIdentifier((f) => ({ ...f, submitter_donor_id: e.target.value })) }}
             onKeyDown={ignoreEnter}
           />
@@ -83,7 +85,7 @@ const PatientSearchForm = () => {
           <Form.Button
             size='large' 
             onClick={
-              () => { setPatientIdentifier({ submitter_donor_id: '', program_id: '', study: defaultStudy }) }
+              () => { setPatientIdentifier({ submitter_donor_id: '', program_id: '', study: '' }) }
             }
             fluid
             inverted
