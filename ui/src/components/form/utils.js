@@ -14,7 +14,7 @@ export const validateInputs = (
   for (const key in state.validators) {
     if (
       state.conditions[key] 
-      && doesFieldNotMeetAllConditions(state.conditions[key], state.fields)
+      && fieldIsDisabled(state.conditions[key], state.fields)
     ) {
       continue
     }
@@ -45,7 +45,7 @@ export const validateInputs = (
  * @param {*} ctx (context) An object type, which allows the form to handle inter connection to other form
  * @returns (boolean) if there contains a false condition then some condition within the field is not met
  */
-export const doesFieldNotMeetAllConditions = (conditionals, gfs) => {
+export const fieldIsDisabled = (conditionals, gfs) => {
   // =====================
   // Conditional Handler
   // =====================
@@ -59,9 +59,11 @@ export const doesFieldNotMeetAllConditions = (conditionals, gfs) => {
   if (conditionals === null) return false
   
   Object.keys(conditionals).forEach((key) => {
-      if (gfs[key] === undefined) 
+      if (gfs[key] === undefined) {
           check.push(false)
-      else {
+      } else if (Array.isArray(gfs[key])) {
+          check.push(gfs[key].includes(conditionals[key]))
+      } else {
         Array.isArray(conditionals[key]) ? 
         check.push(conditionals[key].includes(gfs[key])) :
         check.push(conditionals[key] === gfs[key] || conditionals[key] === Boolean(gfs[key]));

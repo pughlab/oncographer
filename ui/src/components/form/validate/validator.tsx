@@ -27,7 +27,7 @@ import {z} from 'zod'
         case "month":
           schema = schema.date({message : "Must be a date"}); // new Date()
           break;
-        case "mutiple":
+        case "multiple":
         schema = schema.array(z.any()) // Array[any]
           break;
         case "textarea":

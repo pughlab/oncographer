@@ -92,8 +92,8 @@ export function LargeSelectField({ field, study, label, isDisabled, isReadonly, 
                 key={field.name}
                 search
                 name={field.name}
-                value={field.type === "mutiple" && value === "" ? [] : value}
-                multiple={field.type === "mutiple"}
+                value={field.type === "multiple" && value === "" ? [] : value}
+                multiple={field.type === "multiple"}
                 placeholder={field.placeholder}
                 options={processedOptions}
                 onChange={(_e, { name, value }) => {

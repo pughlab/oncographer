@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useReducer, useState } from "react"
 import { Form, Divider, Header, Icon, Button } from "semantic-ui-react"
 import { useMutation, useQuery } from "@apollo/client"
 
-import { validateInputs, doesFieldNotMeetAllConditions, createSubmissionInput, findDisplayName, getParentForm } from './utils'
+import { validateInputs, fieldIsDisabled, createSubmissionInput, findDisplayName, getParentForm } from './utils'
 import { FindDraft, UpdateOrCreateDraft, DeleteDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields } from "./queries/query"
 import { SubmissionTable } from "./table/SubmissionTable"
 import { ActiveSubmissionContext, PatientFoundContext, PatientIdentifierContext } from "../Portal"
@@ -12,6 +12,7 @@ import { IDField } from "./fields/id"
 import { DateInputField, InputField } from "./fields/input"
 import { TextAreaField } from "./fields/textarea"
 import { LargeSelectField, SmallSelectField } from "./fields/select"
+import { CheckboxField } from "./fields/checkbox"
 
 const initialState = {
   validators: {},
@@ -222,7 +223,7 @@ export function FormGenerator({ formMetadata, root }) {
     const { name, value } = e.target
     dispatch({
       type: 'UPDATE_FIELDS',
-      payload: { [name]: value instanceof Date || isNaN(value) || value === '' ? value : Number(value) }
+      payload: { [name]: value instanceof Date || typeof value === "boolean" || isNaN(value) || value === '' ? value : Number(value) }
     })
     setDraftModified(true)
   }
@@ -629,7 +630,7 @@ export function FormGenerator({ formMetadata, root }) {
 
             const isDisabled = field.conditionals === null
               ? false
-              : doesFieldNotMeetAllConditions(field.conditionals, state.fields)
+              : fieldIsDisabled(field.conditionals, state.fields)
             const isReadonly = field.readonly ?? false
             const errorMessage = isDisabled ? null : state.errorMessages[field.name]
 
@@ -682,7 +683,7 @@ export function FormGenerator({ formMetadata, root }) {
               case "select":
                 if (state.options[field.name] === undefined) break;
 
-                if (state.options[field.name].length <= 4) {
+                if (state.options[field.name].length <= 4 && field.type.toLowerCase() !== "multiple") {
                   component = <SmallSelectField
                     key={field.name}
                     field={field}
@@ -713,6 +714,22 @@ export function FormGenerator({ formMetadata, root }) {
                     updateValue={handleFieldChange}
                   />
                 }
+                break
+              case "checkbox":
+                component = <CheckboxField
+                  key={field.name}
+                  field={field}
+                  study={patientIdentifier.study}
+                  label={labels[field.name]}
+                  isDisabled={isDisabled}
+                  isReadonly={isReadonly}
+                  errorMessage={errorMessage}
+                  validator={state.validators[field.name]}
+                  value={state.fields[field.name]}
+                  updateErrorMessage={updateErrorMessages}
+                  updateValue={handleFieldChange}
+                  checked={!!field.value}
+                />
                 break
               default:
                 break;
