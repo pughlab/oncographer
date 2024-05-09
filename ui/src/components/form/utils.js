@@ -38,40 +38,78 @@ export const validateInputs = (
   return validationSuccessful
 }
 
-/**
- * 
- * @param {*} conditionals (field condition) field metadata the contains info of what needs to be met to be used
- * @param {*} gfs (global state form) An object type, intra connection 
- * @param {*} ctx (context) An object type, which allows the form to handle inter connection to other form
- * @returns (boolean) if there contains a false condition then some condition within the field is not met
- */
-export const fieldIsDisabled = (conditionals, gfs) => {
-  // =====================
-  // Conditional Handler
-  // =====================
+export const fieldIsDisabled = (conditions, fieldValues) => {
 
-  let check = []
-  // There are no conditions
-  // so return false given 
-  // there are no condition
-  // to be met.
+  // helper functions
+  const evaluateOperation = (field, operation, value) => {
+    let result = false
 
-  if (conditionals === null) return false
-  
-  Object.keys(conditionals).forEach((key) => {
-      if (gfs[key] === undefined) {
-          check.push(false)
-      } else if (Array.isArray(gfs[key])) {
-          check.push(gfs[key].includes(conditionals[key]))
-      } else {
-        Array.isArray(conditionals[key]) ? 
-        check.push(conditionals[key].includes(gfs[key])) :
-        check.push(conditionals[key] === gfs[key] || conditionals[key] === Boolean(gfs[key]));
-      }
-    });
+    // check if the field should NOT be disabled
+    // this will be negated in the final return sentence
+    switch (operation) {
+      case "eq":
+        result = fieldValues[field] === value
+        break
+      case "neq":
+        result = fieldValues[field] !== value
+        break
+      case "lt":
+        result = fieldValues[field] < value
+        break
+      case "gt":
+        result = fieldValues[field] > value
+        break
+      case "min":
+      case "gte":
+        result = fieldValues[field] >= value
+        break
+      case "max":
+      case "lte":
+        result = fieldValues[field] <= value
+        break
+      case "in":
+        result = fieldValues.hasOwnProperty(field) ? value.includes(fieldValues[field]) : false
+        break
+      case "nin":
+        result = fieldValues.hasOwnProperty(field) ? !value.includes(fieldValues[field]) : false
+        break
+      case "any":
+        result = fieldValues.hasOwnProperty(field) && fieldValues[field] ? fieldValues[field].some(item => value.includes(item)) : false
+        break
+      case "defined":
+        result = ![null, undefined, ""].includes(fieldValues[field])
+        break
+    }
 
-  return check.includes(false);
-};
+    return !result
+  }
+
+  const evaluateCondition = (condition) => {
+    const parts = condition.split(" ")
+    const field = parts[0]
+    const operator = parts[1]
+    let value
+
+    try {
+      value = JSON.parse(parts.slice(2).join(" "))
+    } catch (error) {
+      value = parts.length > 2 ? parts.slice(2).join(" ") : null
+    }
+
+    return evaluateOperation(field, operator, value)
+  }
+
+  // main logic
+  const checks = []
+
+  if (conditions === null || fieldValues === null) return false
+
+  conditions.forEach((condition) => {
+    checks.push(evaluateCondition(condition))
+  })
+
+  return checks.reduce((cond1, cond2) => cond1 && cond2, true)
+}
 
 export const constructDropdown = (values, menu = []) => {
   // =====================
