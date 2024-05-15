@@ -8,7 +8,7 @@ import { FormTree } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
-import { ActiveSubmissionContext, PatientIdentifierContext } from '../Portal';
+import { ActiveSubmissionContext, DisplayNamesContext, PatientIdentifierContext } from '../Portal';
 import { findDisplayName } from "../form/utils"
 import { ParentSubmissionTable } from '../form/table/ParentSubmissionTable';
 import { WelcomeMessage } from './WelcomeMessage';
@@ -107,6 +107,7 @@ function ListMenu({
 // main component
 export default function FormFactory() {
   const { patientIdentifier } = React.useContext(PatientIdentifierContext)
+  const { displayNames } = React.useContext(DisplayNamesContext)
   const { loading, error, data } = useQuery(FormTree, {
     variables: {
       study: patientIdentifier.study
@@ -149,6 +150,7 @@ export default function FormFactory() {
                   key={activeItem.form_id}
                   formID={activeItem.form_id}
                   patientIdentifier={patientIdentifier}
+                  displayNames={displayNames}
                 />
               : <></>
             }

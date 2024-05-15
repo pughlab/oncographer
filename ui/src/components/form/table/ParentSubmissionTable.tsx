@@ -11,7 +11,8 @@ import { ActiveSubmissionContext } from "../../Portal"
 
 export function ParentSubmissionTable({
     formID,
-    patientIdentifier
+    patientIdentifier,
+    displayNames
 }) {
     const { activeSubmission, setActiveSubmission } = useContext(ActiveSubmissionContext)
 
@@ -86,8 +87,11 @@ export function ParentSubmissionTable({
     // set names for the fields as table headers
     const excludedHeaders = ['__typename', 'patient_id', 'study'] // prevent these fields from showing on the table
     const headers = {}
+    Object.keys(patientIdentifier).forEach((key) => {
+        headers[key] = displayNames[key] ?? toTitle(key, "_")
+    })
     fields.GetFormFields.forEach((field) => {
-        headers[field['name']] = findDisplayName(field, patientIdentifier.study, submissionsInfo.submissions[0], parentForm.ParentForm)
+        headers[field['name']] = displayNames[field['name']] ?? findDisplayName(field, patientIdentifier.study, submissionsInfo.submissions[0], parentForm.ParentForm)
     })
     excludedHeaders.forEach((header) => {
         delete headers[header]

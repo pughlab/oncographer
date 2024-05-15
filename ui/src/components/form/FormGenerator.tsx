@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "@apollo/client"
 import { validateInputs, fieldIsDisabled, createSubmissionInput, findDisplayName, getParentForm } from './utils'
 import { FindDraft, UpdateOrCreateDraft, DeleteDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields } from "./queries/query"
 import { SubmissionTable } from "./table/SubmissionTable"
-import { ActiveSubmissionContext, PatientFoundContext, PatientIdentifierContext } from "../Portal"
+import { ActiveSubmissionContext, PatientFoundContext, PatientIdentifierContext, DisplayNamesContext } from "../Portal"
 import { zodifyField } from "./validate/validator"
 import { BasicErrorMessage } from "../common/BasicErrorMessage"
 import { IDField } from "./fields/id"
@@ -151,6 +151,7 @@ export function FormGenerator({ formMetadata, root }) {
   const { patientIdentifier } = useContext(PatientIdentifierContext)
   const { activeSubmission } = useContext(ActiveSubmissionContext)
   const { patientFound, setPatientFound } = useContext(PatientFoundContext)
+  const { displayNames, setDisplayNames } = useContext(DisplayNamesContext)
 
   // Reducer variables and associated functions
   const [state, dispatch] = useReducer(formReducer, initialState)
@@ -266,6 +267,7 @@ export function FormGenerator({ formMetadata, root }) {
         updateErrorMessages({
           [field.node.name]: null
         })
+        setDisplayNames((n) => ({ ...n, [field.node.name]: findDisplayName(field.node, patientIdentifier.study)}))
       })
     }
   })
@@ -291,6 +293,7 @@ export function FormGenerator({ formMetadata, root }) {
           updateErrorMessages({
             [field.node.name]: null
           })
+          setDisplayNames((n) => ({ ...n, [field.node.name]: findDisplayName(field.node, patientIdentifier.study)}))
         })
       }
     }
@@ -312,6 +315,7 @@ export function FormGenerator({ formMetadata, root }) {
         updateErrorMessages({
           [field.name]: null
         })
+        setDisplayNames((n) => ({ ...n, [field.name]: findDisplayName(field, patientIdentifier.study)}))
         if (field.conditionals) {
           updateConditions({
             [field.name]: field.conditionals
