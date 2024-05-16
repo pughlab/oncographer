@@ -535,21 +535,13 @@ export function FormGenerator({ formMetadata, root }) {
   // generate the column headers for the draft and submissions tables
   // and set labels for each field depending on the current study or previous submissions.
   // the label property in each field is used as a fallback
-  const parentForm = getParentForm(root, formMetadata)
-  const tableHeaders: any = {}
   const labels: any = {}
-  const visibleFields = formFields.GetFormFields.filter((field) => field.studies.includes(patientIdentifier.study))
-  patientIDFields.forms[0].fieldsConnection.edges.forEach((field) => {
-    labels[field.node?.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, parentForm)
-    tableHeaders[field.node.name] = labels[field.node.name] ?? field.node.label
-  })
-  renderedFormIDFields.forEach((field) => {
-    labels[field.node.name] = findDisplayName(field.node, patientIdentifier.study, activeSubmission, parentForm)
-    tableHeaders[field.node.name] = labels[field.node.name] ?? field.node.label
+  const visibleFields = formFields.GetFormFields.filter((field) => field.studies.includes(patientIdentifier.study));
+  [...patientIDFields.forms[0].fieldsConnection.edges, ...renderedFormIDFields].forEach((field) => {
+    labels[field.node?.name] = displayNames[field.node?.name] ?? field.node?.label
   })
   visibleFields.forEach((field) => {
-    labels[field.name] = findDisplayName(field, patientIdentifier.study, activeSubmission, parentForm)
-    tableHeaders[field.name] = labels[field.name] ?? field.label
+    labels[field.name] = displayNames[field.name] ?? field.label
   })
 
   // apply overrides to rendered ID fields
@@ -624,7 +616,7 @@ export function FormGenerator({ formMetadata, root }) {
           key={`Submissions-${lastSubmissionUpdate}`}
           formID={formMetadata.form_id}
           formIDKeys={renderedFormIDFields.map((field) => field.name)}
-          headers={tableHeaders}
+          headers={labels}
           patientIdentifier={patientIdentifier}
           fillForm={fillForm}
         />
