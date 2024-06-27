@@ -74,10 +74,14 @@ export const fieldIsDisabled = (conditions, fieldValues) => {
         result = fieldValues.hasOwnProperty(field) ? !value.includes(fieldValues[field]) : false
         break
       case "any":
-        result = fieldValues.hasOwnProperty(field) && fieldValues[field] ? fieldValues[field].some(item => value.includes(item)) : false
+        if (fieldValues.hasOwnProperty(field) && Array.isArray(fieldValues[field])) {
+          result = fieldValues[field].some(item => value.includes(item))
+        } else if (!Array.isArray(fieldValues[field])) {
+          result = fieldValues[field] === value
+        }
         break
       case "defined":
-        result = ![null, undefined, ""].includes(fieldValues[field])
+        result = ![null, undefined, "", 0, NaN].includes(fieldValues[field])
         break
     }
 
@@ -182,6 +186,25 @@ export function findDescription(field, study) {
 }
 
 export function findDisplayName(field, study, activeSubmission = null, parentForm = null) {
+  const handleObjectDisplayName = () => {
+    for (const key in field.display_name) {
+      if (key === study) {
+        if (typeof field.display_name[key] === "string") {
+          return field.display_name[key]
+        }
+        if (
+          activeSubmission
+          && parentForm
+          && parentForm.branch_fields
+          && activeSubmission.form_id === parentForm.form_id
+        ) {
+          return getBranchFieldLabel(field.display_name[key], parentForm.branch_fields, activeSubmission.fields)
+        }
+      }
+    }
+    return field.display_name[study].hasOwnProperty('default') ? field.display_name[study]['default'] : null
+  }
+
   if (!field.display_name) {
     return field.__typename.toLowerCase() === "field" ? field.label : field.form_name
   }
@@ -189,22 +212,7 @@ export function findDisplayName(field, study, activeSubmission = null, parentFor
     case "string":
       return field.display_name
     case "object":
-      for (const key in field.display_name) {
-        if (key === study) {
-          if (typeof field.display_name[key] === "string") {
-            return field.display_name[key]
-          }
-          if (
-            activeSubmission
-            && parentForm
-            && parentForm.branch_fields
-            && activeSubmission.form_id === parentForm.form_id
-          ) {
-            return getBranchFieldLabel(field.display_name[key], parentForm.branch_fields, activeSubmission.fields)
-          }
-        }
-      }
-      return field.display_name[study].hasOwnProperty('default') ? field.display_name[study]['default'] : null
+      return handleObjectDisplayName()
   }
 }
 

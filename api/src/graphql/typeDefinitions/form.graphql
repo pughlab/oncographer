@@ -3,6 +3,11 @@
     value : FormValue!
   }
 
+  type DeleteInfo {
+    nodesDeleted: Int!
+    relationshipsDeleted: Int!
+  }
+
 
   type FieldKeyValuePair{
     """
@@ -45,6 +50,20 @@
     createdBy: KeycloakUser @relationship(type: "CREATED_BY", direction: OUT) 
   }
 
+  type FormTemplate {
+    """
+      FormTemplate allows the user to save a template of any form
+      so they can have a starting point for multiple submissions with common data.
+      Patient data is not saved in templates to preserve anonymity.
+    """
+    template_id: ID! @id
+    form_id: String!
+    patient_id: String!
+    secondary_ids: String # Secondary IDs are fields that are unique to a form
+    data: String
+    createdBy: KeycloakUser @relationship(type: "CREATED_BY", direction: OUT)
+  }
+
   type Form {
     """
     
@@ -82,6 +101,7 @@
     display_name: Parser
     studies: [String]
     format: FormValue
+    api: Parser
     has_next_question: Field @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
     belongs_to(isID: Boolean): Form! @relationship(type: "BELONGS_TO", direction: OUT)
   }
@@ -128,5 +148,6 @@
 
   type Mutation {
     findOrCreatePatient(patient_id: String!, program_id: String!, study: String): Patient,
-    updateOrCreateDraft(input: FormDraftCreateInput!): FormDraft
+    updateOrCreateDraft(input: FormDraftCreateInput!): FormDraft,
+    deleteSubmissionAndFields(where: SubmissionWhere!): DeleteInfo
   }

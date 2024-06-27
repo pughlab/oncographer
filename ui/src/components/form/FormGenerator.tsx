@@ -3,16 +3,18 @@ import { Form, Divider, Header, Icon, Button } from "semantic-ui-react"
 import { useMutation, useQuery } from "@apollo/client"
 
 import { validateInputs, fieldIsDisabled, createSubmissionInput, findDisplayName, getParentForm } from './utils'
-import { FindDraft, UpdateOrCreateDraft, DeleteDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields } from "./queries/query"
+import { FindDraft, UpdateOrCreateDraft, DeleteDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields, CreateTemplate } from "./queries/query"
 import { SubmissionTable } from "./table/SubmissionTable"
-import { ActiveSubmissionContext, PatientFoundContext, PatientIdentifierContext, DisplayNamesContext } from "../Portal"
+import { ActiveSubmissionContext, PatientFoundContext, PatientIdentifierContext } from "../Portal"
 import { zodifyField } from "./validate/validator"
 import { BasicErrorMessage } from "../common/BasicErrorMessage"
 import { IDField } from "./fields/id"
 import { DateInputField, InputField } from "./fields/input"
 import { TextAreaField } from "./fields/textarea"
-import { LargeSelectField, SmallSelectField } from "./fields/select"
+import { LargeSelectField, MultipleSmallSelectField, SmallSelectField } from "./fields/select"
 import { CheckboxField } from "./fields/checkbox"
+import { TemplateTable } from "./table/TemplateTable"
+import { useDisplayNamesContext } from "../layout/FormFactory"
 
 const initialState = {
   validators: {},
@@ -24,6 +26,11 @@ const initialState = {
   fields: {},
   draftID: null
 }
+
+// regex to determine a date in the YYYY-MM-DD format
+// It will also match anything after the YYYY-MM-DD match,
+// so a date like "2023-02-01T05:00:00.000Z" (without the quotes) is a valid date 
+const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
 
 const formReducer = (state, action) => {
   switch (action.type) {
@@ -128,6 +135,26 @@ function transformData(data: any, re: RegExp) {
   })
 }
 
+function createDraftInfo(formID, patientID, state, isRootForm) {
+  const draftInfo: any = {
+    'form_id': String(formID),
+    'patient_id': JSON.stringify(patientID),
+    'data': JSON.stringify(state.fields)
+  }
+  const formIDKeys = Object.keys(state.formIDs)
+  if (formIDKeys.length > 0 && !isRootForm) {
+    const formIDs = formIDKeys
+      .filter((id) =>
+        !Object.keys(state.patientID).includes(id)
+      )
+      .reduce((obj, key) => {
+        return Object.assign(obj, { [key]: state.formIDs[key] })
+      }, {})
+    draftInfo['secondary_ids'] = JSON.stringify(formIDs)
+  }
+  return draftInfo
+}
+
 function formatDraftDate(date: Date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -145,13 +172,21 @@ export function FormGenerator({ formMetadata, root }) {
 
   // State and context variables
   const [lastDraftUpdate, setLastDraftUpdate] = useState("")
+  const [lastTemplateUpdate, setLastTemplateUpdate] = useState(`Templates-${new Date().toUTCString()}`)
   const [lastSubmissionUpdate, setLastSubmissionUpdate] = useState(`Submissions-${new Date().toUTCString()}`)
   const [draftModified, setDraftModified] = useState(false)
 
   const { patientIdentifier } = useContext(PatientIdentifierContext)
   const { activeSubmission } = useContext(ActiveSubmissionContext)
   const { patientFound, setPatientFound } = useContext(PatientFoundContext)
-  const { displayNames, setDisplayNames } = useContext(DisplayNamesContext)
+  const { displayNames, setDisplayNames } = useDisplayNamesContext()
+
+  // avoid rendering warnings when updating the display names
+  const updateDisplayNames = (newDisplayNames) => {
+    setTimeout(() => {
+      setDisplayNames(newDisplayNames)
+    }, 0)
+  }
 
   // Reducer variables and associated functions
   const [state, dispatch] = useReducer(formReducer, initialState)
@@ -224,7 +259,7 @@ export function FormGenerator({ formMetadata, root }) {
     const { name, value } = e.target
     dispatch({
       type: 'UPDATE_FIELDS',
-      payload: { [name]: value instanceof Date || typeof value === "boolean" || isNaN(value) || value === '' ? value : Number(value) }
+      payload: { [name]: value instanceof Date || typeof value === "boolean" || isNaN(value) ? value : Number(value) }
     })
     setDraftModified(true)
   }
@@ -243,6 +278,35 @@ export function FormGenerator({ formMetadata, root }) {
     setDraftModified(false)
   }
 
+  function setInitialFieldValue(field: any) {
+    if (field.value) {
+      updateFields({
+        [field.name]: field.value
+      })
+    } else {
+      let value = null
+      switch (field.type.toLowerCase()) {
+        case "text":
+        case "textarea":
+          value = ""
+          break
+        case "multiple":
+          value = []
+          break
+        case "boolean":
+          value = false
+          break
+        case "number":
+        case "integer":
+          value = 0
+          break
+      }
+      updateFields({
+        [field.name]: value
+      })
+    }
+  }
+
   // Query and mutation variables.
   // Also, helper variables that depend on query results,
   // and helper functions that use these queries/mutations
@@ -251,6 +315,7 @@ export function FormGenerator({ formMetadata, root }) {
   const [findOrCreatePatient] = useMutation(FindOrCreatePatient)
   const [updateOrCreateDraft] = useMutation(UpdateOrCreateDraft)
   const [deleteDraft] = useMutation(DeleteDraft)
+  const [createTemplate] = useMutation(CreateTemplate)
   const [createSubmission] = useMutation(CreateSubmission)
   const [createUserSubmissionConnection] = useMutation(CreateUserSubmissionConnection)
   const { data: patientIDFields } = useQuery(FormIDFields, {
@@ -267,7 +332,7 @@ export function FormGenerator({ formMetadata, root }) {
         updateErrorMessages({
           [field.node.name]: null
         })
-        setDisplayNames((n) => ({ ...n, [field.node.name]: findDisplayName(field.node, patientIdentifier.study)}))
+        updateDisplayNames((n) => ({ ...n, [field.node.name]: findDisplayName(field.node, patientIdentifier.study)}))
       })
     }
   })
@@ -293,7 +358,7 @@ export function FormGenerator({ formMetadata, root }) {
           updateErrorMessages({
             [field.node.name]: null
           })
-          setDisplayNames((n) => ({ ...n, [field.node.name]: findDisplayName(field.node, patientIdentifier.study)}))
+          updateDisplayNames((n) => ({ ...n, [field.node.name]: findDisplayName(field.node, patientIdentifier.study)}))
         })
       }
     }
@@ -312,10 +377,11 @@ export function FormGenerator({ formMetadata, root }) {
         updateValidators({
           [field.name]: zodifyField(field, patientIdentifier.study)
         })
+        setInitialFieldValue(field)
         updateErrorMessages({
           [field.name]: null
         })
-        setDisplayNames((n) => ({ ...n, [field.name]: findDisplayName(field, patientIdentifier.study)}))
+        updateDisplayNames((n) => ({ ...n, [field.name]: findDisplayName(field, patientIdentifier.study)}))
         if (field.conditionals) {
           updateConditions({
             [field.name]: field.conditionals
@@ -343,10 +409,6 @@ export function FormGenerator({ formMetadata, root }) {
     },
     fetchPolicy: "network-only",
     onCompleted: (data) => {
-      // regex to determine a date in the YYYY-MM-DD format
-      // It will also match anything after the YYYY-MM-DD match,
-      // so a date like "2023-02-01T05:00:00.000Z" (without the quotes) is a valid date 
-      const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
 
       if (data.formDrafts.length > 0) {
         const patientID = JSON.parse(data.formDrafts[0].patient_id)
@@ -412,27 +474,23 @@ export function FormGenerator({ formMetadata, root }) {
   // Event handlers
   // Handler for saving a form draft
   const saveDraft = async () => {
-    const draftInfo: any = {
-      'form_id': String(formMetadata.form_id),
-      'patient_id': JSON.stringify(patientIdentifier),
-      'data': JSON.stringify(state.fields)
-    }
-    const formIDKeys = Object.keys(state.formIDs)
-    if (formIDKeys.length > 0 && !isRootForm) {
-      const formIDs = formIDKeys
-        .filter((id) =>
-          !Object.keys(state.patientID).includes(id)
-        )
-        .reduce((obj, key) => {
-          return Object.assign(obj, { [key]: state.formIDs[key] })
-        }, {})
-      draftInfo['secondary_ids'] = JSON.stringify(formIDs)
-    }
+    const draftInfo = createDraftInfo(formMetadata.form_id, patientIdentifier, state, isRootForm)
     await updateOrCreateDraft({
       variables: { input: draftInfo },
       onCompleted: (data) => {
         updateDraftID(data.updateOrCreateDraft.draft_id)
       }
+    })
+  }
+
+  const saveTemplate = async () => {
+    const templateInfo = createDraftInfo(formMetadata.form_id, patientIdentifier, state, isRootForm)
+    await createTemplate({
+      variables: { input: templateInfo },
+      onCompleted() {
+        alert('Template saved!')
+        setLastTemplateUpdate(`Templates-${new Date().toUTCString()}`)
+      },
     })
   }
 
@@ -488,6 +546,7 @@ export function FormGenerator({ formMetadata, root }) {
           alert('Form submitted!')
           setLastSubmissionUpdate(`Submissions-${new Date().toUTCString()}`)
           setPatientFound(true)
+          clearForm()
         }
       })
       .catch((error) => {
@@ -584,6 +643,22 @@ export function FormGenerator({ formMetadata, root }) {
           event.preventDefault()
         }}
       >
+        <TemplateTable
+          key={`Templates-${lastTemplateUpdate}`}
+          formID={formMetadata.form_id}
+          headers={labels}
+          fillForm={fillForm}
+          setLastTemplateUpdate={setLastTemplateUpdate}
+        />
+        <SubmissionTable
+          key={`Submissions-${lastSubmissionUpdate}`}
+          formID={formMetadata.form_id}
+          formIDKeys={renderedFormIDFields.map((field) => field.name)}
+          headers={labels}
+          patientIdentifier={patientIdentifier}
+          fillForm={fillForm}
+          setLastSubmissionUpdate={setLastSubmissionUpdate}
+        />
         {
           isRootForm || renderedFormIDFields.length === 0
           ? <></> 
@@ -612,14 +687,6 @@ export function FormGenerator({ formMetadata, root }) {
             )
           }
         </Form.Group>
-        <SubmissionTable
-          key={`Submissions-${lastSubmissionUpdate}`}
-          formID={formMetadata.form_id}
-          formIDKeys={renderedFormIDFields.map((field) => field.name)}
-          headers={labels}
-          patientIdentifier={patientIdentifier}
-          fillForm={fillForm}
-        />
         { // render regular form fields
           visibleFields.map((field) => {
             let component = <></>
@@ -679,8 +746,21 @@ export function FormGenerator({ formMetadata, root }) {
               case "select":
                 if (state.options[field.name] === undefined) break;
 
-                if (state.options[field.name].length <= 4 && field.type.toLowerCase() !== "multiple") {
-                  component = <SmallSelectField
+                if (state.options[field.name].length <= 4) {
+                  component = field.type.toLowerCase() !== "multiple" ? <SmallSelectField
+                    key={field.name}
+                    field={field}
+                    study={patientIdentifier.study}
+                    label={labels[field.name]}
+                    isDisabled={isDisabled}
+                    isReadonly={isReadonly}
+                    errorMessage={errorMessage}
+                    options={state.options[field.name]}
+                    validator={state.validators[field.name]}
+                    value={state.fields[field.name]}
+                    updateErrorMessage={updateErrorMessages}
+                    updateValue={handleFieldChange}
+                  /> : <MultipleSmallSelectField 
                     key={field.name}
                     field={field}
                     study={patientIdentifier.study}
@@ -721,10 +801,10 @@ export function FormGenerator({ formMetadata, root }) {
                   isReadonly={isReadonly}
                   errorMessage={errorMessage}
                   validator={state.validators[field.name]}
-                  value={state.fields[field.name]}
+                  value={state.fields[field.name] ?? !!field.value}
                   updateErrorMessage={updateErrorMessages}
                   updateValue={handleFieldChange}
-                  checked={!!field.value}
+                  checked={!!field.value ?? false}
                 />
                 break
               default:
@@ -733,15 +813,27 @@ export function FormGenerator({ formMetadata, root }) {
             return component
           })
         }
-        <Button.Group size="large" fluid>
-        <Button content="SAVE DRAFT" color="black" icon="save" onClick={() => { 
-            saveDraft()
-            setDraftModified(false)
-            setLastDraftUpdate(formatDraftDate(new Date()))
-          }
-        } />
+        <Button.Group size="large" fluid widths={3}>
+          <Button
+            size='large' 
+            onClick={
+              () => { clearForm() }
+            }
+            fluid
+            icon='trash'
+            color='red'
+            content='CLEAR FORM'
+          />
           <Button.Or />
-          <Button icon="send" size="huge" content="FINALIZE" color="teal"
+          <Button content="SAVE TEMPLATE" color="black" icon="save" onClick={() => { 
+              saveTemplate()
+              setDraftModified(false)
+              setLastDraftUpdate(formatDraftDate(new Date()))
+            }
+          }
+          />
+          <Button.Or />
+          <Button icon="send" content="FINALIZE" color="teal"
             disabled={!canSubmit}
             onClick={() => {
               submitForm()

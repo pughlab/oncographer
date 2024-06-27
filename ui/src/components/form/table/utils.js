@@ -5,10 +5,15 @@ export function toTitle(str, separator = ' ') {
     }).join(' ')
 }
 
-export function toDateString(value) {
+export function toDateString(value, includeDay = false) {
     let date = value instanceof Date ? value : new Date(value)
-    return date.toLocaleDateString("en-US", {
+    const options = {
         year: "numeric",
         month: 'long'
-    })
+    }
+
+    if (includeDay) {
+        options.day = 'numeric'
+    }
+    return date.toLocaleDateString("en-US", options)
 }

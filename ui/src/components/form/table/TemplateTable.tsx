@@ -1,84 +1,90 @@
 import * as React from 'react'
-import { Button, Divider, Header, Icon, List, Table } from 'semantic-ui-react'
+import { Accordion, Button, Divider, Header, Icon, List, Table } from 'semantic-ui-react'
 import { useMutation, useQuery } from '@apollo/client'
 import { toTitle, toDateString } from './utils'
 import { LoadingSegment } from "../../common/LoadingSegment";
-import { FindDraft, DeleteDraft } from '../queries/query'
+import { FindTemplate, DeleteTemplate } from '../queries/query'
 import { BasicErrorMessage } from '../../common/BasicErrorMessage';
 
-type DraftSearchInfo = {
-  form_id: String,
-  patient_id: String,
-  secondary_ids?: String
+type TemplateSearchInfo = {
+  form_id: string,
+  secondary_ids?: string
 }
 
-export function DraftTable({ 
+export function TemplateTable({ 
   formID,
   headers,
-  patientIdentifier,
-  setLastDraftUpdate,
+  setLastTemplateUpdate,
   fillForm
 }) {
-  // attempt to find drafts for the current form/patient combination
-  const draftInfo: DraftSearchInfo = { 
-    form_id: formID,
-    patient_id: JSON.stringify(patientIdentifier)
+  const [isActive, setActive] = React.useState(true)
+
+  // attempt to find templates for the current form
+  const templateInfo: TemplateSearchInfo = { 
+    form_id: formID
   }
 
-  const { loading: draftsLoading, error: draftsError, data: drafts } = useQuery(FindDraft, {
+  const { loading: templatesLoading, error: templatesError, data: templates } = useQuery(FindTemplate, {
     variables: {
-      where: draftInfo
+      where: templateInfo
     },
     fetchPolicy: "network-only"
   })
 
-  if (draftsLoading) {
+  if (templatesLoading) {
     return <LoadingSegment />
   }
 
-  if (draftsError) {
+  if (templatesError) {
     return <BasicErrorMessage />
   }
 
-  return drafts.formDrafts.length === 0 ? <></> : (
+  return templates.formTemplates.length === 0 ? <></> : (
     <>
       <Divider hidden />
-      <Divider horizontal>
-        <Header as="h4">
-          <Icon name="save" />
-          DRAFTS
-        </Header>
-      </Divider>
-      <DraftTableContents
-        drafts={drafts.formDrafts}
-        setLastDraftUpdate={setLastDraftUpdate}
-        headers={headers}
-        fillForm={fillForm}
-      />
+      <Accordion>
+        <Accordion.Title active={isActive} onClick={() => setActive(!isActive)}>
+          <Icon name="dropdown" />
+          <Divider horizontal style={{ display: 'inline-block' }}>
+            <Header as="h4">
+              <Icon name="save" />
+              TEMPLATES
+            </Header>
+          </Divider>
+        </Accordion.Title>
+        <Accordion.Content active={isActive}>
+          <TemplateTableContents
+            templates={templates.formTemplates}
+            setLastTemplateUpdate={setLastTemplateUpdate}
+            headers={headers}
+            fillForm={fillForm}
+          />
+        </Accordion.Content>
+      </Accordion>
     </>
   )
 }
 
-const DraftTableContents = ({ drafts, headers, setLastDraftUpdate, fillForm }) => {
+const TemplateTableContents = ({ templates, headers, setLastTemplateUpdate, fillForm }) => {
 
   let table = null
-  const [deleteDraft] = useMutation(DeleteDraft)
+  const [deleteTemplate] = useMutation(DeleteTemplate)
 
-  const removeDraft = (draft) => {
-    deleteDraft({
+  const removeTemplate = (template) => {
+    deleteTemplate({
       variables: {
         where: {
-          'draft_id': draft.draft_id
+          'template_id': template.template_id
         }
       },
       onCompleted: () => {
-        alert('Draft deleted')
-        setLastDraftUpdate(new Date())
+        alert('Template deleted')
+        setLastTemplateUpdate(toDateString(new Date()))
       }
     })
   }
 
-  if (drafts.length > 0) { // valid results, create the table
+  if (templates.length > 0) { // valid results, create the table
 
     // regex to determine a date in the YYYY-MM-DD format
     // It will also match anything after the YYYY-MM-DD match,
@@ -86,8 +92,8 @@ const DraftTableContents = ({ drafts, headers, setLastDraftUpdate, fillForm }) =
     const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
 
     table = (
-      <Table fixed selectable aria-labelledby="header" striped>
-        <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
+      <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
+        <Table fixed selectable aria-labelledby="header" striped>
 
           <Table.Header>
             <Table.Row>
@@ -101,15 +107,15 @@ const DraftTableContents = ({ drafts, headers, setLastDraftUpdate, fillForm }) =
           </Table.Header>
           <Table.Body>
             {
-              drafts.map((draft) => {
-                const patientId = JSON.parse(draft.patient_id)
-                const secondaryIds = JSON.parse(draft.secondary_ids) || {}
-                const data = JSON.parse(draft.data) // the data that is used to save the draft
+              templates.map((template) => {
+                const patientId = JSON.parse(template.patient_id)
+                const secondaryIds = JSON.parse(template.secondary_ids) || {}
+                const data = JSON.parse(template.data) // the data that is used to save the template
                 const ids = {
                   ...patientId,
                   ...secondaryIds
                 }
-                const row = { // the visual representation of the full draft
+                const row = { // the visual representation of the full template
                   ...ids,
                   ...data
                 }
@@ -119,7 +125,7 @@ const DraftTableContents = ({ drafts, headers, setLastDraftUpdate, fillForm }) =
                 transformData(data, re)
 
                 return (
-                  <Table.Row key={draft.draft_id} onClick={() => {
+                  <Table.Row key={template.template_id} onClick={() => {
                     fillForm({
                       fields: data,
                       patientID: patientId,
@@ -140,23 +146,23 @@ const DraftTableContents = ({ drafts, headers, setLastDraftUpdate, fillForm }) =
 
                         return (
                           <Table.Cell
-                            key={`${draft.draft_id}-${key}-${value}`}
+                            key={`${template.template_id}-${key}-${value}`}
                           >
                             { value }
                           </Table.Cell>
                         )
                       })
                     }
-                    <Table.Cell key={`${draft.draft_id}-delete`} textAlign="center">
-                      <Button negative icon='trash' onClick={() => { removeDraft(draft) }} />
+                    <Table.Cell key={`${template.template_id}-delete`} textAlign="center">
+                      <Button negative icon='trash' onClick={() => { removeTemplate(template) }} />
                     </Table.Cell>
                   </Table.Row>
                 )
               })
             }
           </Table.Body>
-        </div>
-      </Table>
+        </Table>
+      </div>
     )
   } else { // invalid results, return an empty tag
     table = (

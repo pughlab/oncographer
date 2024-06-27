@@ -6,6 +6,10 @@ type KeycloakUser @exclude {
   email: Email!
 }
 
+type Query {
+  isAdmin: Boolean
+}
+
 type Mutation {
     me: KeycloakUser @auth
     assignKeycloakUserToSubmission(submissionID: ID!): KeycloakUser @auth

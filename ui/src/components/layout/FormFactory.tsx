@@ -8,10 +8,17 @@ import { FormTree } from "../form/queries/query";
 import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
-import { ActiveSubmissionContext, DisplayNamesContext, PatientIdentifierContext } from '../Portal';
+import { ActiveSubmissionContext, PatientFoundContext, PatientIdentifierContext } from '../Portal';
 import { findDisplayName } from "../form/utils"
 import { ParentSubmissionTable } from '../form/table/ParentSubmissionTable';
 import { WelcomeMessage } from './WelcomeMessage';
+import { PatientTable } from '../form/table/PatientTable';
+
+export const DisplayNamesContext = React.createContext({})
+
+export function useDisplayNamesContext() {
+  return React.useContext(DisplayNamesContext)
+}
 
 // helper functions
 function compareForms(a, b) {
@@ -107,7 +114,8 @@ function ListMenu({
 // main component
 export default function FormFactory() {
   const { patientIdentifier } = React.useContext(PatientIdentifierContext)
-  const { displayNames } = React.useContext(DisplayNamesContext)
+  const { patientFound } = React.useContext(PatientFoundContext)
+  const [displayNames, setDisplayNames] = React.useState({})
   const { loading, error, data } = useQuery(FormTree, {
     variables: {
       study: patientIdentifier.study
@@ -128,12 +136,16 @@ export default function FormFactory() {
   }
 
   const root =  data.forms[0]
-  const roles = keycloak?.tokenParsed?.resource_access['oncographer-app']?.roles || []
+  const adminRoles = JSON.parse(process.env.KEYCLOAK_ADMIN_ROLES)
   const validStudy = patientIdentifier.study !== ""
+  const roles = (
+    keycloak?.tokenParsed?.resource_access[process.env.KEYCLOAK_SERVER_CLIENT]?.roles || []
+  ).filter((role) => !adminRoles.includes(role))
 
   return (
     validStudy && roles.length > 0
-    ? <Segment>
+    ? <DisplayNamesContext.Provider value={{displayNames, setDisplayNames}}>
+        <Segment>
         <Grid>
           <Grid.Column width={3}>
             <ListMenu
@@ -144,6 +156,11 @@ export default function FormFactory() {
             />
           </Grid.Column>
           <Grid.Column width={13}>
+            {
+              patientFound && activeItem && activeItem !== root
+              ? <PatientTable patientIdentifier={patientIdentifier} />
+              : <></>
+            }
             {
               activeItem && activeItem !== root
               ? <ParentSubmissionTable 
@@ -165,7 +182,8 @@ export default function FormFactory() {
             }
           </Grid.Column>
         </Grid>
-      </Segment>
+        </Segment>
+      </DisplayNamesContext.Provider>
     : <WelcomeMessage withRoles={roles.length > 0}/>
   )
 }

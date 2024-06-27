@@ -139,6 +139,7 @@ export const FieldData = gql`
       info
       studies
       format
+      api
     }
   }
 `;
@@ -210,13 +211,26 @@ export const FindDraft = gql`
     }
   }
 `
-export const CreateDraft = gql`
-  mutation CreateDrafts($input: [FormDraftCreateInput!]!) {
-    createFormDrafts(input: $input) {
-      formDrafts {
-        draft_id
-        form_id
+
+export const FindTemplate = gql`
+  query FindTemplate($where: FormTemplateWhere) {
+    formTemplates(where: $where) {
+      template_id
+      form_id
+      patient_id
+      secondary_ids
+      data
+    }
+  }
+`
+
+export const CreateTemplate = gql`
+  mutation CreateTemplate($input: [FormTemplateCreateInput!]!) {
+    createFormTemplates(input: $input) {
+      formTemplates {
+        template_id
         patient_id
+        form_id
         secondary_ids
         data
       }
@@ -237,8 +251,17 @@ export const UpdateOrCreateDraft = gql`
 `
 
 export const DeleteDraft = gql`
-  mutation DeleteDrafts($where: FormDraftWhere) {
+  mutation DeleteDrafts($where: FormDraftWhere!) {
     deleteFormDrafts(where: $where) {
+      nodesDeleted
+      relationshipsDeleted
+    }
+  }
+`
+
+export const DeleteTemplate = gql`
+  mutation DeleteTemplates($where: FormTemplateWhere!) {
+    deleteFormTemplates(where: $where) {
       nodesDeleted
       relationshipsDeleted
     }
@@ -261,6 +284,15 @@ export const CreateSubmission = gql`
           value
         }
       }
+    }
+  }
+`
+
+export const DeleteSubmission = gql`
+  mutation DeleteSubmissions($where: SubmissionWhere!) {
+    deleteSubmissionAndFields(where: $where) {
+      nodesDeleted
+      relationshipsDeleted
     }
   }
 `

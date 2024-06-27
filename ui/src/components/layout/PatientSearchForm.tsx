@@ -6,6 +6,7 @@ import { PatientFoundContext, PatientIdentifierContext } from '../Portal'
 import { FindPatients } from '../form/queries/query'
 
 import keycloak from '../../keycloak/keycloak'
+import { defaultStudy } from '../../App'
 
 let studies : { key: string, text: string, value: string }[] = []
 
@@ -16,6 +17,7 @@ function ignoreEnter(event) {
 }
 
 const PatientSearchForm = () => {
+  const adminRoles = JSON.parse(process.env.KEYCLOAK_ADMIN_ROLES)
   const { patientIdentifier, setPatientIdentifier } = useContext(PatientIdentifierContext)
   const { setPatientFound } = useContext(PatientFoundContext)
   const [findPatient] = useLazyQuery(FindPatients, {
@@ -32,9 +34,9 @@ const PatientSearchForm = () => {
   })
 
   useEffect(() => {
-    const roles = keycloak?.tokenParsed?.resource_access['oncographer-app']?.roles || []
+    const roles = keycloak?.tokenParsed?.resource_access[process.env.KEYCLOAK_SERVER_CLIENT]?.roles || []
     if (roles?.length > 0) {
-      roles.forEach((role: string) => {
+      roles.filter((role) => !adminRoles.includes(role)).forEach((role: string) => {
         studies.push({ key: role, text: role.toUpperCase(), value: role })
       })
     }
@@ -68,7 +70,7 @@ const PatientSearchForm = () => {
             icon='id card outline'
             iconPosition='left'
             type='text'
-            placeholder={patientIdentifier.study !== 'mohccn' ? 'Submitter Participant ID' : 'Submitter Donor Id'}
+            placeholder={patientIdentifier.study !== defaultStudy ? 'Submitter Participant ID' : 'Submitter Donor Id'}
             onChange={(e) => { setPatientIdentifier((f) => ({ ...f, submitter_donor_id: e.target.value })) }}
             onKeyDown={ignoreEnter}
           />
@@ -91,7 +93,7 @@ const PatientSearchForm = () => {
             inverted
             icon='trash'
             color='red'
-            content='CLEAR FORMS'
+            content='CLEAR SEARCH'
             width={2}
           />
         </Form.Group>
