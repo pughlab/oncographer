@@ -161,7 +161,6 @@ export const resolvers = {
       const session = driver.session()
       const adminRoles : string[] = JSON.parse(process.env.KEYCLOAK_ADMIN_ROLES) || []
       const clientName : string = process.env.KEYCLOAK_SERVER_CLIENT || ""
-      console.log(kauth)
       const isAdmin =  (
         kauth
         ? adminRoles.some((role) => kauth.accessToken?.content?.resource_access[clientName]?.roles?.includes(role))

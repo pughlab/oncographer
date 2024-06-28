@@ -144,8 +144,6 @@ const SubmissionTableContents = ({ submissions, idKeys, headers, fillForm, setAc
             row[key] = submission.patient[key]
         })
         rows.push(row)
-        console.log(submission)
-        console.log(rows)
     })
 
     // regex to determine a date in the YYYY-MM-DD format
