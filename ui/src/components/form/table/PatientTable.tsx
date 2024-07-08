@@ -90,10 +90,10 @@ export function PatientTable({ patientIdentifier }) {
                                                 {
                                                     Object.keys(headers).map((field) => {
                                                         let value = row.hasOwnProperty(field) ? row[field] : ""
-                                                        const isDate = re.test(value)
+                                                        const isDate = (value.resolution && re.test(value.value)) ?? re.test(value)
 
                                                         if (isDate) {
-                                                            value = toDateString(value, patientIdentifier.study !== defaultStudy)
+                                                            value = toDateString(value)
                                                         } else if (Array.isArray(value)) {
                                                             value = (
                                                                 <List>{

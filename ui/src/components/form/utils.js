@@ -153,7 +153,7 @@ export const createSubmissionInput = (formID, state) => {
     "fields": {
       "create": Object.keys(fields).map(
         function(key) { 
-          return { "node": { 'key': key, 'value': fields[key] }}
+          return { "node": { 'key': key, 'value': typeof fields[key] === 'object' ? JSON.stringify(fields[key]) : fields[key] }}
         }
       )
     }

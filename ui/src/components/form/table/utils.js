@@ -5,15 +5,36 @@ export function toTitle(str, separator = ' ') {
     }).join(' ')
 }
 
-export function toDateString(value, includeDay = false) {
-    let date = value instanceof Date ? value : new Date(value)
-    const options = {
-        year: "numeric",
-        month: 'long'
-    }
+export function toDateString(value) {
+    let date
+    let resolution = "month"
 
-    if (includeDay) {
-        options.day = 'numeric'
+    try {
+        date = JSON.parse(`${value}`)
+        if (typeof date === "object") {
+            resolution = date.resolution
+            date = new Date(date.value)
+        } else if (value instanceof Date) {
+            date = value
+        } else {
+            date = new Date(value)
+        }
+    
+        const options = {
+            year: "numeric"
+        }
+    
+        if (resolution === 'month') {
+            options.month = 'long'
+        }
+    
+        if (resolution === 'day') {
+            options.month = 'long'
+            options.day = 'numeric'
+        }
+        return date.toLocaleDateString("en-US", options)
+    } catch (error) {
+        console.log(`Date error: ${error}`)
+        return `Invalid date`
     }
-    return date.toLocaleDateString("en-US", options)
 }

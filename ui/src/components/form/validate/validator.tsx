@@ -24,6 +24,12 @@ import {z} from 'zod'
         case "number":
           schema = schema.number(); // x∈[-inf,inf]
           break;
+        case "date":
+          schema = schema.object({
+            value: schema.date({ message: "Must be a date" }),
+            resolution: z.string()
+          })
+          break
         case "month":
           schema = schema.date({message : "Must be a date"}); // new Date()
           break;

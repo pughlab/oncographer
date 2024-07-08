@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useReducer, useState } from "react"
 import { Form, Divider, Header, Icon, Button } from "semantic-ui-react"
 import { useMutation, useQuery } from "@apollo/client"
 
-import { validateInputs, fieldIsDisabled, createSubmissionInput, findDisplayName, getParentForm } from './utils'
+import { validateInputs, fieldIsDisabled, createSubmissionInput, findDisplayName } from './utils'
 import { FindDraft, UpdateOrCreateDraft, DeleteDraft, CreateSubmission, CreateUserSubmissionConnection, FieldData, FindOrCreatePatient, FormIDFields, CreateTemplate } from "./queries/query"
 import { SubmissionTable } from "./table/SubmissionTable"
 import { ActiveSubmissionContext, PatientFoundContext, PatientIdentifierContext } from "../Portal"
@@ -300,6 +300,14 @@ export function FormGenerator({ formMetadata, root }) {
         case "integer":
           value = 0
           break
+        case "month":
+          value = new Date()
+          break
+        case "date":
+          value = {
+            value: new Date(),
+            resolution: "month"
+          }
       }
       updateFields({
         [field.name]: value
@@ -359,6 +367,7 @@ export function FormGenerator({ formMetadata, root }) {
             [field.node.name]: null
           })
           updateDisplayNames((n) => ({ ...n, [field.node.name]: findDisplayName(field.node, patientIdentifier.study)}))
+          setInitialFieldValue(field)
         })
       }
     }
@@ -626,17 +635,7 @@ export function FormGenerator({ formMetadata, root }) {
 
   // final render
   return (
-    <div key={formMetadata.form_name} style={{ paddingLeft: "60px", paddingRight: "60px" }}>
-      { 
-        lastDraftUpdate !== "" 
-        ? <>
-            <span style={{float: 'right'}}>
-              Patient {patientIdentifier.submitter_donor_id}: {formMetadata.form_name} form last autosaved at: {lastDraftUpdate}
-            </span>
-            <br/>
-          </>
-        : <></>
-      }
+    <div key={formMetadata.form_name}>
       <Form
         size="small"
         onSubmit={(event) => {
@@ -659,6 +658,17 @@ export function FormGenerator({ formMetadata, root }) {
           fillForm={fillForm}
           setLastSubmissionUpdate={setLastSubmissionUpdate}
         />
+        <br />
+        { 
+        lastDraftUpdate !== "" 
+        ? <>
+            <span style={{float: 'right'}}>
+              Patient {patientIdentifier.submitter_donor_id}: {formMetadata.form_name} form last autosaved at: {lastDraftUpdate}
+            </span>
+            <br/>
+          </>
+        : <></>
+      }
         {
           isRootForm || renderedFormIDFields.length === 0
           ? <></> 
@@ -699,7 +709,7 @@ export function FormGenerator({ formMetadata, root }) {
 
             switch (String(field.component).toLowerCase()) {
               case "input":
-                if (field.type === "month") {
+                if (field.type === "month" || field.type === "date") {
                   component = <DateInputField
                     key={field.name}
                     field={field}

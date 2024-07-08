@@ -155,7 +155,10 @@ export default function FormFactory() {
               setActiveItem={setActiveItem}
             />
           </Grid.Column>
-          <Grid.Column width={13}>
+          {/* add empty column to provide spacing between the menu and the main content */}
+          <Grid.Column width={1}/>
+          {/* main content */}
+          <Grid.Column width={12}>
             {
               patientFound && activeItem && activeItem !== root
               ? <PatientTable patientIdentifier={patientIdentifier} />

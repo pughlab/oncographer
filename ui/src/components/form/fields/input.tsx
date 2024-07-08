@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from "react"
 import DatePicker from "react-datepicker"
 import dayjs from 'dayjs'
+import { format } from 'date-fns'
 import { Form, Icon, Popup, Radio } from "semantic-ui-react"
 import "react-datepicker/dist/react-datepicker.css"
 import { v4 as uuid4 } from 'uuid'
 import { fieldIsRequired, findDescription } from "../utils"
 
-export function DateInputField({ field, study, label, value = null, comparingDate = null, isDisabled, isReadonly, errorMessage, validator, updateErrorMessage, updateValue }) {
+export function DateInputField({ field, study, label, value, comparingDate = null, isDisabled, isReadonly, errorMessage, validator, updateErrorMessage, updateValue }) {
     // calculate time difference in years between the current value and a given date
     const otherDate = comparingDate ?? new Date()
     const difference = dayjs(otherDate).diff(dayjs(value), 'years')
     const description = findDescription(field, study)
     const radioGroupName = uuid4()
-    const [resolution, setResolution] = useState("month")
+    const [resolution, setResolution] = useState(value?.resolution || "month")
     const [key, setKey] = useState(0)
+    const [selectedDate, setSelectedDate] = useState(value?.value ? new Date(value.value) : value ? new Date(value) : new Date())
 
     const handleChange = (_e, { value }) => {
         setResolution(value)
@@ -34,16 +36,80 @@ export function DateInputField({ field, study, label, value = null, comparingDat
         return format
     }
 
+    const getDateString = (date: Date) => {
+        let str = ""
+
+        switch (resolution) {
+            case "year":
+                str = format(date, 'yyyy')
+                break
+            case "day":
+                str = format(date, 'yyyy-MM-dd')
+                break
+            default:
+                str = format(date, 'yyyy-MM')
+        }
+        return str
+    }
+
     useEffect(() => {
         setKey((prevKey) => prevKey + 1)
     }, [resolution])
 
+    useEffect(() => {
+        selectedDate.setHours(0,0,0,0)
+        const recheckValueValidation = validator.safeParse(selectedDate);
+        if (recheckValueValidation.success) {
+            updateErrorMessage({
+                [field.name]: null,
+            });
+        }
+        updateValue({
+            /* 
+            * we create a structure similar to the event object
+            * so we don't need to rewrite the handler in the reducer
+            * for this particular case
+            */
+            target: {
+                name: field.name,
+                value: {
+                    value: selectedDate,
+                    resolution: resolution
+                }
+            }
+        })
+    }, [selectedDate])
+
     return (
         <>
             <Form.Field>
-                <Radio label="Year" name={radioGroupName} value="year" checked={resolution === "year"} disabled={isDisabled} onChange={handleChange}/>
-                <Radio label="Month" name={radioGroupName} value="month" checked={resolution === "month"} disabled={isDisabled} onChange={handleChange}/>
-                <Radio label="Day" name={radioGroupName} value="day" checked={resolution === "day"} disabled={isDisabled} onChange={handleChange}/>
+                <Radio 
+                    label="Year"
+                    name={radioGroupName}
+                    value="year"
+                    checked={resolution === "year"}
+                    disabled={isDisabled}
+                    onChange={handleChange}
+                    style={{margin: '5px'}}
+                />
+                <Radio 
+                    label="Month"
+                    name={radioGroupName}
+                    value="month"
+                    checked={resolution === "month"}
+                    disabled={isDisabled}
+                    onChange={handleChange}
+                    style={{margin: '5px'}}
+                />
+                <Radio 
+                    label="Day"
+                    name={radioGroupName}
+                    value="day"
+                    checked={resolution === "day"}
+                    disabled={isDisabled}
+                    onChange={handleChange}
+                    style={{margin: '5px'}}
+                />
             </Form.Field>
             <Form.Field disabled={isDisabled} error={errorMessage !== null}>
                 <div>
@@ -68,34 +134,16 @@ export function DateInputField({ field, study, label, value = null, comparingDat
                 </div>
                 <DatePicker
                     key={key}
-                    selected={typeof(value) === "string" ? new Date(value) : value}
-                    placeholderText={field.placeholder}
-                    onChange={(date) => {
-                        const recheckValueValidation = validator.safeParse(date === null ? date : new Date(date));
-                        if (recheckValueValidation.success) {
-                            updateErrorMessage({
-                                [field.name]: null,
-                            });
-                        }
-                        updateValue({
-                            /* 
-                            * we create a structure similar to the event object
-                            * so we don't need to rewrite the handler in the reducer
-                            * for this particular case
-                            */
-                            target: {
-                                name: field.name,
-                                value: date ?? new Date()
-                            }
-                        })
-                    }}
+                    selected={selectedDate}
+                    onChange={(date) => setSelectedDate(date)}
+                    date={selectedDate}
                     dateFormat={getFormat()}
-                    isClearable
                     showYearPicker={resolution === 'year'}
                     showMonthYearPicker={resolution === 'month'}
-                    showFullMonthYearPicker={resolution === 'month'}
-                    showFourColumnMonthYearPicker={resolution === 'month'}
+                    placeholderText={field.placeholder}
+                    isClearable
                     readOnly={isReadonly}
+                    utcOffset={0}
                 />
             </Form.Field>
         </>

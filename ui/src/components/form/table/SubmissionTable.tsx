@@ -179,7 +179,7 @@ const SubmissionTableContents = ({ submissions, idKeys, headers, fillForm, setAc
                                             const isDate = re.test(value)
 
                                             if (isDate) {
-                                                value = toDateString(value, patientIdentifier.study !== defaultStudy)
+                                                value = toDateString(value)
                                             } else if (Array.isArray(value)) {
                                                 value = (
                                                     <List>{ 
