@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import DatePicker from "react-datepicker"
 import dayjs from 'dayjs'
-import { format } from 'date-fns'
 import { Form, Icon, Popup, Radio } from "semantic-ui-react"
 import "react-datepicker/dist/react-datepicker.css"
 import { v4 as uuid4 } from 'uuid'
@@ -15,10 +14,19 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
     const radioGroupName = uuid4()
     const [resolution, setResolution] = useState(value?.resolution || "month")
     const [key, setKey] = useState(0)
-    const [selectedDate, setSelectedDate] = useState(value?.value ? new Date(value.value) : value ? new Date(value) : new Date())
+    const [selectedDate, setSelectedDate] = useState(null)
+    const isProgrammaticChange = useRef(false) // used to know if the date was changed programmatically or was changed by the user
 
-    const handleChange = (_e, { value }) => {
+    const handleResolutionChange = (_e, { value }) => {
         setResolution(value)
+    }
+
+    const handleDateChange = (date) => {
+        if (!isProgrammaticChange.current) {
+            setSelectedDate(date)
+        } else {
+            isProgrammaticChange.current = false
+        }
     }
 
     const getFormat = () => {
@@ -36,48 +44,54 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
         return format
     }
 
-    const getDateString = (date: Date) => {
-        let str = ""
-
-        switch (resolution) {
-            case "year":
-                str = format(date, 'yyyy')
-                break
-            case "day":
-                str = format(date, 'yyyy-MM-dd')
-                break
-            default:
-                str = format(date, 'yyyy-MM')
+    useEffect(() => {
+        isProgrammaticChange.current = true
+        if (value?.value && selectedDate !== value?.value) {
+            setSelectedDate(new Date(value.value))
+            updateValue({
+                target: {
+                    name: field.name,
+                    value: {
+                        value: new Date(value.value),
+                        resolution: resolution
+                    }
+                }
+            })
         }
-        return str
-    }
+    }, [value])
 
     useEffect(() => {
         setKey((prevKey) => prevKey + 1)
     }, [resolution])
 
     useEffect(() => {
-        selectedDate.setHours(0,0,0,0)
-        const recheckValueValidation = validator.safeParse(selectedDate);
-        if (recheckValueValidation.success) {
+        if(!isProgrammaticChange.current && selectedDate !== null) {
+            selectedDate?.setHours(0,0,0,0)
+            const recheckValueValidation = validator?.safeParse(selectedDate);        
+            if (recheckValueValidation?.success) {
+                updateErrorMessage({
+                    [field.name]: null,
+                });
+            }
+            updateValue({
+                /* 
+                * we create a structure similar to the event object
+                * so we don't need to rewrite the handler in the reducer
+                * for this particular case
+                */
+                target: {
+                    name: field.name,
+                    value: {
+                        value: selectedDate,
+                        resolution: resolution
+                    }
+                }
+            })
+        } else if (isProgrammaticChange.current) {
             updateErrorMessage({
                 [field.name]: null,
             });
         }
-        updateValue({
-            /* 
-            * we create a structure similar to the event object
-            * so we don't need to rewrite the handler in the reducer
-            * for this particular case
-            */
-            target: {
-                name: field.name,
-                value: {
-                    value: selectedDate,
-                    resolution: resolution
-                }
-            }
-        })
     }, [selectedDate])
 
     return (
@@ -89,7 +103,7 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
                     value="year"
                     checked={resolution === "year"}
                     disabled={isDisabled}
-                    onChange={handleChange}
+                    onChange={handleResolutionChange}
                     style={{margin: '5px'}}
                 />
                 <Radio 
@@ -98,7 +112,7 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
                     value="month"
                     checked={resolution === "month"}
                     disabled={isDisabled}
-                    onChange={handleChange}
+                    onChange={handleResolutionChange}
                     style={{margin: '5px'}}
                 />
                 <Radio 
@@ -107,7 +121,7 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
                     value="day"
                     checked={resolution === "day"}
                     disabled={isDisabled}
-                    onChange={handleChange}
+                    onChange={handleResolutionChange}
                     style={{margin: '5px'}}
                 />
             </Form.Field>
@@ -135,7 +149,7 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
                 <DatePicker
                     key={key}
                     selected={selectedDate}
-                    onChange={(date) => setSelectedDate(date)}
+                    onChange={handleDateChange}
                     date={selectedDate}
                     dateFormat={getFormat()}
                     showYearPicker={resolution === 'year'}

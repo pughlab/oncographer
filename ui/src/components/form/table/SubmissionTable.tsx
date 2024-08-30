@@ -7,13 +7,13 @@ import { toTitle, toDateString } from './utils'
 import { FindSubmissions, DeleteSubmission } from "../queries/query"
 import { BasicErrorMessage } from "../../common/BasicErrorMessage"
 import { ActiveSubmissionContext } from "../../Portal"
-import { defaultStudy } from "../../../App"
 
 export function SubmissionTable({
     formID,
     formIDKeys,
     headers,
     patientIdentifier,
+    clearForm,
     fillForm,
     setLastSubmissionUpdate
 }) {
@@ -68,6 +68,7 @@ export function SubmissionTable({
                         submissions={submissionsInfo.submissions}
                         idKeys={formIDKeys}
                         headers={headers}
+                        clearForm={clearForm}
                         fillForm={fillForm}
                         setActiveSubmission={setActiveSubmission}
                         patientIdentifier={patientIdentifier}
@@ -79,7 +80,7 @@ export function SubmissionTable({
     )
 }
 
-const SubmissionTableContents = ({ submissions, idKeys, headers, fillForm, setActiveSubmission, patientIdentifier, setLastSubmissionUpdate }) => {
+const SubmissionTableContents = ({ submissions, idKeys, headers, clearForm, fillForm, setActiveSubmission, patientIdentifier, setLastSubmissionUpdate }) => {
 
     // storage for the table's contents
     let rows: any[] = []
@@ -168,7 +169,8 @@ const SubmissionTableContents = ({ submissions, idKeys, headers, fillForm, setAc
                     {
                         rows.map((row: any, index) => {
                             return (
-                                <Table.Row key={`${row.id}-${index}`} onClick={() => { 
+                                <Table.Row key={`${row.id}-${index}`} onClick={() => {
+                                    clearForm()
                                     fillForm(createFormData(row)); 
                                     setActiveSubmission(submissions.find((sub) => sub.submission_id === row.id)) 
                                 }}>

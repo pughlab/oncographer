@@ -8,20 +8,24 @@ import { BasicErrorMessage } from '../../common/BasicErrorMessage';
 
 type TemplateSearchInfo = {
   form_id: string,
+  patient_id: string,
   secondary_ids?: string
 }
 
 export function TemplateTable({ 
   formID,
+  patientIdentifier,
   headers,
   setLastTemplateUpdate,
+  clearForm,
   fillForm
 }) {
   const [isActive, setActive] = React.useState(true)
 
   // attempt to find templates for the current form
   const templateInfo: TemplateSearchInfo = { 
-    form_id: formID
+    form_id: formID,
+    patient_id: JSON.stringify(patientIdentifier)
   }
 
   const { loading: templatesLoading, error: templatesError, data: templates } = useQuery(FindTemplate, {
@@ -57,6 +61,7 @@ export function TemplateTable({
             templates={templates.formTemplates}
             setLastTemplateUpdate={setLastTemplateUpdate}
             headers={headers}
+            clearForm={clearForm}
             fillForm={fillForm}
           />
         </Accordion.Content>
@@ -65,7 +70,7 @@ export function TemplateTable({
   )
 }
 
-const TemplateTableContents = ({ templates, headers, setLastTemplateUpdate, fillForm }) => {
+const TemplateTableContents = ({ templates, headers, setLastTemplateUpdate, clearForm, fillForm }) => {
 
   let table = null
   const [deleteTemplate] = useMutation(DeleteTemplate)
@@ -126,6 +131,7 @@ const TemplateTableContents = ({ templates, headers, setLastTemplateUpdate, fill
 
                 return (
                   <Table.Row key={template.template_id} onClick={() => {
+                    clearForm()
                     fillForm({
                       fields: data,
                       patientID: patientId,
@@ -142,6 +148,8 @@ const TemplateTableContents = ({ templates, headers, setLastTemplateUpdate, fill
                           value = toDateString(value)
                         } else if (Array.isArray(value)) {
                           value = <List>{ value.map((item) => <List.Item key={item}>{item}</List.Item>) }</List>
+                        } else if (typeof value === 'object' && value.hasOwnProperty("value")) {
+                          value = re.test(value.value) ? toDateString(value.value) : ""
                         }
 
                         return (

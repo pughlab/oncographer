@@ -8,7 +8,6 @@ import { findDisplayName } from '../utils'
 import { FindSubmissions, ParentForm, FieldData } from "../queries/query"
 import { BasicErrorMessage } from "../../common/BasicErrorMessage"
 import { ActiveSubmissionContext } from "../../Portal"
-import { defaultStudy } from "../../../App"
 
 export function ParentSubmissionTable({
     formID,

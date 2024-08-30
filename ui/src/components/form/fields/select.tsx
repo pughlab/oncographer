@@ -6,8 +6,9 @@ import { constructDropdown, fieldIsRequired, findDescription } from '../utils'
 export function SmallSelectField({ field, study, label, isDisabled, isReadonly, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
     const processedOptions = constructDropdown(options)
     const description = findDescription(field, study)
+    const hasError = errorMessage !== null
     return (
-        <Form.Field disabled={isDisabled} readOnly={isReadonly} error={errorMessage !== null}>
+        <Form.Field disabled={isDisabled} readOnly={isReadonly} error={hasError}>
             <div>
                 <Popup
                     trigger={<span style={fieldIsRequired(field, study) && !isDisabled ? { color: 'red' } : { display: 'none' }}>* </span>}

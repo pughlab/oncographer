@@ -135,7 +135,10 @@ export const createSubmissionInput = (formID, state) => {
     Object.entries({
       ...state.formIDs,
       ...state.fields
-    }).filter(([_key, value]) => value && value !== '')
+    }).filter(([_key, value]) => 
+      (value && !(["", null, undefined].includes(value)))
+      || (value.value && !(["", null, undefined].includes(value)))
+    )
   )
   return {
     "form_id": formID,
@@ -233,4 +236,53 @@ export function getParentForm(root, form) {
 
 export function fieldIsRequired(field, study) {
   return typeof field.required === "boolean" ? field.required : JSON.parse(field.required)[study]
+}
+
+export function formatDraftDate(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(dsate.getSeconds()).padStart(2, '0')
+  const ampm = date.toLocaleString('en-US', { timeZoneName: 'short' }).split(' ')[2]
+  const timeZone = date.toLocaleString('en-US', { timeZoneName: 'short' }).split(' ')[3]
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} ${ampm} ${timeZone}`
+}
+
+export function createDraftInfo(formID, patientID, state, isRootForm) {
+  const draftInfo = {
+    'form_id': String(formID),
+    'patient_id': JSON.stringify(patientID),
+    'data': JSON.stringify(state.fields)
+  }
+  const formIDKeys = Object.keys(state.formIDs)
+  if (formIDKeys.length > 0 && !isRootForm) {
+    const formIDs = formIDKeys
+      .filter((id) =>
+        !Object.keys(state.patientID).includes(id)
+      )
+      .reduce((obj, key) => {
+        return Object.assign(obj, { [key]: state.formIDs[key] })
+      }, {})
+    draftInfo['secondary_ids'] = JSON.stringify(formIDs)
+  }
+  return draftInfo
+}
+
+export function transformToDate(data) {
+  // regex to determine a date in the YYYY-MM-DD format
+  // It will also match anything after the YYYY-MM-DD match,
+  // so a date like "2023-02-01T05:00:00.000Z" (without the quotes) is a valid date 
+  const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
+
+  Object.keys(data).forEach((key) => {
+    const isDate = re.test(data[key])
+    if (isDate) {
+      data[key] = new Date(data[key])
+    } else if (data[key] === "") {
+      data[key] = null
+    }
+  })
 }

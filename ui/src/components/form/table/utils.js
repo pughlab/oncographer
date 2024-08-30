@@ -9,32 +9,37 @@ export function toDateString(value) {
     let date
     let resolution = "month"
 
-    try {
-        date = JSON.parse(`${value}`)
-        if (typeof date === "object") {
-            resolution = date.resolution
-            date = new Date(date.value)
-        } else if (value instanceof Date) {
-            date = value
-        } else {
-            date = new Date(value)
-        }
-    
-        const options = {
-            year: "numeric"
-        }
-    
-        if (resolution === 'month') {
-            options.month = 'long'
-        }
-    
-        if (resolution === 'day') {
-            options.month = 'long'
-            options.day = 'numeric'
-        }
-        return date.toLocaleDateString("en-US", options)
-    } catch (error) {
-        console.log(`Date error: ${error}`)
-        return `Invalid date`
+    if (!value) {
+        return ""
     }
+
+    if (typeof value === "string") {
+        try {
+            date = JSON.parse(`${value}`)
+        } catch (error) {
+            date = value
+        }
+    }
+    if (typeof date === "object") {
+        resolution = date.resolution
+        date = new Date(date.value)
+    } else if (value instanceof Date) {
+        date = value
+    } else {
+        date = new Date(value)
+    }
+
+    const options = {
+        year: "numeric"
+    }
+
+    if (resolution === 'month') {
+        options.month = 'long'
+    }
+
+    if (resolution === 'day') {
+        options.month = 'long'
+        options.day = 'numeric'
+    }
+    return date.toLocaleDateString("en-US", options)
 }
