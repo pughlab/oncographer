@@ -20,7 +20,7 @@ import { useDisplayNamesContext } from "../layout/FormFactory"
 import { initialState, formReducer } from "./reducer"
 import { formStateMachine } from "./xstate/form"
 
-function renderField(field, patientIdentifier, state, label, updateErrorMessages, handleFieldChange) {
+function renderField(field, patientIdentifier, state, label, updateErrorMessages, handleFieldChange, reset) {
   let component = <></>
 
   const isDisabled = field.conditionals === null
@@ -44,6 +44,7 @@ function renderField(field, patientIdentifier, state, label, updateErrorMessages
           validator={state.validators[field.name]}
           updateErrorMessage={updateErrorMessages}
           updateValue={handleFieldChange}
+          reset={reset}
         />
       } else if (field.type === "textarea") {
         component = <TextAreaField
@@ -105,6 +106,7 @@ function renderField(field, patientIdentifier, state, label, updateErrorMessages
           value={state.fields[field.name]}
           updateErrorMessage={updateErrorMessages}
           updateValue={handleFieldChange}
+          reset={reset}
         />
       } else {
         component = <LargeSelectField
@@ -150,6 +152,7 @@ export function FormGenerator({ formMetadata, root }) {
   // State and context variables
   const [lastTemplateUpdate, setLastTemplateUpdate] = useState(`Templates-${new Date().toUTCString()}`)
   const [lastSubmissionUpdate, setLastSubmissionUpdate] = useState(`Submissions-${new Date().toUTCString()}`)
+  const [resetForm, setResetForm] = useState(false)
 
   const { patientIdentifier } = useContext(PatientIdentifierContext)
   const { activeSubmission } = useContext(ActiveSubmissionContext)
@@ -192,13 +195,12 @@ export function FormGenerator({ formMetadata, root }) {
       intervalId: null
     },
     actions: {
-      initializeForm: initializeForm,
       executeClearForm: clearForm,
       executeSubmit: submitForm,
-      saveDraft: attemptSaveDraft
     },
     services: {
-      initializeForm
+      initializeForm,
+      saveDraft: attemptSaveDraft
     }
   })
 
@@ -287,7 +289,7 @@ export function FormGenerator({ formMetadata, root }) {
     if (!R.equals(state.fields[name], value)) {
       dispatch({
         type: 'UPDATE_FIELDS',
-        payload: { [name]: value instanceof Date || typeof value === "boolean" || isNaN(value) ? value : Number(value) }
+        payload: { [name]: value }
       })
     }
   }
@@ -303,6 +305,7 @@ export function FormGenerator({ formMetadata, root }) {
     dispatch({
       type: 'CLEAR_FORM'
     })
+    setResetForm((prev) => !prev)
   }
 
   async function initializeForm()  {
@@ -678,7 +681,7 @@ export function FormGenerator({ formMetadata, root }) {
           }
         </Form.Group>
         { // render regular form fields
-          visibleFields.map((field) => renderField(field, patientIdentifier, state, labels[field.name], updateErrorMessages, handleFieldChange))
+          visibleFields.map((field) => renderField(field, patientIdentifier, state, labels[field.name], updateErrorMessages, handleFieldChange, resetForm))
         }
         <Button.Group size="large" fluid widths={3}>
           <Button

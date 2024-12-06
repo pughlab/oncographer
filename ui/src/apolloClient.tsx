@@ -23,7 +23,13 @@ const link = createUploadLink({uri:`https://${GRAPHQL_IP}:4001/graphql`})
 
 const apolloClient = new ApolloClient({
     link: authLink.concat(link),
-    cache: new InMemoryCache(),
+    cache: new InMemoryCache({
+      typePolicies: {
+        Form: {
+          keyFields: ["formID"]
+        }
+      }
+    }),
   })
 
 export default apolloClient

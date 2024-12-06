@@ -4,7 +4,7 @@ import { Accordion, Divider, Header, Icon, List, Table } from "semantic-ui-react
 
 import { toTitle, toDateString } from './utils'
 import { DisplayNamesContext } from "../../layout/FormFactory"
-import { RootForm, FindSubmissions } from "../queries/query"
+import { RootForm, FindSubmissions } from "../dynamic_form/queries/form"
 import { LoadingSegment } from "../../common/LoadingSegment"
 import { BasicErrorMessage } from "../../common/BasicErrorMessage"
 import { defaultStudy } from "../../../App"

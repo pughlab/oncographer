@@ -1,21 +1,25 @@
-import React, { useContext } from "react"
+import React, { useContext, useEffect } from "react"
 import { LoadingSegment } from "../../common/LoadingSegment"
 import { Divider, Header, Table, Icon, List, Button, Accordion } from "semantic-ui-react"
 import { gql, useMutation, useQuery } from "@apollo/client"
 
 import { toTitle, toDateString } from './utils'
-import { FindSubmissions, DeleteSubmission } from "../queries/query"
+import { FindSubmissions, DeleteSubmission } from "../dynamic_form/queries/form"
 import { BasicErrorMessage } from "../../common/BasicErrorMessage"
 import { ActiveSubmissionContext } from "../../Portal"
 
 export function SubmissionTable({
     formID,
-    formIDKeys,
     headers,
     patientIdentifier,
     clearForm,
     fillForm,
-    setLastSubmissionUpdate
+    reload,
+    setLastSubmissionUpdate,
+    setOpenModal,
+    setModalTitle,
+    setModalContent,
+    setModalError
 }) {
     const [isActive, setActive] = React.useState(true)
     const { setActiveSubmission } = useContext(ActiveSubmissionContext)
@@ -32,13 +36,20 @@ export function SubmissionTable({
     const {
         loading: submissionsLoading,
         error: submissionsError,
-        data: submissionsInfo
+        data: submissionsInfo,
+        refetch
     } = useQuery(FindSubmissions, {
         variables: {
             where: submissionSearchInfo
         },
-        fetchPolicy: "network-only"
+        fetchPolicy: "no-cache"
     })
+
+    useEffect(() => {
+        if(reload) {
+            refetch()
+        }
+    }, [reload, refetch])
 
     if (submissionsLoading) {
         return <LoadingSegment />
@@ -66,13 +77,16 @@ export function SubmissionTable({
                 <Accordion.Content active={isActive}>
                     <SubmissionTableContents 
                         submissions={submissionsInfo.submissions}
-                        idKeys={formIDKeys}
                         headers={headers}
+                        refetch={refetch}
                         clearForm={clearForm}
                         fillForm={fillForm}
                         setActiveSubmission={setActiveSubmission}
-                        patientIdentifier={patientIdentifier}
                         setLastSubmissionUpdate={setLastSubmissionUpdate}
+                        setOpenModal={setOpenModal}
+                        setModalTitle={setModalTitle}
+                        setModalContent={setModalContent}
+                        setModalError={setModalError}
                     />
                 </Accordion.Content>
             </Accordion>
@@ -80,7 +94,19 @@ export function SubmissionTable({
     )
 }
 
-const SubmissionTableContents = ({ submissions, idKeys, headers, clearForm, fillForm, setActiveSubmission, patientIdentifier, setLastSubmissionUpdate }) => {
+const SubmissionTableContents = ({
+    submissions,
+    headers,
+    refetch,
+    clearForm,
+    fillForm,
+    setActiveSubmission,
+    setLastSubmissionUpdate,
+    setOpenModal,
+    setModalTitle,
+    setModalContent,
+    setModalError
+}) => {
 
     // storage for the table's contents
     let rows: any[] = []
@@ -100,47 +126,31 @@ const SubmissionTableContents = ({ submissions, idKeys, headers, clearForm, fill
                 }
             },
             onCompleted: () => {
-                alert('Submission deleted!')
-                rows = rows.filter((row) => row.id !== submissionID)
-                setLastSubmissionUpdate(`Submissions-${new Date().toUTCString()}`)
+                refetch()
+                console.log('Submission deleted')
+                setLastSubmissionUpdate()
+                setModalTitle('Success')
+                setModalContent('The submission was deleted.')
+                setModalError(false)
+                setOpenModal(true)
+            },
+            onError: () => {
+                console.log('Submission not deleted')
+                setModalTitle('Error')
+                setModalContent('There was an error while deleting the submission, please try again.')
+                setModalError(true)
+                setOpenModal(true)
             }
         })
-    }
-
-    // creates a representation of the submission that can be used to fill
-    // the form's fields in the FormGenerator component with the submission's data
-    const createFormData = (row) => {
-        const cleanRow = { ...row }
-        delete cleanRow.id
-        const formData = {
-            patientID: patientIdentifier,
-            formIDs: idKeys.reduce((obj, key) => {
-                return {
-                    ...obj,
-                    [key]: row[key]
-                }
-            }, {}),
-            fields: Object.keys(cleanRow)
-                .filter((key) => !idKeys.includes(key))
-                .reduce((obj, key) => {
-                    return {
-                        ...obj,
-                        [key]: re.test(row[key]) 
-                            ? new Date(row[key]) 
-                            : row[key]
-                    }
-                }, {})
-        }
-        return formData
     }
 
     // fill the table's row data from the submission data
     submissions.forEach((submission: any) => {
         const row: any = {}
-        row.id = submission.submission_id
         submission.fields.filter((field) => field.key !== '__typename').forEach((field) => {
             row[field["key"]] = field["value"]
         })
+        row.id = submission.submission_id
         Object.keys(submission.patient).filter((key) => key !== '__typename').forEach((key) =>{
             row[key] = submission.patient[key]
         })
@@ -171,7 +181,7 @@ const SubmissionTableContents = ({ submissions, idKeys, headers, clearForm, fill
                             return (
                                 <Table.Row key={`${row.id}-${index}`} onClick={() => {
                                     clearForm()
-                                    fillForm(createFormData(row)); 
+                                    fillForm(row); 
                                     setActiveSubmission(submissions.find((sub) => sub.submission_id === row.id)) 
                                 }}>
                                     {

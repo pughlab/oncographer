@@ -4,8 +4,7 @@ import { Divider, Header, Table, Icon, List, Accordion } from "semantic-ui-react
 import { useQuery } from "@apollo/client"
 
 import { toTitle, toDateString } from './utils'
-import { findDisplayName } from '../utils'
-import { FindSubmissions, ParentForm, FieldData } from "../queries/query"
+import { FindSubmissions, ParentForm, FieldData } from "../dynamic_form/queries/form"
 import { BasicErrorMessage } from "../../common/BasicErrorMessage"
 import { ActiveSubmissionContext } from "../../Portal"
 
@@ -34,14 +33,14 @@ export function ParentSubmissionTable({
         refetch: refetchFields
     } = useQuery(FieldData, {
         variables: {
-            id: parentForm?.ParentForm.form_id,
+            id: parentForm?.ParentForm.formID,
             study: patientIdentifier.study
         },
         skip: !parentForm
     })
 
     const submissionSearchInfo = {
-        form_id: parentForm?.ParentForm.form_id,
+        form_id: parentForm?.ParentForm.formID,
         patient: {
             patient_id: patientIdentifier.submitter_donor_id,
             program_id: patientIdentifier.program_id,
@@ -91,8 +90,10 @@ export function ParentSubmissionTable({
     Object.keys(patientIdentifier).forEach((key) => {
         headers[key] = displayNames[key] ?? toTitle(key, "_")
     })
-    fields.GetFormFields.forEach((field) => {
-        headers[field['name']] = displayNames[field['name']] ?? findDisplayName(field, patientIdentifier.study, submissionsInfo.submissions[0], parentForm.ParentForm)
+    fields.GetFormFields.forEach((field) => { // add all fields except comments
+        if(!field['name'].toLowerCase().startsWith('comments')) {
+            headers[field['name']] = toTitle(field.label[patientIdentifier.study] ?? field.label.default)
+        }
     })
     excludedHeaders.forEach((header) => {
         delete headers[header]
@@ -118,7 +119,7 @@ export function ParentSubmissionTable({
                                 <Table.Row>
                                     {
                                         Object.values(headers).map((header: any) => {
-                                            return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
+                                            return <Table.HeaderCell key={header}>{header}</Table.HeaderCell>
                                         })
                                     }
                                 </Table.Row>

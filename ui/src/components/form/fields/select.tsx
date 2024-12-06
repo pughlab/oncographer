@@ -63,7 +63,7 @@ export function SmallSelectField({ field, study, label, isDisabled, isReadonly, 
     )
 }
 
-export function MultipleSmallSelectField({ field, study, label, isDisabled, isReadonly, errorMessage, options, validator, value, updateErrorMessage, updateValue }) {
+export function MultipleSmallSelectField({ field, study, label, isDisabled, isReadonly, errorMessage, options, validator, value, updateErrorMessage, updateValue, reset }) {
     const processedOptions = constructDropdown(options)
     const description = findDescription(field, study)
     const [selectedOptions, setSelectedOptions] = React.useState([])
@@ -80,6 +80,10 @@ export function MultipleSmallSelectField({ field, study, label, isDisabled, isRe
             return options
         })
     }
+
+    useEffect(() => {
+        setSelectedOptions([])
+    }, [reset])
 
     useEffect(() => {
         updateValue({

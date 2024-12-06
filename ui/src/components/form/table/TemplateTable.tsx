@@ -3,7 +3,7 @@ import { Accordion, Button, Divider, Header, Icon, List, Table } from 'semantic-
 import { useMutation, useQuery } from '@apollo/client'
 import { toTitle, toDateString } from './utils'
 import { LoadingSegment } from "../../common/LoadingSegment";
-import { FindTemplate, DeleteTemplate } from '../queries/query'
+import { FindTemplate, DeleteTemplate } from '../dynamic_form/queries/form'
 import { BasicErrorMessage } from '../../common/BasicErrorMessage';
 
 type TemplateSearchInfo = {
@@ -18,7 +18,11 @@ export function TemplateTable({
   headers,
   setLastTemplateUpdate,
   clearForm,
-  fillForm
+  fillForm,
+  setOpenModal,
+  setModalTitle,
+  setModalContent,
+  setModalError
 }) {
   const [isActive, setActive] = React.useState(true)
 
@@ -63,6 +67,10 @@ export function TemplateTable({
             headers={headers}
             clearForm={clearForm}
             fillForm={fillForm}
+            setOpenModal={setOpenModal}
+            setModalTitle={setModalTitle}
+            setModalContent={setModalContent}
+            setModalError={setModalError}
           />
         </Accordion.Content>
       </Accordion>
@@ -70,9 +78,20 @@ export function TemplateTable({
   )
 }
 
-const TemplateTableContents = ({ templates, headers, setLastTemplateUpdate, clearForm, fillForm }) => {
+const TemplateTableContents = ({
+  templates,
+  headers,
+  setLastTemplateUpdate,
+  clearForm,
+  fillForm,
+  setOpenModal,
+  setModalTitle,
+  setModalContent,
+  setModalError
+}) => {
 
   let table = null
+
   const [deleteTemplate] = useMutation(DeleteTemplate)
 
   const removeTemplate = (template) => {
@@ -83,8 +102,19 @@ const TemplateTableContents = ({ templates, headers, setLastTemplateUpdate, clea
         }
       },
       onCompleted: () => {
-        alert('Template deleted')
-        setLastTemplateUpdate(toDateString(new Date()))
+        console.log('Template deleted')
+        setModalTitle('Success')
+        setModalContent('The template has been deleted')
+        setModalError(false)
+        setOpenModal(true)
+        setLastTemplateUpdate()
+      },
+      onError: () => {
+        console.log('Template not deleted')
+        setModalTitle('Error')
+        setModalContent('There was an error while deleting the template, please try again')
+        setModalError(true)
+        setOpenModal(true)
       }
     })
   }
@@ -97,80 +127,79 @@ const TemplateTableContents = ({ templates, headers, setLastTemplateUpdate, clea
     const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
 
     table = (
-      <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
-        <Table fixed selectable aria-labelledby="header" striped>
+      <>
+        
+        <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
+          <Table fixed selectable aria-labelledby="header" striped>
 
-          <Table.Header>
-            <Table.Row>
+            <Table.Header>
+              <Table.Row>
+                {
+                  Object.values(headers).map((header: any) => {
+                    return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
+                  })
+                }
+                <Table.HeaderCell key="Delete" textAlign='center'>Delete</Table.HeaderCell>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {
-                Object.values(headers).map((header: any) => {
-                  return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
+                templates.map((template) => {
+                  const patientId = JSON.parse(template.patient_id)
+                  const secondaryIds = JSON.parse(template.secondary_ids) || {}
+                  const data = JSON.parse(template.data) // the data that is used to save the template
+                  const ids = {
+                    ...patientId,
+                    ...secondaryIds
+                  }
+                  const row = { // the visual representation of the full template
+                    ...ids,
+                    ...data
+                  }
+
+                  // convert date-like strings to Date objects
+                  // and empty strings to null
+                  transformData(data, re)
+
+                  return (
+                    <Table.Row key={template.template_id} onClick={() => {
+                      clearForm()
+                      fillForm(data)
+                    }}>{
+                        Object.keys(headers).map((key) => {
+                          let value = row.hasOwnProperty(key) ? row[key] : ""
+
+                          const isDate = re.test(value)
+
+                          // transform the cell's value for better reading if necessary
+                          if (isDate) {
+                            value = toDateString(value)
+                          } else if (Array.isArray(value)) {
+                            value = <List>{ value.map((item) => <List.Item key={item}>{item}</List.Item>) }</List>
+                          } else if (typeof value === 'object' && value.hasOwnProperty("value")) {
+                            value = re.test(value.value) ? toDateString(value.value) : ""
+                          }
+
+                          return (
+                            <Table.Cell
+                              key={`${template.template_id}-${key}-${value}`}
+                            >
+                              { value }
+                            </Table.Cell>
+                          )
+                        })
+                      }
+                      <Table.Cell key={`${template.template_id}-delete`} textAlign="center">
+                        <Button negative icon='trash' onClick={() => { removeTemplate(template) }} />
+                      </Table.Cell>
+                    </Table.Row>
+                  )
                 })
               }
-              <Table.HeaderCell key="Delete" textAlign='center'>Delete</Table.HeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {
-              templates.map((template) => {
-                const patientId = JSON.parse(template.patient_id)
-                const secondaryIds = JSON.parse(template.secondary_ids) || {}
-                const data = JSON.parse(template.data) // the data that is used to save the template
-                const ids = {
-                  ...patientId,
-                  ...secondaryIds
-                }
-                const row = { // the visual representation of the full template
-                  ...ids,
-                  ...data
-                }
-
-                // convert date-like strings to Date objects
-                // and empty strings to null
-                transformData(data, re)
-
-                return (
-                  <Table.Row key={template.template_id} onClick={() => {
-                    clearForm()
-                    fillForm({
-                      fields: data,
-                      patientID: patientId,
-                      formIDs: secondaryIds
-                    })
-                  }}>{
-                      Object.keys(headers).map((key) => {
-                        let value = row.hasOwnProperty(key) ? row[key] : ""
-
-                        const isDate = re.test(value)
-
-                        // transform the cell's value for better reading if necessary
-                        if (isDate) {
-                          value = toDateString(value)
-                        } else if (Array.isArray(value)) {
-                          value = <List>{ value.map((item) => <List.Item key={item}>{item}</List.Item>) }</List>
-                        } else if (typeof value === 'object' && value.hasOwnProperty("value")) {
-                          value = re.test(value.value) ? toDateString(value.value) : ""
-                        }
-
-                        return (
-                          <Table.Cell
-                            key={`${template.template_id}-${key}-${value}`}
-                          >
-                            { value }
-                          </Table.Cell>
-                        )
-                      })
-                    }
-                    <Table.Cell key={`${template.template_id}-delete`} textAlign="center">
-                      <Button negative icon='trash' onClick={() => { removeTemplate(template) }} />
-                    </Table.Cell>
-                  </Table.Row>
-                )
-              })
-            }
-          </Table.Body>
-        </Table>
-      </div>
+            </Table.Body>
+          </Table>
+        </div>
+      </>
     )
   } else { // invalid results, return an empty tag
     table = (

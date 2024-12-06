@@ -6,7 +6,7 @@ import "react-datepicker/dist/react-datepicker.css"
 import { v4 as uuid4 } from 'uuid'
 import { fieldIsRequired, findDescription } from "../utils"
 
-export function DateInputField({ field, study, label, value, comparingDate = null, isDisabled, isReadonly, errorMessage, validator, updateErrorMessage, updateValue }) {
+export function DateInputField({ field, study, label, value, comparingDate = null, isDisabled, isReadonly, errorMessage, validator, updateErrorMessage, updateValue, reset }) {
     // calculate time difference in years between the current value and a given date
     const otherDate = comparingDate ?? new Date()
     const difference = dayjs(otherDate).diff(dayjs(value), 'years')
@@ -43,6 +43,11 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
         }
         return format
     }
+
+    useEffect(() => {
+        isProgrammaticChange.current = true
+        setSelectedDate(null)
+    }, [reset])
 
     useEffect(() => {
         isProgrammaticChange.current = true
@@ -150,7 +155,6 @@ export function DateInputField({ field, study, label, value, comparingDate = nul
                     key={key}
                     selected={selectedDate}
                     onChange={handleDateChange}
-                    date={selectedDate}
                     dateFormat={getFormat()}
                     showYearPicker={resolution === 'year'}
                     showMonthYearPicker={resolution === 'month'}

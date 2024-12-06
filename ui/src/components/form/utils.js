@@ -26,7 +26,7 @@ export const validateInputs = (
       value = undefined
     }
 
-    const validation = state.validators[key].safeParse(value)
+    const validation = state.validators[key].safeParse(isNaN(value && value.toString()) ? value : Number(value))
 
     if (!validation.success) {
       validationSuccessful = false
@@ -199,7 +199,7 @@ export function findDisplayName(field, study, activeSubmission = null, parentFor
           activeSubmission
           && parentForm
           && parentForm.branch_fields
-          && activeSubmission.form_id === parentForm.form_id
+          && activeSubmission.form_id === parentForm.formID
         ) {
           return getBranchFieldLabel(field.display_name[key], parentForm.branch_fields, activeSubmission.fields)
         }

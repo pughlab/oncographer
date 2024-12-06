@@ -68,15 +68,20 @@
     """
     
     """
-    form_id                       : String
-    form_name                     : String
+    form_id: String
+    formID: String
+    form_name: String
+    name: String
     form_relationship_cardinality : FormValue
     next_form: [Form!]!  @relationship(type : "NEXT_FORM", direction : OUT, properties: "Studies")
     display_name: Parser
+    label: Parser
     fields: [Field!] @relationship(type: "BELONGS_TO", direction: IN, properties: "IsID")
     has_next_question: [Field] @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
     studies: [String]
     weight: FormValue
+    required_fields: Parser
+    mutex_fields: Parser
     branch_fields: [String]
   }
 
@@ -85,21 +90,25 @@
     Field metadata holds all the informaton needed to populate
     the frontend dynamically
     """
-    label             : String
-    description       : String
-    name              : String
-    type              : String
-    regex             : String
-    value             : FormValue
-    set               : SampleSet
-    required          : FormValue
-    component         : String
-    conditionals      : Parser
-    placeholder       : String
-    filter            : Parser
+    label: Parser
+    description: String
+    name: String
+    type: String
+    regex: String
+    value: FormValue
+    minValue: FormValue
+    maxValue: FormValue
+    set: SampleSet
+    required: FormValue
+    component: String
+    conditionals: Parser
+    enablingConditions: [String]
+    placeholder: String
+    filter: Parser
     info: String
     display_name: Parser
     studies: [String]
+    options: [String]
     format: FormValue
     api: Parser
     has_next_question: Field @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)

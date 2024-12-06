@@ -4,15 +4,16 @@ import { useQuery } from "@apollo/client";
 import { Segment, List, Grid, SemanticICONS, SemanticCOLORS } from "semantic-ui-react";
 
 import keycloak from '../../keycloak/keycloak'
-import { FormTree } from "../form/queries/query";
-import { FormGenerator } from "../form/FormGenerator";
+import { FormTree } from "../form/dynamic_form/queries/form";
+// import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
 import { ActiveSubmissionContext, PatientFoundContext, PatientIdentifierContext } from '../Portal';
-import { findDisplayName } from "../form/utils"
 import { ParentSubmissionTable } from '../form/table/ParentSubmissionTable';
 import { WelcomeMessage } from './WelcomeMessage';
 import { PatientTable } from '../form/table/PatientTable';
+import { DynamicForm } from '../form/dynamic_form/DynamicForm';
+import { Form } from '../form/dynamic_form/types';
 
 export const DisplayNamesContext = React.createContext({})
 
@@ -68,13 +69,13 @@ function ListMenuItem({
       <List.Content>
         <a style={isActive ? { color: "#02B5AE" } : {}} onClick={() => {
           setActiveItem(node)
-        }}>{ findDisplayName(node, study, activeSubmission, node) }</a>
+        }}>{ node.label ? node.label[study] ?? node.label.default : node.name }</a>
         <List.List>
           {
             subForms.map((subform) => {
               const currentSubform = subform.node ? subform.node : subform
               return <ListMenuItem
-                key={`${currentSubform.form_name}-${currentSubform.form_id}`}
+                key={`${currentSubform.name}-${currentSubform.formID}`}
                 item={subform}
                 study={study}
                 activeItem={activeItem}
@@ -100,7 +101,7 @@ function ListMenu({
     <Segment basic>
     <List link size="large">
       <ListMenuItem
-        key={`${node.form_name}-${node.form_id}`}
+        key={`${node.name}-${node.formID}`}
         item={node}
         study={study}
         activeItem={activeItem} 
@@ -121,7 +122,7 @@ export default function FormFactory() {
       study: patientIdentifier.study
     }
   })
-  const [ activeItem, setActiveItem ] = React.useState(null)
+  const [ activeItem, setActiveItem ] = React.useState<Form|null>(null)
 
   if (loading) {
     return <LoadingSegment />
@@ -167,21 +168,15 @@ export default function FormFactory() {
             {
               activeItem && activeItem !== root
               ? <ParentSubmissionTable 
-                  key={activeItem.form_id}
-                  formID={activeItem.form_id}
+                  key={activeItem.formID}
+                  formID={activeItem.formID}
                   patientIdentifier={patientIdentifier}
                   displayNames={displayNames}
                 />
               : <></>
             }
             {
-              validStudy
-              ? <FormGenerator
-                  key={activeItem ? activeItem.form_name : root.form_name}
-                  root={root}
-                  formMetadata={activeItem ?? root}
-                />
-              : <></>
+              validStudy && <DynamicForm key={activeItem ? activeItem.name : root.name} form={activeItem ?? root} excluded_fields={Object.keys(patientIdentifier)} /> 
             }
           </Grid.Column>
         </Grid>
