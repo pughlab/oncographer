@@ -19,7 +19,6 @@ export const PatientFoundContext = createContext({})
 
 const DocsLink = () => {
   return (
-  <>
   <Popup size='large' flowing wide='very'
     trigger={
       <Menu.Item
@@ -33,21 +32,16 @@ const DocsLink = () => {
   >
     <Label basic content="Go to OncoGrapher Docs:" detail="https://oncographer.ca" />
   </Popup>
-</>
 )}
 
 export default function Portal () {
-  const {navigate, location, isActivePathElement} = useRouter()
-  const [meMutationState] = useKeycloakMeMutation()
+  useRouter()
+  useKeycloakMeMutation()
 
   const [patientIdentifier, setPatientIdentifier] = useState({submitter_donor_id: '', program_id: '', study: ''})
   const [activeSubmission, setActiveSubmission] = useState({})
   const [patientFound, setPatientFound] = useState(false)
 
-  const routes = [
-    {path: '/', icon: 'info circle', introID: HOME_MENU_ELEMENT_ID},
-    // {path: '/home', icon: 'database', introID: DATA_MENU_ELEMENT_ID},
-  ]
   return (
     <>
         <Sticky>
@@ -56,7 +50,7 @@ export default function Portal () {
           <Logo href="/" size='tiny' />
           <Menu.Item>
             <Header href="/" size='large'>
-              <strong >OncoGrapher</strong><strong style={{fontWeight: 100}}>App</strong>
+              <strong>OncoGrapher</strong><strong style={{fontWeight: 100}}>App</strong>
             </Header>
           </Menu.Item>
 
@@ -77,17 +71,17 @@ export default function Portal () {
     </Sticky>
 
     <Divider horizontal />
+    <div style={{padding: '1em'}}>
       <PatientIdentifierContext.Provider value={{patientIdentifier, setPatientIdentifier }}>
-        <ActiveSubmissionContext.Provider value={{activeSubmission, setActiveSubmission}}>
-          <PatientFoundContext.Provider value={{patientFound, setPatientFound}}>
-            <div style={{padding: '1em'}}>
-              <PatientSearchForm />
-              <Divider horizontal />
-              <FormFactory />
-            </div>
-          </PatientFoundContext.Provider>
-        </ActiveSubmissionContext.Provider>
+        <PatientFoundContext.Provider value={{patientFound, setPatientFound}}>
+          <PatientSearchForm />
+          <Divider horizontal />
+          <ActiveSubmissionContext.Provider value={{activeSubmission, setActiveSubmission}}>
+            <FormFactory />
+          </ActiveSubmissionContext.Provider>
+        </PatientFoundContext.Provider>
       </PatientIdentifierContext.Provider>
+    </div>
     </>
   )
 }

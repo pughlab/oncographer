@@ -21,7 +21,7 @@ export function SubmissionTable({
     setModalContent,
     setModalError
 }) {
-    const [isActive, setActive] = React.useState(true)
+    const [active, setActive] = React.useState(true)
     const { setActiveSubmission } = useContext(ActiveSubmissionContext)
     
     const submissionSearchInfo = {
@@ -65,7 +65,7 @@ export function SubmissionTable({
         <>
             <Divider hidden />
             <Accordion>
-                <Accordion.Title active={isActive} onClick={() => setActive(!isActive)}>
+                <Accordion.Title active={active} onClick={() => setActive(!active)}>
                     <Icon name="dropdown" />
                     <Divider horizontal style={{ display: 'inline-block' }}>
                         <Header as="h4">
@@ -74,7 +74,7 @@ export function SubmissionTable({
                         </Header>
                     </Divider>
                 </Accordion.Title>
-                <Accordion.Content active={isActive}>
+                <Accordion.Content active={active}>
                     <SubmissionTableContents 
                         submissions={submissionsInfo.submissions}
                         headers={headers}

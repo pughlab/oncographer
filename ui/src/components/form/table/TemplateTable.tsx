@@ -24,7 +24,7 @@ export function TemplateTable({
   setModalContent,
   setModalError
 }) {
-  const [isActive, setActive] = React.useState(true)
+  const [active, setActive] = React.useState(true)
 
   // attempt to find templates for the current form
   const templateInfo: TemplateSearchInfo = { 
@@ -51,7 +51,7 @@ export function TemplateTable({
     <>
       <Divider hidden />
       <Accordion>
-        <Accordion.Title active={isActive} onClick={() => setActive(!isActive)}>
+        <Accordion.Title active={active} onClick={() => setActive(!active)}>
           <Icon name="dropdown" />
           <Divider horizontal style={{ display: 'inline-block' }}>
             <Header as="h4">
@@ -60,7 +60,7 @@ export function TemplateTable({
             </Header>
           </Divider>
         </Accordion.Title>
-        <Accordion.Content active={isActive}>
+        <Accordion.Content active={active}>
           <TemplateTableContents
             templates={templates.formTemplates}
             setLastTemplateUpdate={setLastTemplateUpdate}
@@ -127,79 +127,76 @@ const TemplateTableContents = ({
     const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m
 
     table = (
-      <>
-        
-        <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
-          <Table fixed selectable aria-labelledby="header" striped>
+      <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
+        <Table fixed selectable aria-labelledby="header" striped>
 
-            <Table.Header>
-              <Table.Row>
-                {
-                  Object.values(headers).map((header: any) => {
-                    return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
-                  })
-                }
-                <Table.HeaderCell key="Delete" textAlign='center'>Delete</Table.HeaderCell>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
+          <Table.Header>
+            <Table.Row>
               {
-                templates.map((template) => {
-                  const patientId = JSON.parse(template.patient_id)
-                  const secondaryIds = JSON.parse(template.secondary_ids) || {}
-                  const data = JSON.parse(template.data) // the data that is used to save the template
-                  const ids = {
-                    ...patientId,
-                    ...secondaryIds
-                  }
-                  const row = { // the visual representation of the full template
-                    ...ids,
-                    ...data
-                  }
-
-                  // convert date-like strings to Date objects
-                  // and empty strings to null
-                  transformData(data, re)
-
-                  return (
-                    <Table.Row key={template.template_id} onClick={() => {
-                      clearForm()
-                      fillForm(data)
-                    }}>{
-                        Object.keys(headers).map((key) => {
-                          let value = row.hasOwnProperty(key) ? row[key] : ""
-
-                          const isDate = re.test(value)
-
-                          // transform the cell's value for better reading if necessary
-                          if (isDate) {
-                            value = toDateString(value)
-                          } else if (Array.isArray(value)) {
-                            value = <List>{ value.map((item) => <List.Item key={item}>{item}</List.Item>) }</List>
-                          } else if (typeof value === 'object' && value.hasOwnProperty("value")) {
-                            value = re.test(value.value) ? toDateString(value.value) : ""
-                          }
-
-                          return (
-                            <Table.Cell
-                              key={`${template.template_id}-${key}-${value}`}
-                            >
-                              { value }
-                            </Table.Cell>
-                          )
-                        })
-                      }
-                      <Table.Cell key={`${template.template_id}-delete`} textAlign="center">
-                        <Button negative icon='trash' onClick={() => { removeTemplate(template) }} />
-                      </Table.Cell>
-                    </Table.Row>
-                  )
+                Object.values(headers).map((header: any) => {
+                  return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
                 })
               }
-            </Table.Body>
-          </Table>
-        </div>
-      </>
+              <Table.HeaderCell key="Delete" textAlign='center'>Delete</Table.HeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {
+              templates.map((template) => {
+                const patientId = JSON.parse(template.patient_id)
+                const secondaryIds = JSON.parse(template.secondary_ids) || {}
+                const data = JSON.parse(template.data) // the data that is used to save the template
+                const ids = {
+                  ...patientId,
+                  ...secondaryIds
+                }
+                const row = { // the visual representation of the full template
+                  ...ids,
+                  ...data
+                }
+
+                // convert date-like strings to Date objects
+                // and empty strings to null
+                transformData(data, re)
+
+                return (
+                  <Table.Row key={template.template_id} onClick={() => {
+                    clearForm()
+                    fillForm(data)
+                  }}>{
+                      Object.keys(headers).map((key) => {
+                        let value = row.hasOwnProperty(key) ? row[key] : ""
+
+                        const isDate = re.test(value)
+
+                        // transform the cell's value for better reading if necessary
+                        if (isDate) {
+                          value = toDateString(value)
+                        } else if (Array.isArray(value)) {
+                          value = <List>{ value.map((item) => <List.Item key={item}>{item}</List.Item>) }</List>
+                        } else if (typeof value === 'object' && value.hasOwnProperty("value")) {
+                          value = re.test(value.value) ? toDateString(value.value) : ""
+                        }
+
+                        return (
+                          <Table.Cell
+                            key={`${template.template_id}-${key}-${value}`}
+                          >
+                            { value }
+                          </Table.Cell>
+                        )
+                      })
+                    }
+                    <Table.Cell key={`${template.template_id}-delete`} textAlign="center">
+                      <Button negative icon='trash' onClick={() => { removeTemplate(template) }} />
+                    </Table.Cell>
+                  </Table.Row>
+                )
+              })
+            }
+          </Table.Body>
+        </Table>
+      </div>
     )
   } else { // invalid results, return an empty tag
     table = (

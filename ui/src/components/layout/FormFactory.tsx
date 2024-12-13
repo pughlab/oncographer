@@ -5,10 +5,9 @@ import { Segment, List, Grid, SemanticICONS, SemanticCOLORS } from "semantic-ui-
 
 import keycloak from '../../keycloak/keycloak'
 import { FormTree } from "../form/dynamic_form/queries/form";
-// import { FormGenerator } from "../form/FormGenerator";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
-import { ActiveSubmissionContext, PatientFoundContext, PatientIdentifierContext } from '../Portal';
+import { PatientFoundContext, PatientIdentifierContext } from '../Portal';
 import { ParentSubmissionTable } from '../form/table/ParentSubmissionTable';
 import { WelcomeMessage } from './WelcomeMessage';
 import { PatientTable } from '../form/table/PatientTable';
@@ -47,7 +46,6 @@ function ListMenuItem({
   const isActive = activeItem === node 
   const hasSubForms = node.next_formConnection.edges.length > 0
   const isActiveAndHasSubForms = isActive && hasSubForms
-  const { activeSubmission } = React.useContext(ActiveSubmissionContext)
   const itemBelongsToStudy = node.studies.includes(study)
   const subForms = [...node.next_formConnection.edges].sort(compareForms)
   let iconName : SemanticICONS = "file outline"

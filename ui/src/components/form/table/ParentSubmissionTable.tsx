@@ -13,7 +13,7 @@ export function ParentSubmissionTable({
     patientIdentifier,
     displayNames
 }) {
-    const [isActive, setActive] = React.useState(true)
+    const [active, setActive] = React.useState(true)
     const { activeSubmission, setActiveSubmission } = useContext(ActiveSubmissionContext)
 
     const {
@@ -33,20 +33,20 @@ export function ParentSubmissionTable({
         refetch: refetchFields
     } = useQuery(FieldData, {
         variables: {
-            id: parentForm?.ParentForm.formID,
+            id: parentForm?.ParentForm?.formID,
             study: patientIdentifier.study
         },
-        skip: !parentForm
+        skip: !(parentForm?.parentForm)
     })
 
-    const submissionSearchInfo = {
-        form_id: parentForm?.ParentForm.formID,
+    const submissionSearchInfo = parentForm?.ParentForm ? {
+        form_id: parentForm.ParentForm.formID,
         patient: {
             patient_id: patientIdentifier.submitter_donor_id,
             program_id: patientIdentifier.program_id,
             study: patientIdentifier.study
         }
-    }
+    } : {}
 
     const {
         loading: submissionsLoading,
@@ -57,14 +57,14 @@ export function ParentSubmissionTable({
         variables: {
             where: submissionSearchInfo
         },
-        skip: !parentForm
+        skip: !(parentForm?.ParentForm)
     })
 
     useEffect(() => {
-        if (parentForm && !fieldsLoading) {
+        if (parentForm?.ParentForm && !fieldsLoading) {
             refetchFields()
         }
-        if (parentForm && !submissionsLoading) {
+        if (parentForm?.ParentForm && !submissionsLoading) {
             refetchSubmissions()
         }
     }, [parentForm, fieldsLoading, submissionsLoading, refetchFields, refetchSubmissions])
@@ -103,7 +103,7 @@ export function ParentSubmissionTable({
         <>
             <Divider hidden />
             <Accordion>
-                <Accordion.Title active={isActive} onClick={() => setActive(!isActive)}>
+                <Accordion.Title active={active} onClick={() => setActive(!active)}>
                     <Icon name="dropdown" />
                     <Divider horizontal style={{ display: 'inline-block' }}>
                         <Header as="h4">
@@ -112,7 +112,7 @@ export function ParentSubmissionTable({
                         </Header>
                     </Divider>
                 </Accordion.Title>
-                <Accordion.Content active={isActive}>
+                <Accordion.Content active={active}>
                     <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
                         <Table fixed selectable aria-labelledby="header" striped>
                             <Table.Header>
