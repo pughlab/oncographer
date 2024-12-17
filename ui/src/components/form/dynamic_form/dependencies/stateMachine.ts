@@ -30,6 +30,7 @@ export const formStateMachine = createMachine({
         CLEAR: { target: 'empty' },
         SAVED: { target: 'clean' },
         FAILED: { target: 'failure' },
+        RELOAD: { target: 'loading' },
       }
     },
     modified: {
@@ -52,6 +53,7 @@ export const formStateMachine = createMachine({
         SAVED: { target: 'clean' },
         CLEAR: { target: 'empty' },
         FAILED: { target: 'failure' },
+        RELOAD: { target: 'loading' },
       }
     },
     submitting: {
@@ -72,7 +74,8 @@ export const formStateMachine = createMachine({
         SUBMIT: {
           target: 'submitting',
           cond: 'isFormValid'
-        }
+        },
+        RELOAD: { target: 'loading' },
       }
     },
     saving: {
@@ -88,7 +91,8 @@ export const formStateMachine = createMachine({
       entry: 'showModal',
       on: {
         RETRY: { target: 'submitting' },
-        CANCEL: { target: 'clean' }
+        CANCEL: { target: 'clean' },
+        RELOAD: { target: 'loading' },
       }
     }
   }

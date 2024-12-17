@@ -1,6 +1,11 @@
 import { ReactElement } from "react"
 import { EventObject } from "xstate"
 
+export interface Action {
+    type: string,
+    payload?: any
+}
+
 export type Label = {
     default: string
     [key: string]: string

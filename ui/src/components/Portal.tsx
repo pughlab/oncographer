@@ -14,7 +14,6 @@ import FormFactory  from './layout/FormFactory';
 import PatientSearchForm from './layout/PatientSearchForm'
 
 export const PatientIdentifierContext = createContext({})
-export const ActiveSubmissionContext = createContext({})
 export const PatientFoundContext = createContext({})
 
 const DocsLink = () => {
@@ -39,7 +38,7 @@ export default function Portal () {
   useKeycloakMeMutation()
 
   const [patientIdentifier, setPatientIdentifier] = useState({submitter_donor_id: '', program_id: '', study: ''})
-  const [activeSubmission, setActiveSubmission] = useState({})
+  
   const [patientFound, setPatientFound] = useState(false)
 
   return (
@@ -76,9 +75,7 @@ export default function Portal () {
         <PatientFoundContext.Provider value={{patientFound, setPatientFound}}>
           <PatientSearchForm />
           <Divider horizontal />
-          <ActiveSubmissionContext.Provider value={{activeSubmission, setActiveSubmission}}>
-            <FormFactory />
-          </ActiveSubmissionContext.Provider>
+          <FormFactory />
         </PatientFoundContext.Provider>
       </PatientIdentifierContext.Provider>
     </div>

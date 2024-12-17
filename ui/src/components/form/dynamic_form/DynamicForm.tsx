@@ -1,13 +1,13 @@
 import React, { useReducer, useContext } from "react";
 import { useMachine } from "@xstate/react";
-import { initialState, formReducer } from "./dependencies/reducer";
+import { initialState, formReducer, updateFieldValue, updateWidgets, updateRequiredFields, updateExclusiveFields, fillForm, updateDraftId, clearForm, clearDraftId, clearDraft, clearDraftDate, clearTemplateDate, clearSubmissionDate, updateDraft, updateDraftDate, updateTemplateDate, updateValidationErrors, updateSubmissionDate, clearValidationErrors } from "./dependencies/reducer";
 import { formStateMachine } from "./dependencies/stateMachine";
 import { useApolloClient } from "@apollo/client";
 import { Button, Form, Header, Icon, List, ListContent, ListIcon, ListItem, Message, Modal } from 'semantic-ui-react'
-import { CreateSubmission, CreateTemplate, CreateUserSubmissionConnection, DeleteDraft, FieldData, FindDraft, FormIDFields, RootForm, UpdateOrCreateDraft } from "./queries/form";
+import { CreateSubmission, CreateTemplate, CreateUserSubmissionConnection, DeleteDraft, FieldData, FindDraft, FindOrCreatePatient, FormIDFields, RootForm, UpdateOrCreateDraft } from "./queries/form";
 import { InputField } from "./fields/input";
 import { SelectField } from "./fields/select";
-import { Validator, FieldValue, DynamicFormProps, Field, FormDraft, ValidationError, DynamicFormModalProps, ModalEvent } from "./types";
+import { Validator, FieldValue, DynamicFormProps, Field, ValidationError, DynamicFormModalProps, ModalEvent } from "./types";
 import { notEmpty, number, min, max, regex, integer, date } from "./validation/validate";
 import { TextareaField } from "./fields/textarea";
 import { fieldIsDisabled, findLabel, isFalsy } from "./utils/field";
@@ -116,122 +116,6 @@ const DynamicFormModal: React.FC<DynamicFormModalProps> = ({ open, onClose, titl
 export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) => {
   // initialise and configure reducer and state machine
   const [reducer, dispatch] = useReducer(formReducer, initialState);
-  const { patientIdentifier } = useContext(PatientIdentifierContext)
-
-  function updateFieldValue(field: Field, value: FieldValue) {
-    dispatch({
-      type: "UPDATE_FIELD_VALUES",
-      payload: {
-        [field.name]: value
-      }
-    })
-    send('CHANGE')
-  }
-
-  function fillForm(values: unknown) {
-    dispatch({
-      type: "FILL_FORM",
-      payload: values
-    })
-  }
-
-  function clearForm() {
-    dispatch({
-      type: "CLEAR_FORM"
-    })
-  }
-
-  function updateDraftId(draftId: string) {
-    dispatch({
-      type: "UPDATE_DRAFT_ID",
-      payload: draftId
-    })
-  }
-
-  function clearDraftId() {
-    dispatch({
-      type: "UPDATE_DRAFT_ID",
-      payload: null
-    })
-  }
-
-  function updateDraftDate() {
-    dispatch({
-      type: "UPDATE_DRAFT_DATE"
-    })
-  }
-
-  function clearDraftDate() {
-    dispatch({
-      type: "CLEAR_DRAFT_DATE"
-    })
-  }
-
-  function updateDraft(draft: FormDraft) {
-    dispatch({
-      type: "UPDATE_DRAFT",
-      payload: draft
-    })
-  }
-
-  function clearDraft() {
-    dispatch({
-      type: "UPDATE_DRAFT",
-      payload: null
-    })
-  }
-
-  function updateTemplateDate() {
-    dispatch({
-      type: "UPDATE_TEMPLATE_DATE"
-    })
-  }
-
-  function clearTemplateDate() {
-    dispatch({
-      type: "CLEAR_TEMPLATE_DATE"
-    })
-  }
-
-  function updateSubmissionDate() {
-    dispatch({
-      type: "UPDATE_SUBMISSION_DATE"
-    })
-  }
-
-  function clearSubmissionDate() {
-    dispatch({
-      type: "CLEAR_SUBMISSION_DATE"
-    })
-  }
-
-  function updateWidgets(widgets: Field[]) {
-    dispatch({
-      type: "UPDATE_WIDGETS",
-      payload: widgets
-    })
-  }
-
-  function updateExclusiveFields(fieldNames: string[]) {
-    dispatch({
-      type: "UPDATE_EXCLUSIVE_FIELDS",
-      payload: fieldNames
-    })
-  }
-
-  function updateRequiredFields(fieldNames: string[]) {
-    dispatch({
-      type: "UPDATE_REQUIRED_FIELDS",
-      payload: fieldNames
-    })
-  }
-
-  function updateValidationErrors(errors: ValidationError[]) {
-    dispatch({
-      type: "UPDATE_VALIDATION_ERRORS",
-      payload: errors
-    })
-  }
 
   const [state, send] = useMachine(formStateMachine, {
     actions: {
@@ -250,13 +134,20 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
     }
   });
 
-  // initialise auxiliary state or ref variables
+  function updateField(field: Field, value: FieldValue) {
+    updateFieldValue(dispatch, field, value)
+    send('CHANGE')
+  }
+
+  // initialise auxiliary state, context or ref variables
   const [formWasCleared, setFormWasCleared] = React.useState(false)
   const [openModal, setOpenModal] = React.useState(false)
   const [modalTitle, setModalTitle] = React.useState('')
   const [modalContent, setModalContent] = React.useState('')
   const [modalError, setModalError] = React.useState<boolean|undefined>(false)
   const [reloadSubmissions, setReloadSubmissions] = React.useState(false)
+  const { patientIdentifier } = useContext(PatientIdentifierContext)
+  const patientIdentifierRef = React.useRef(patientIdentifier)
 
   // query for field data
   const gqlClient = useApolloClient();
@@ -325,14 +216,14 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
       }
     })
 
-    updateWidgets(fields.filter((field: Field) => !excluded_fields.includes(field.name)))
+    updateWidgets(dispatch, fields.filter((field: Field) => !excluded_fields.includes(field.name)))
     if (form.required_fields) {
       const requiredFields = patientIdentifier.study && form.required_fields ? form.required_fields[patientIdentifier.study] : form.required_fields?.default ?? []
-      updateRequiredFields(requiredFields.filter((field: string) => !excluded_fields.includes(field)))
+      updateRequiredFields(dispatch, requiredFields.filter((field: string) => !excluded_fields.includes(field)))
     }
     if (form.mutex_fields) {
       const mutexFields = patientIdentifier.study && form.mutex_fields ? form.mutex_fields[patientIdentifier.study] : form.mutex_fields?.default ?? []
-      updateExclusiveFields(mutexFields.filter((field: string) => !excluded_fields.includes(field)))
+      updateExclusiveFields(dispatch, mutexFields.filter((field: string) => !excluded_fields.includes(field)))
     }
   };
 
@@ -350,8 +241,8 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
     const data = draftQuery.data?.formDrafts || []
 
     if(data.length > 0) {
-      fillForm(JSON.parse(data[0].data))
-      updateDraftId(data[0].draft_id)
+      fillForm(dispatch, JSON.parse(data[0].data))
+      updateDraftId(dispatch, data[0].draft_id)
     }
   }
   
@@ -365,12 +256,12 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
   }
 
   function executeClearForm() { 
-    clearForm()
-    clearDraftId()
-    clearDraft()
-    clearDraftDate()
-    clearTemplateDate()
-    clearSubmissionDate()
+    clearForm(dispatch)
+    clearDraftId(dispatch)
+    clearDraft(dispatch)
+    clearDraftDate(dispatch)
+    clearTemplateDate(dispatch)
+    clearSubmissionDate(dispatch)
     setFormWasCleared(true)
     setTimeout(() => {
       setFormWasCleared(false)
@@ -378,7 +269,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
   }
 
   function storeDraft() {
-    updateDraft({
+    updateDraft(dispatch, {
       form_id: form.formID,
       data: JSON.stringify(reducer.fieldValues),
       patient_id: JSON.stringify(patientIdentifier)
@@ -396,8 +287,8 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
           mutation: UpdateOrCreateDraft,
           variables: { input: reducer.draft }
         })
-        updateDraftId(draft.updateOrCreateDraft.draft_id)
-        updateDraftDate()
+        updateDraftId(dispatch, draft.updateOrCreateDraft.draft_id)
+        updateDraftDate(dispatch)
         console.log('Draft saved')
       }
     } catch (error: any) {
@@ -417,7 +308,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
           }
         }
       })
-      updateTemplateDate()
+      updateTemplateDate(dispatch)
       console.log('Template saved')
       setModalTitle('Success')
       setModalContent('The template has been saved.')
@@ -532,7 +423,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
     const isValid = [validateRequiredFields, validateMutexFields].every((f) => f())
 
     if (isValid) {
-      updateValidationErrors([])
+      clearValidationErrors(dispatch)
     }
 
     return isValid
@@ -553,7 +444,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
     filledMutexFields.forEach((field: string) => {
       errors.push({ field, type: 'mutex'})
     })
-    updateValidationErrors(errors)
+    updateValidationErrors(dispatch, errors)
   }
 
   async function submitForm() {
@@ -597,58 +488,68 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
     }
 
     try {
-      const submissionQuery = await gqlClient.mutate({
-        mutation: CreateSubmission,
+      const patientMutation = await gqlClient.mutate({
+        mutation: FindOrCreatePatient,
         variables: {
-          input: createSubmissionInput()
+          patient_id: patientIdentifier.submitter_donor_id,
+          program_id: patientIdentifier.program_id,
+          study: patientIdentifier.study
         }
       })
-
-      const submissionID: string = submissionQuery.data.createSubmissions.submissions[0].submission_id
-      const cleanupMutations: { mutation: Promise<any>, label: string }[] = []
-      cleanupMutations.push({
-        mutation: gqlClient.mutate({
-          mutation: DeleteDraft,
+      if (patientMutation.data?.findOrCreatePatient) { // submit only if patient was successfully found or created
+        const submissionQuery = await gqlClient.mutate({
+          mutation: CreateSubmission,
           variables: {
-            where: {
-              draft_id: reducer.draftID
-            }
-          }
-        }),
-        label: 'DeleteDraft'
-      })
-      cleanupMutations.push({
-        label: 'ConnectUser',
-        mutation: gqlClient.mutate({
-          mutation: CreateUserSubmissionConnection,
-          variables: {
-            submissionID
+            input: createSubmissionInput()
           }
         })
-      })
-      const cleanupResults = await Promise.allSettled(cleanupMutations.map(({ mutation }) => mutation))
-      cleanupResults.forEach((result, index) => {
-        const { label } = cleanupMutations[index]
-        if (result.status === 'fulfilled') {
-          if (label === 'ConnectUser') {
-            console.log(`Connected user to submission ${submissionID}`)
-          } else {
-            clearDraftId()
-            clearDraftDate()
-            clearDraft()
-            console.log('Draft has been deleted')
+  
+        const submissionID: string = submissionQuery.data.createSubmissions.submissions[0].submission_id
+        const postCreateMutations: { mutation: Promise<any>, label: string }[] = []
+        postCreateMutations.push({
+          mutation: gqlClient.mutate({
+            mutation: DeleteDraft,
+            variables: {
+              where: {
+                draft_id: reducer.draftID
+              }
+            }
+          }),
+          label: 'DeleteDraft'
+        })
+        postCreateMutations.push({
+          label: 'ConnectUser',
+          mutation: gqlClient.mutate({
+            mutation: CreateUserSubmissionConnection,
+            variables: {
+              submissionID
+            }
+          })
+        })
+        const postCreateResults = await Promise.allSettled(postCreateMutations.map(({ mutation }) => mutation))
+        postCreateResults.forEach((result, index) => {
+          const { label } = postCreateMutations[index]
+          if (result.status === 'fulfilled') {
+            if (label === 'ConnectUser') {
+              console.log(`Connected user to submission ${submissionID}`)
+            } else {
+              clearDraftId(dispatch)
+              clearDraftDate(dispatch)
+              clearDraft(dispatch)
+              console.log('Draft has been deleted')
+            }
+          } else if (label === 'ConnectUser') {
+            console.log('Could not connect user to submission')
           }
-        } else if (label === 'ConnectUser') {
-          console.log('Could not connect user to submission')
-        }
-      })
-      updateSubmissionDate()
-      setModalTitle('Success')
-      setModalContent('The form has been submitted!')
-      setModalError(false)
-      setOpenModal(true)
-      forceReloadSubmissions()
-      console.log('Form submitted!')
+        })
+        updateSubmissionDate(dispatch)
+        setModalTitle('Success')
+        setModalContent('The form has been submitted!')
+        setModalError(false)
+        setOpenModal(true)
+        forceReloadSubmissions()
+        console.log('Form submitted!')
+      }
     } catch (error: any) {
       console.log(`Error while submitting the form: ${error.message}`)
       send({ type: 'FAILURE', title: 'Error', content: 'There was an error while submitting the form, please try again', error: true})
@@ -658,14 +559,19 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
   // render control variables and effects
   const canRender = reducer.fieldWidgets.length > 0 && !state.matches('loading')
 
-  console.log(state.value)
-
   React.useEffect(() => {
-    send('CLEAR')
-    if (patientIdentifierIsNotEmpty()) {
-      loadDraft()
+    if (patientIdentifierRef.current !== patientIdentifier) {
+      send('CLEAR')
+      if (patientIdentifierIsNotEmpty()) {
+        loadDraft()
+      }
+      patientIdentifierRef.current = patientIdentifier
     }
   }, [patientIdentifier])
+
+  React.useEffect(() => {
+    send('RELOAD')
+  }, [patientIdentifier.study])
 
   // final result
   let finalComponent = <></>
@@ -691,8 +597,8 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
           formID={form.formID}
           patientIdentifier={patientIdentifier}
           headers={labels}
-          clearForm={clearForm}
-          fillForm={fillForm}
+          clearForm={executeClearForm}
+          fillForm={(values: any) => fillForm(dispatch, values)}
           setLastTemplateUpdate={updateTemplateDate}
           setOpenModal={setOpenModal}
           setModalTitle={setModalTitle}
@@ -704,8 +610,8 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
           formID={form.formID}
           headers={labels}
           patientIdentifier={patientIdentifier}
-          clearForm={clearForm}
-          fillForm={fillForm}
+          clearForm={executeClearForm}
+          fillForm={(values: any) => fillForm(dispatch, values)}
           reload={reloadSubmissions}
           setLastSubmissionUpdate={updateSubmissionDate}
           setOpenModal={setOpenModal}
@@ -761,7 +667,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
               renderField({
                 field: field,
                 validators: getFieldValidators(field),
-                updateValue: updateFieldValue,
+                updateValue: updateField,
                 formWasCleared,
                 values: reducer.fieldValues,
                 study: patientIdentifier.study,
@@ -774,7 +680,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
               renderField({
                 field: field,
                 validators: getFieldValidators(field),
-                updateValue: updateFieldValue,
+                updateValue: updateField,
                 formWasCleared,
                 values: reducer.fieldValues,
                 study: patientIdentifier.study,

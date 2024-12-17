@@ -15,6 +15,7 @@ import { DynamicForm } from '../form/dynamic_form/DynamicForm';
 import { Form } from '../form/dynamic_form/types';
 
 export const DisplayNamesContext = React.createContext({})
+export const ActiveSubmissionContext = React.createContext({})
 
 export function useDisplayNamesContext() {
   return React.useContext(DisplayNamesContext)
@@ -115,12 +116,14 @@ export default function FormFactory() {
   const { patientIdentifier } = React.useContext(PatientIdentifierContext)
   const { patientFound } = React.useContext(PatientFoundContext)
   const [displayNames, setDisplayNames] = React.useState({})
+  const patienIdentifierKeys = React.useMemo(() => Object.keys(patientIdentifier), [])
   const { loading, error, data } = useQuery(FormTree, {
     variables: {
       study: patientIdentifier.study
     }
   })
   const [ activeItem, setActiveItem ] = React.useState<Form|null>(null)
+  const [activeSubmission, setActiveSubmission] = React.useState({})
 
   if (loading) {
     return <LoadingSegment />
@@ -143,8 +146,7 @@ export default function FormFactory() {
 
   return (
     validStudy && roles.length > 0
-    ? <DisplayNamesContext.Provider value={{displayNames, setDisplayNames}}>
-        <Segment>
+    ? <Segment>
         <Grid>
           <Grid.Column width={3}>
             <ListMenu
@@ -160,26 +162,30 @@ export default function FormFactory() {
           <Grid.Column width={12}>
             {
               patientFound && activeItem && activeItem !== root
-              ? <PatientTable patientIdentifier={patientIdentifier} />
+              ? <DisplayNamesContext.Provider value={{displayNames, setDisplayNames}}>
+                  <PatientTable patientIdentifier={patientIdentifier} />
+                </DisplayNamesContext.Provider>
               : <></>
             }
-            {
-              activeItem && activeItem !== root
-              ? <ParentSubmissionTable 
-                  key={activeItem.formID}
-                  formID={activeItem.formID}
-                  patientIdentifier={patientIdentifier}
-                  displayNames={displayNames}
-                />
-              : <></>
-            }
-            {
-              validStudy && <DynamicForm key={activeItem ? activeItem.name : root.name} form={activeItem ?? root} excluded_fields={Object.keys(patientIdentifier)} /> 
-            }
+            <ActiveSubmissionContext.Provider value={{activeSubmission, setActiveSubmission}}>
+              {
+                activeItem && activeItem !== root
+                ? <ParentSubmissionTable 
+                    key={activeItem.formID}
+                    formID={activeItem.formID}
+                    patientIdentifier={patientIdentifier}
+                    displayNames={displayNames}
+                  />
+                : <></>
+              }
+              {
+                validStudy && <DynamicForm key={activeItem ? activeItem.name : root.name} form={activeItem ?? root} excluded_fields={patienIdentifierKeys} /> 
+              }
+            </ActiveSubmissionContext.Provider>
           </Grid.Column>
         </Grid>
-        </Segment>
-      </DisplayNamesContext.Provider>
+      </Segment>
+      
     : <WelcomeMessage withRoles={roles.length > 0}/>
   )
 }

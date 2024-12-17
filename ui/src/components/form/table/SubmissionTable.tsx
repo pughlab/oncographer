@@ -6,7 +6,7 @@ import { gql, useMutation, useQuery } from "@apollo/client"
 import { toTitle, toDateString } from './utils'
 import { FindSubmissions, DeleteSubmission } from "../dynamic_form/queries/form"
 import { BasicErrorMessage } from "../../common/BasicErrorMessage"
-import { ActiveSubmissionContext } from "../../Portal"
+import { ActiveSubmissionContext } from "../../layout/FormFactory"
 
 export function SubmissionTable({
     formID,
