@@ -50,6 +50,19 @@ export interface FormDraft {
     data?: string
 }
 
+export interface FormReducer {
+    fieldWidgets: Field[],
+    idFields: string[],
+    mutexFields: string[],
+    requiredFields: string[],
+    draftID: string|null,
+    lastDraftUpdate: Date|null,
+    lastTemplateUpdate: Date|null,
+    lastSubmissionUpdate: Date|null,
+    fieldValues: { [key: string]: FieldValue },
+    validationErrors: ValidationError[],
+}
+
 export type FieldValue = string | string[]
 
 export interface FormFieldPropsBase {

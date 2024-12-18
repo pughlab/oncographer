@@ -1,5 +1,5 @@
 import { isValid, parseISO } from "date-fns"
-import { Validator, FieldValue } from '../types'
+import { Validator, FieldValue, Field } from '../types'
 
 export const notEmpty: Validator = (value: FieldValue) => {
     if (Array.isArray(value)) {
@@ -61,4 +61,38 @@ export const max = (limit: number) => (value: FieldValue): string | null => {
         return null
     }
     return Number(value) > limit ? `The value must not be greater than ${limit}`: null
+}
+
+export const getFieldValidators = (field: Field, requiredFields: string[] = [], mutexFields: string[] = []) => {
+    const validators: Validator[] = []
+
+    if (requiredFields.includes(field.name) && !mutexFields.includes(field.name)) {
+        validators.push(notEmpty)
+    }
+    
+    if (field.type.toLowerCase() === 'number' || field.type.toLowerCase() === 'integer') {
+        validators.push(number)
+    }
+
+    if (field.type.toLowerCase() === 'integer') {
+        validators.push(integer)
+    }
+
+    if (field.minValue) {
+        validators.push(min(field.minValue))
+    }
+
+    if (field.maxValue) {
+        validators.push(max(field.maxValue))
+    }
+
+    if (field.regex) {
+        validators.push(regex(new RegExp(field.regex), "This value is invalid"))
+    }
+
+    if (field.type.toLowerCase() === 'date' || field.type.toLowerCase() === 'month') {
+        validators.push(date)
+    }
+
+    return validators
 }

@@ -1,18 +1,20 @@
 import * as React from 'react'
 import * as R from 'remeda'
 import { useQuery } from "@apollo/client";
-import { Segment, List, Grid, SemanticICONS, SemanticCOLORS } from "semantic-ui-react";
+import { Segment, List, Grid, SemanticICONS, SemanticCOLORS, Divider } from "semantic-ui-react";
 
 import keycloak from '../../keycloak/keycloak'
 import { FormTree } from "../form/dynamic_form/queries/form";
 import { LoadingSegment } from '../common/LoadingSegment'
 import { BasicErrorMessage } from '../common/BasicErrorMessage';
-import { PatientFoundContext, PatientIdentifierContext } from '../Portal';
+import { PatientFoundContext } from '../Portal';
 import { ParentSubmissionTable } from '../form/table/ParentSubmissionTable';
 import { WelcomeMessage } from './WelcomeMessage';
 import { PatientTable } from '../form/table/PatientTable';
 import { DynamicForm } from '../form/dynamic_form/DynamicForm';
 import { Form } from '../form/dynamic_form/types';
+import { PatientIDContext } from './context';
+import { defaultStudy } from '../../App';
 
 export const DisplayNamesContext = React.createContext({})
 export const ActiveSubmissionContext = React.createContext({})
@@ -113,13 +115,13 @@ function ListMenu({
 
 // main component
 export default function FormFactory() {
-  const { patientIdentifier } = React.useContext(PatientIdentifierContext)
+  const patientID = React.useContext(PatientIDContext)
   const { patientFound } = React.useContext(PatientFoundContext)
   const [displayNames, setDisplayNames] = React.useState({})
-  const patienIdentifierKeys = React.useMemo(() => Object.keys(patientIdentifier), [])
+  const patienIdentifierKeys = React.useMemo(() => Object.keys(patientID), [])
   const { loading, error, data } = useQuery(FormTree, {
     variables: {
-      study: patientIdentifier.study
+      study: patientID.study
     }
   })
   const [ activeItem, setActiveItem ] = React.useState<Form|null>(null)
@@ -139,7 +141,7 @@ export default function FormFactory() {
 
   const root =  data.forms[0]
   const adminRoles = JSON.parse(process.env.KEYCLOAK_ADMIN_ROLES)
-  const validStudy = patientIdentifier.study !== ""
+  const validStudy = patientID.study !== ""
   const roles = (
     keycloak?.tokenParsed?.resource_access[process.env.KEYCLOAK_SERVER_CLIENT]?.roles || []
   ).filter((role) => !adminRoles.includes(role))
@@ -151,19 +153,19 @@ export default function FormFactory() {
           <Grid.Column width={3}>
             <ListMenu
               root={root}
-              study={patientIdentifier.study}
+              study={patientID.study ?? defaultStudy}
               activeItem={activeItem}
               setActiveItem={setActiveItem}
             />
           </Grid.Column>
           {/* add empty column to provide spacing between the menu and the main content */}
-          <Grid.Column width={1}/>
+          <Divider vertical/>
           {/* main content */}
           <Grid.Column width={12}>
             {
               patientFound && activeItem && activeItem !== root
               ? <DisplayNamesContext.Provider value={{displayNames, setDisplayNames}}>
-                  <PatientTable patientIdentifier={patientIdentifier} />
+                  <PatientTable patientIdentifier={patientID} />
                 </DisplayNamesContext.Provider>
               : <></>
             }
@@ -173,7 +175,7 @@ export default function FormFactory() {
                 ? <ParentSubmissionTable 
                     key={activeItem.formID}
                     formID={activeItem.formID}
-                    patientIdentifier={patientIdentifier}
+                    patientIdentifier={patientID}
                     displayNames={displayNames}
                   />
                 : <></>

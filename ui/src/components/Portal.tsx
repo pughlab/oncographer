@@ -1,4 +1,4 @@
-import React, { useState, createContext } from "react";
+import React, { useState, createContext} from "react";
 import { Sticky, Menu, Divider, Label, Popup, Header, Icon } from 'semantic-ui-react'
 import useKeycloakMeMutation from '../hooks/useKeycloakMeMutation'
 import dayjs from 'dayjs'
@@ -12,6 +12,7 @@ import PortalNavBarIntro, {HOME_MENU_ELEMENT_ID} from './intros/PortalNavBarIntr
 
 import FormFactory  from './layout/FormFactory';
 import PatientSearchForm from './layout/PatientSearchForm'
+import { UpdatePatientContext, PatientIDContext } from "./layout/context";
 
 export const PatientIdentifierContext = createContext({})
 export const PatientFoundContext = createContext({})
@@ -37,48 +38,41 @@ export default function Portal () {
   useRouter()
   useKeycloakMeMutation()
 
-  const [patientIdentifier, setPatientIdentifier] = useState({submitter_donor_id: '', program_id: '', study: ''})
-  
-  const [patientFound, setPatientFound] = useState(false)
+  const [patientID, setPatientID] = useState({submitter_donor_id: '', program_id: '', study: ''})
 
   return (
     <>
-        <Sticky>
-      <Menu borderless style={{margin: 0, borderRadius: 0}}>
-        <Menu.Menu position='left'>
-          <Logo href="/" size='tiny' />
-          <Menu.Item>
-            <Header href="/" size='large'>
-              <strong>OncoGrapher</strong><strong style={{fontWeight: 100}}>App</strong>
-            </Header>
-          </Menu.Item>
-
-        </Menu.Menu>
-
-
-        <Menu.Menu position='right'>
-          <Menu.Item>
-            <Icon name='calendar' />
-            {dayjs().format("MMMM DD, YYYY, h:mm a")}
-          </Menu.Item>
-          <DocsLink />
-          <LoginModal />
-          <PortalNavBarIntro />
-        </Menu.Menu>
-      </Menu>
-      
-    </Sticky>
-
-    <Divider horizontal />
-    <div style={{padding: '1em'}}>
-      <PatientIdentifierContext.Provider value={{patientIdentifier, setPatientIdentifier }}>
-        <PatientFoundContext.Provider value={{patientFound, setPatientFound}}>
+      <Sticky>
+        <Menu borderless style={{margin: 0, borderRadius: 0}}>
+          <Menu.Menu position='left'>
+            <Logo href="/" size='tiny' />
+            <Menu.Item>
+              <Header href="/" size='large'>
+                <strong>OncoGrapher</strong><strong style={{fontWeight: 100}}>App</strong>
+              </Header>
+            </Menu.Item>
+          </Menu.Menu>
+          <Menu.Menu position='right'>
+            <Menu.Item>
+              <Icon name='calendar' />
+              {dayjs().format("MMMM DD, YYYY, h:mm a")}
+            </Menu.Item>
+            <DocsLink />
+            <LoginModal />
+            <PortalNavBarIntro />
+          </Menu.Menu>
+        </Menu>
+      </Sticky>
+      <Divider horizontal />
+      <div style={{padding: '1em'}}>
+        <UpdatePatientContext.Provider value={setPatientID}>
           <PatientSearchForm />
-          <Divider horizontal />
+        </UpdatePatientContext.Provider>
+        <Divider horizontal />
+        <PatientIDContext.Provider value={patientID}>
           <FormFactory />
-        </PatientFoundContext.Provider>
-      </PatientIdentifierContext.Provider>
-    </div>
+        </PatientIDContext.Provider>
+      </div>
     </>
   )
 }

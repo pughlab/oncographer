@@ -1,6 +1,6 @@
-import React, { useReducer, useContext } from "react";
+import React, { useReducer } from "react";
 import { useMachine } from "@xstate/react";
-import { initialState, formReducer, updateFieldValue, updateWidgets, updateRequiredFields, updateExclusiveFields, fillForm, updateDraftId, clearForm, clearDraftId, clearDraft, clearDraftDate, clearTemplateDate, clearSubmissionDate, updateDraft, updateDraftDate, updateTemplateDate, updateValidationErrors, updateSubmissionDate, clearValidationErrors } from "./dependencies/reducer";
+import { initialState, formReducer, updateWidgets, updateRequiredFields, updateExclusiveFields, fillForm, updateDraftId, clearForm, clearDraftId, clearDraftDate, clearTemplateDate, clearSubmissionDate, updateDraftDate, updateTemplateDate, updateSubmissionDate } from "./dependencies/reducer";
 import { formStateMachine } from "./dependencies/stateMachine";
 import { useApolloClient } from "@apollo/client";
 import { Button, Form, Header, Icon, List, ListContent, ListIcon, ListItem, Message, Modal } from 'semantic-ui-react'
@@ -8,12 +8,13 @@ import { CreateSubmission, CreateTemplate, CreateUserSubmissionConnection, Delet
 import { InputField } from "./fields/input";
 import { SelectField } from "./fields/select";
 import { Validator, FieldValue, DynamicFormProps, Field, ValidationError, DynamicFormModalProps, ModalEvent } from "./types";
-import { notEmpty, number, min, max, regex, integer, date } from "./validation/validate";
+import { getFieldValidators } from "./validation/field";
 import { TextareaField } from "./fields/textarea";
-import { fieldIsDisabled, findLabel, isFalsy } from "./utils/field";
-import { PatientIdentifierContext } from "../../Portal";
+import { fieldIsDisabled, findLabel, getFilledFields } from "./utils/field";
 import { TemplateTable } from "../table/TemplateTable";
 import { SubmissionTable } from "../table/SubmissionTable";
+import { isFormValid, showValidationErrors } from "./validation/form";
+import { usePatientID } from "../../layout/context";
 
 const renderField = ({
   field,
@@ -94,6 +95,37 @@ const renderField = ({
   return component
 }
 
+function ActionsGroup(
+  {disabled, send, saveTemplate}
+  : Readonly<{disabled:boolean, send: (value: string) => void, saveTemplate: () => void}>)
+{
+  return (
+    <Button.Group size="large" fluid widths={3}>
+      <Button
+        size='large' 
+        onClick={ () => send('CLEAR') }
+        fluid
+        icon='trash'
+        color='red'
+        content='CLEAR FORM'
+      />
+      <Button.Or />
+      <Button 
+        content="SAVE TEMPLATE"
+        color="black"
+        icon="save"
+        onClick={() => { saveTemplate() }
+      }
+      />
+      <Button.Or />
+      <Button icon="send" content="FINALIZE" color="teal"
+        disabled={disabled}
+        onClick={() => { send('SUBMIT') }}
+      />
+    </Button.Group>
+  )
+}
+
 const DynamicFormModal: React.FC<DynamicFormModalProps> = ({ open, onClose, title, content, error = false }) => {
   return (
     <Modal open={open} onClose={onClose} closeIcon>
@@ -116,13 +148,11 @@ const DynamicFormModal: React.FC<DynamicFormModalProps> = ({ open, onClose, titl
 export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) => {
   // initialise and configure reducer and state machine
   const [reducer, dispatch] = useReducer(formReducer, initialState);
-
   const [state, send] = useMachine(formStateMachine, {
     actions: {
       executeClearForm,
-      storeDraft,
       showModal,
-      showValidationErrors,
+      showValidationErrors: () => showValidationErrors(reducer, dispatch),
     },
     services: {
       initializeForm,
@@ -130,15 +160,9 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
       executeSubmitForm: submitForm,
     },
     guards: {
-      isFormValid,
+      isFormValid: () => isFormValid(reducer, dispatch),
     }
   });
-
-  function updateField(field: Field, value: FieldValue) {
-    updateFieldValue(dispatch, field, value)
-    send('CHANGE')
-  }
-
   // initialise auxiliary state, context or ref variables
   const [formWasCleared, setFormWasCleared] = React.useState(false)
   const [openModal, setOpenModal] = React.useState(false)
@@ -146,8 +170,15 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
   const [modalContent, setModalContent] = React.useState('')
   const [modalError, setModalError] = React.useState<boolean|undefined>(false)
   const [reloadSubmissions, setReloadSubmissions] = React.useState(false)
-  const { patientIdentifier } = useContext(PatientIdentifierContext)
-  const patientIdentifierRef = React.useRef(patientIdentifier)
+  const patientID = usePatientID()
+  const patientIdentifierRef = React.useRef(patientID)
+  const valuesRef = React.useRef<{[key: string]: FieldValue}>({})
+
+  function updateField(field: Field, value: FieldValue) {
+    // updateFieldValue(dispatch, field, value)
+    valuesRef.current[field.name] = value
+    send('CHANGE')
+  }
 
   // query for field data
   const gqlClient = useApolloClient();
@@ -156,7 +187,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
     const rootQuery = await gqlClient.query({
       query: RootForm,
       variables: {
-        study: patientIdentifier.study
+        study: patientIdentifierRef.current.study
       }
     })
     const root = rootQuery.data.GetRootForm
@@ -191,7 +222,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
         query: FieldData,
         variables: {
           id: form.formID,
-          study: patientIdentifier.study,
+          study: patientID.study,
         },
       }),
       label: 'FieldData'
@@ -218,11 +249,11 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
 
     updateWidgets(dispatch, fields.filter((field: Field) => !excluded_fields.includes(field.name)))
     if (form.required_fields) {
-      const requiredFields = patientIdentifier.study && form.required_fields ? form.required_fields[patientIdentifier.study] : form.required_fields?.default ?? []
+      const requiredFields = patientIdentifierRef.current.study && form.required_fields ? form.required_fields[patientIdentifierRef.current.study] : form.required_fields?.default ?? []
       updateRequiredFields(dispatch, requiredFields.filter((field: string) => !excluded_fields.includes(field)))
     }
     if (form.mutex_fields) {
-      const mutexFields = patientIdentifier.study && form.mutex_fields ? form.mutex_fields[patientIdentifier.study] : form.mutex_fields?.default ?? []
+      const mutexFields = patientIdentifierRef.current.study && form.mutex_fields ? form.mutex_fields[patientIdentifierRef.current.study] : form.mutex_fields?.default ?? []
       updateExclusiveFields(dispatch, mutexFields.filter((field: string) => !excluded_fields.includes(field)))
     }
   };
@@ -230,7 +261,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
   const loadDraft = async () => {
     const draftInfo = {
       form_id: form.formID,
-      patient_id: JSON.stringify(patientIdentifier)
+      patient_id: JSON.stringify(patientIdentifierRef.current)
     }
     const draftQuery = await gqlClient.query({
       query: FindDraft,
@@ -258,7 +289,6 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
   function executeClearForm() { 
     clearForm(dispatch)
     clearDraftId(dispatch)
-    clearDraft(dispatch)
     clearDraftDate(dispatch)
     clearTemplateDate(dispatch)
     clearSubmissionDate(dispatch)
@@ -268,24 +298,21 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
     }, 0) // ugly hack to restore the form cleared flag semi-synchronously
   }
 
-  function storeDraft() {
-    updateDraft(dispatch, {
-      form_id: form.formID,
-      data: JSON.stringify(reducer.fieldValues),
-      patient_id: JSON.stringify(patientIdentifier)
-    })
-    console.log('Draft updated')
-  }
-
   async function saveDraft() {
     const date = new Date()
     const millisecondsDifference = (date.getTime() - reducer.lastDraftUpdate?.getTime()) || 0
     const secondsDifference = millisecondsDifference / 1000
     try {
-      if (reducer.draft && (secondsDifference >= 10 || !reducer.lastDraftUpdate)) {
+      if (secondsDifference >= 10 || !reducer.lastDraftUpdate) {
         const { data: draft } = await gqlClient.mutate({
           mutation: UpdateOrCreateDraft,
-          variables: { input: reducer.draft }
+          variables: {
+            input: {
+              form_id: form.formID,
+              data: JSON.stringify(getFilledFields(reducer.fieldValues)),
+              patient_id: JSON.stringify(patientIdentifierRef.current)
+            }
+          }
         })
         updateDraftId(dispatch, draft.updateOrCreateDraft.draft_id)
         updateDraftDate(dispatch)
@@ -303,8 +330,8 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
         variables: { 
           input: {
             form_id: form.formID,
-            data: JSON.stringify(reducer.fieldValues),
-            patient_id: JSON.stringify(patientIdentifier)
+            data: JSON.stringify(getFilledFields(reducer.fieldValues)),
+            patient_id: JSON.stringify(patientIdentifierRef.current)
           }
         }
       })
@@ -332,132 +359,13 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
     setReloadSubmissions((prev: boolean) => !prev)
   }
 
-  // create separate handlers for validating and submitting the form
-  // the validator here is for the form as a whole, fields will have their own validation logic
-  const getFieldValidators = (field: Field) => {
-    const validators: Validator[] = []
-
-    if (reducer.requiredFields.includes(field.name) && !reducer.mutexFields.includes(field.name)) {
-      validators.push(notEmpty)
-    }
-    
-    if (field.type.toLowerCase() === 'number' || field.type.toLowerCase() === 'integer') {
-      validators.push(number)
-    }
-
-    if (field.type.toLowerCase() === 'integer') {
-      validators.push(integer)
-    }
-
-    if (field.minValue) {
-      validators.push(min(field.minValue))
-    }
-
-    if (field.maxValue) {
-      validators.push(max(field.maxValue))
-    }
-
-    if (field.regex) {
-      validators.push(regex(new RegExp(field.regex), "This value is invalid"))
-    }
-
-    if (field.type.toLowerCase() === 'date' || field.type.toLowerCase() === 'month') {
-      validators.push(date)
-    }
-
-    return validators
-  }
-
   const patientIdentifierIsNotEmpty = () => {
-    return patientIdentifier.submitter_donor_id.trim() !== '' && patientIdentifier.program_id.trim() !== ''
-  }
-
-  const getFilledFields = () => {
-    return Object.keys(reducer.fieldValues)
-      .filter((field) => !isFalsy(reducer.fieldValues[field]))
-  }
-
-  const getDisabledFields = () => {
-    const disabledFields: string[] = []
-    reducer.fieldWidgets.forEach((field: Field) => {
-      if (fieldIsDisabled(reducer.fieldValues, field.enablingConditions)) {
-        disabledFields.push(field.name)
-      }
-    })
-    return disabledFields
-  }
-
-  const validateRequiredFields = () => {
-    const filledFields = getFilledFields()
-    const disabledFields = getDisabledFields()
-    const isValid = reducer.requiredFields 
-      ? reducer.requiredFields.filter((field: string) => !disabledFields.includes(field))
-        .reduce(
-          (acc: boolean, field: string) => acc && filledFields.includes(field),
-          true
-        )
-      : true
-    return isValid
-  }
-
-  const validateMutexFields = () => {
-    let isValid = true
-
-    if (reducer.mutexFields.length > 0) {
-      const filledFields = getFilledFields()
-      const filledMutexFields: {[key:string]: string} = {}
-
-      filledFields.forEach((field) => {
-        if (reducer.mutexFields?.includes(field) && !isFalsy(reducer.fieldValues[field])) {
-          filledMutexFields[field] = reducer.fieldValues[field]
-        }
-      })
-
-      isValid = Object.keys(filledMutexFields).length === 1
-    }
-
-    return isValid
-  }
-
-  function isFormValid() {
-    const isValid = [validateRequiredFields, validateMutexFields].every((f) => f())
-
-    if (isValid) {
-      clearValidationErrors(dispatch)
-    }
-
-    return isValid
-  }
-
-  function showValidationErrors() {
-    const errors: ValidationError[] = []
-    const filledFields = getFilledFields()
-    const disabledFields = getDisabledFields()
-    const emptyFields: string[] = reducer.requiredFields
-      .filter((field: string) => !filledFields.includes(field))
-      .filter((field: string) => !disabledFields.includes(field))
-    const filledMutexFields = reducer.mutexFields.filter((field: string) => filledFields.includes(field))
-
-    emptyFields.forEach((field: string) => {
-      errors.push({ field, type: 'required'})
-    })
-    filledMutexFields.forEach((field: string) => {
-      errors.push({ field, type: 'mutex'})
-    })
-    updateValidationErrors(dispatch, errors)
+    return patientIdentifierRef.current.submitter_donor_id.trim() !== '' && patientIdentifierRef.current.program_id.trim() !== ''
   }
 
   async function submitForm() {
     const createSubmissionInput = () => {
-      const valuesToSubmit = Object.keys(reducer.fieldValues).reduce((newObj: {[key: string]: FieldValue}, key: string) => {
-        const value = reducer.fieldValues[key]
-
-        if(!isFalsy(value)) {
-          newObj[key] = value
-        }
-
-        return newObj
-      }, {})
+      const valuesToSubmit = getFilledFields(reducer.fieldValues)
 
       return {
         form_id: form.formID,
@@ -465,16 +373,16 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
           connect: {
             where: {
               node: {
-                patient_id: patientIdentifier.submitter_donor_id,
-                program_id: patientIdentifier.program_id,
-                study: patientIdentifier.study
+                patient_id: patientIdentifierRef.current.submitter_donor_id,
+                program_id: patientIdentifierRef.current.program_id,
+                study: patientIdentifierRef.current.study
               }
             }
           }
         },
         fields: {
           create: Object.keys(valuesToSubmit).map(
-            function(key) {
+            function(key: string) {
               return {
                 node: {
                   key: key,
@@ -491,9 +399,9 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
       const patientMutation = await gqlClient.mutate({
         mutation: FindOrCreatePatient,
         variables: {
-          patient_id: patientIdentifier.submitter_donor_id,
-          program_id: patientIdentifier.program_id,
-          study: patientIdentifier.study
+          patient_id: patientIdentifierRef.current.submitter_donor_id,
+          program_id: patientIdentifierRef.current.program_id,
+          study: patientIdentifierRef.current.study
         }
       })
       if (patientMutation.data?.findOrCreatePatient) { // submit only if patient was successfully found or created
@@ -535,7 +443,6 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
             } else {
               clearDraftId(dispatch)
               clearDraftDate(dispatch)
-              clearDraft(dispatch)
               console.log('Draft has been deleted')
             }
           } else if (label === 'ConnectUser') {
@@ -560,18 +467,18 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
   const canRender = reducer.fieldWidgets.length > 0 && !state.matches('loading')
 
   React.useEffect(() => {
-    if (patientIdentifierRef.current !== patientIdentifier) {
+    if (patientIdentifierRef.current !== patientID) {
       send('CLEAR')
       if (patientIdentifierIsNotEmpty()) {
         loadDraft()
       }
-      patientIdentifierRef.current = patientIdentifier
+      patientIdentifierRef.current = patientID
     }
-  }, [patientIdentifier])
+  }, [patientID])
 
   React.useEffect(() => {
     send('RELOAD')
-  }, [patientIdentifier.study])
+  }, [patientID.study])
 
   // final result
   let finalComponent = <></>
@@ -587,7 +494,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
       } else {
         regularFields.push(field)
       }
-      labels[field.name] = findLabel(field, reducer.fieldValues, patientIdentifier.study)
+      labels[field.name] = findLabel(field, reducer.fieldValues, patientIdentifierRef.current.study)
     })
 
     finalComponent = (
@@ -595,7 +502,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
         <TemplateTable
           key={`Templates-${reducer.lastTemplateUpdate}`}
           formID={form.formID}
-          patientIdentifier={patientIdentifier}
+          patientIdentifier={patientID}
           headers={labels}
           clearForm={executeClearForm}
           fillForm={(values: any) => fillForm(dispatch, values)}
@@ -609,7 +516,7 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
           key={reducer.lastSubmissionUpdate ?? new Date()}
           formID={form.formID}
           headers={labels}
-          patientIdentifier={patientIdentifier}
+          patientIdentifier={patientID}
           clearForm={executeClearForm}
           fillForm={(values: any) => fillForm(dispatch, values)}
           reload={reloadSubmissions}
@@ -620,12 +527,12 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
           setModalError={setModalError}
         />
         <Form>
-          <h2 style={{marginTop: '10px', textAlign: 'center'}}>{form.label && patientIdentifier.study ? form.label[patientIdentifier.study]: form.name}</h2>
+          <h2 style={{marginTop: '10px', textAlign: 'center'}}>{form.label && patientID.study ? form.label[patientID.study]: form.name}</h2>
           {
             reducer.lastDraftUpdate && 
             <>
               <span style={{float: 'right'}}>
-                Patient {patientIdentifier.submitter_donor_id}: {form.name} form last autosaved at: {reducer.lastDraftUpdate.toString()}
+                Patient {patientID.submitter_donor_id}: {form.name} form last autosaved at: {reducer.lastDraftUpdate.toString()}
               </span>
               <br/>
             </>
@@ -666,11 +573,11 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
           { idFields.map((field: Field) => (
               renderField({
                 field: field,
-                validators: getFieldValidators(field),
+                validators: getFieldValidators(field, reducer.requiredFields, reducer.mutexFields),
                 updateValue: updateField,
                 formWasCleared,
                 values: reducer.fieldValues,
-                study: patientIdentifier.study,
+                study: patientID.study,
                 required: reducer.requiredFields.includes(field.name),
                 notifyError: () => { send('INVALID') }
               })
@@ -679,37 +586,26 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
           { regularFields.map((field: Field) => (
               renderField({
                 field: field,
-                validators: getFieldValidators(field),
+                validators: getFieldValidators(field, reducer.requiredFields, reducer.mutexFields),
+                // updateValue: updateField,
                 updateValue: updateField,
                 formWasCleared,
                 values: reducer.fieldValues,
-                study: patientIdentifier.study,
+                study: patientID.study,
                 required: reducer.requiredFields.includes(field.name),
                 notifyError: () => { send('INVALID') }
               })
             ))
           }
-          <Button.Group size="large" fluid widths={3}>
-            <Button
-              size='large' 
-              onClick={ () => send('CLEAR') }
-              fluid
-              icon='trash'
-              color='red'
-              content='CLEAR FORM'
-            />
-            <Button.Or />
-            <Button content="SAVE TEMPLATE" color="black" icon="save" onClick={() => { 
-                saveTemplate()
-              }
+          <ActionsGroup
+            send={send}
+            saveTemplate={saveTemplate}
+            disabled={
+              !patientIdentifierIsNotEmpty()
+              || state.matches('failure')
+              || state.matches('invalid')
             }
-            />
-            <Button.Or />
-            <Button icon="send" content="FINALIZE" color="teal"
-              disabled={!patientIdentifierIsNotEmpty() || state.matches('failure') || state.matches('invalid')}
-              onClick={() => { send('SUBMIT') }}
-            />
-          </Button.Group> 
+          />
         </Form>
         <DynamicFormModal 
           open={openModal} 

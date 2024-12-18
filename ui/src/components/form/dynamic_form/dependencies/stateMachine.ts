@@ -35,10 +35,9 @@ export const formStateMachine = createMachine({
     },
     modified: {
       after: {
-        1000: { 
-          target: 'saving',
-          cond: 'isFormValid'
-        } // save the draft 1 second (1000 milliseconds) after user stopped typing, but only do it if the form is valid
+        5000: { 
+          target: 'saving'
+        } // save the draft 5 seconds (5000 milliseconds) after user has stopped typing
       },
       on: {
         SUBMIT: [
@@ -49,7 +48,7 @@ export const formStateMachine = createMachine({
           { target: 'invalid' }
         ],
         INVALID: { target: 'invalid' },
-        CHANGE: { actions: 'storeDraft' },
+        CHANGE: { target: 'modified' },
         SAVED: { target: 'clean' },
         CLEAR: { target: 'empty' },
         FAILED: { target: 'failure' },

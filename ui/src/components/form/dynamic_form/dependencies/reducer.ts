@@ -1,12 +1,11 @@
-import { Action, Field, FieldValue, FormDraft, ValidationError } from "../types";
+import { Action, Field, FieldValue, FormReducer, ValidationError } from "../types";
 
-export const initialState = {
+export const initialState: FormReducer = {
   fieldWidgets: [],
   idFields: [],
   mutexFields: [],
   requiredFields: [],
   draftID: null,
-  draft: null,
   lastDraftUpdate: null,
   lastTemplateUpdate: null,
   lastSubmissionUpdate: null,
@@ -59,20 +58,6 @@ export function updateDraftDate(dispatch: React.Dispatch<Action>) {
 export function clearDraftDate(dispatch: React.Dispatch<Action>) {
   dispatch({
     type: "CLEAR_DRAFT_DATE"
-  })
-}
-
-export function updateDraft(dispatch: React.Dispatch<Action>, draft: FormDraft) {
-  dispatch({
-    type: "UPDATE_DRAFT",
-    payload: draft
-  })
-}
-
-export function clearDraft(dispatch: React.Dispatch<Action>) {
-  dispatch({
-    type: "UPDATE_DRAFT",
-    payload: null
   })
 }
 
@@ -160,11 +145,6 @@ export const formReducer = (state: any, action: any) => {
         ...state,
         draftID: action.payload,
       };
-    case "UPDATE_DRAFT":
-      return {
-        ...state,
-        draft: action.payload,
-      }
     case "CLEAR_FORM":
       return {
         ...state,

@@ -107,3 +107,18 @@ export const findLabel = (field: Field, fieldValues: { [key: string]: FieldValue
 
   return label
 }
+
+export function getFilledFields(valuesObject: {[key: string]: FieldValue}) {
+  return Object.keys(valuesObject)
+    .filter((field) => !isFalsy(valuesObject[field]))
+}
+
+export function getDisabledFields(widgets: Field[], valuesObject: {[key: string]: FieldValue}) {
+  const disabledFields: string[] = []
+  widgets.forEach((field: Field) => {
+    if (fieldIsDisabled(valuesObject, field.enablingConditions)) {
+      disabledFields.push(field.name)
+    }
+  })
+  return disabledFields
+}
