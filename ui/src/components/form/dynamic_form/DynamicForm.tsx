@@ -249,11 +249,11 @@ export const DynamicForm = ({ form, excluded_fields = [] }: DynamicFormProps) =>
 
     updateWidgets(dispatch, fields.filter((field: Field) => !excluded_fields.includes(field.name)))
     if (form.required_fields) {
-      const requiredFields = patientIdentifierRef.current.study && form.required_fields ? form.required_fields[patientIdentifierRef.current.study] : form.required_fields?.default ?? []
+      const requiredFields = patientIdentifierRef.current.study && form.required_fields ? form.required_fields[patientIdentifierRef.current.study] ?? [] : form.required_fields?.default ?? []
       updateRequiredFields(dispatch, requiredFields.filter((field: string) => !excluded_fields.includes(field)))
     }
     if (form.mutex_fields) {
-      const mutexFields = patientIdentifierRef.current.study && form.mutex_fields ? form.mutex_fields[patientIdentifierRef.current.study] : form.mutex_fields?.default ?? []
+      const mutexFields = patientIdentifierRef.current.study && form.mutex_fields ? form.mutex_fields[patientIdentifierRef.current.study] ?? [] : form.mutex_fields?.default ?? []
       updateExclusiveFields(dispatch, mutexFields.filter((field: string) => !excluded_fields.includes(field)))
     }
   };

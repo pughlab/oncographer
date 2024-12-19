@@ -1,6 +1,6 @@
 import React from 'react'
 import { TextArea } from 'semantic-ui-react'
-import { TextareaProps } from '../../types'
+import { TextareaProps } from '../types'
 import { FormField } from './base'
 
 export const TextareaField: React.FC<TextareaProps> = ({
@@ -15,6 +15,7 @@ export const TextareaField: React.FC<TextareaProps> = ({
     notifyError,
     onChange
 }: TextareaProps) => {
+    const [renderedValue, setRenderedValue] = React.useState<string|number|undefined>(value ?? defaultValue);
     return (
         <FormField
             study=''
@@ -29,12 +30,15 @@ export const TextareaField: React.FC<TextareaProps> = ({
             onChange={onChange}
             notifyError={notifyError}
         >
-            {({defaultValue, onChange}) => (
+            {({onChange}) => (
                 <TextArea 
                     name={field.name}
                     rows={4}
-                    value={!value || Array.isArray(value) ? "" : value ?? defaultValue}
-                    onChange={(_e, { value }) => onChange(field, value as string)}
+                    value={renderedValue}
+                    onChange={(_e, { value }) => {
+                        setRenderedValue(value)
+                        onChange(field, value as string)
+                    }}
                 />
             )}
         </FormField>

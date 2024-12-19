@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Form, SemanticWIDTHS } from "semantic-ui-react";
-import { FieldValue, ButtonSelectFieldProps, DropdownSelectFieldProps, SelectFieldProps } from "../../types";
+import { FieldValue, ButtonSelectFieldProps, DropdownSelectFieldProps, SelectFieldProps } from "../types";
 import { FormField } from "./base";
 
 const SmallSelectField: React.FC<ButtonSelectFieldProps> = ({
@@ -14,6 +14,7 @@ const SmallSelectField: React.FC<ButtonSelectFieldProps> = ({
   options,
   onClick,
 }: ButtonSelectFieldProps) => {
+  const [renderedValue, setRenderedValue] = useState(value ?? defaultValue)
   return (
     <FormField
       field={field}
@@ -35,7 +36,7 @@ const SmallSelectField: React.FC<ButtonSelectFieldProps> = ({
           }
         >
           {options?.map((option: string, index: number) => {
-              const isActive = option === value;
+              const isActive = option === renderedValue;
               return (
                 <Form.Button
                   fluid
@@ -46,6 +47,7 @@ const SmallSelectField: React.FC<ButtonSelectFieldProps> = ({
                   color={isActive ? "teal" : undefined}
                   onClick={() => {
                     if (onClick) {
+                      setRenderedValue(option)
                       onClick(field, option);
                     }
                   }}
@@ -136,10 +138,16 @@ const LargeSelectField: React.FC<DropdownSelectFieldProps> = ({
 }: DropdownSelectFieldProps) => {
 
   const blankValue: FieldValue = multiple ? [] : ""
-  const selectedValue = React.useRef<FieldValue>(value ?? blankValue)
+  const selectedValue = React.useRef<FieldValue>(blankValue)
+
+  useEffect(() => {
+    if (multiple && !Array.isArray(value)) {
+      selectedValue.current = [value]
+    }
+  }, [])
 
   React.useEffect(() => {
-    if (formWasCleared && selectedValue.current !== blankValue) {
+    if (formWasCleared) {
       selectedValue.current = blankValue
     }
   }, [formWasCleared])

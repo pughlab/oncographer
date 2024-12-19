@@ -82,14 +82,14 @@ export interface FormFieldPropsBase {
         defaultValue: FieldValue,
         disabled: boolean,
         readonly: boolean,
-        onChange: (field: {name: string}, value: FieldValue) => void,
-        onClick?: (field: {name: string}, value: FieldValue) => void
+        onChange: (field: Field, value: FieldValue) => void,
+        onClick?: (field: Field, value: FieldValue) => void
     }) => ReactElement
 }
 
 export type FormFieldProps = 
-    | (FormFieldPropsBase & { onClick: (field: {name: string}, value: FieldValue) => void, onChange?: never })
-    | (FormFieldPropsBase & { onClick?: never, onChange: (field: {name: string}, value: FieldValue) => void })
+    | (FormFieldPropsBase & { onClick: (field: Field, value: FieldValue) => void, onChange?: never })
+    | (FormFieldPropsBase & { onClick?: never, onChange: (field: Field, value: FieldValue) => void })
 
 export type Validator = (value: FieldValue) => string | null
 
@@ -101,39 +101,39 @@ export interface SelectFieldPropsBase {
     defaultValue: FieldValue;
     disabled: boolean;
     multiple: boolean;
-    field: { name: string };
+    field: Field;
     readonly: boolean;
     required: boolean;
     validators?: Validator[];
     options: string[];
 }
 
-export type ButtonSelectFieldProps = SelectFieldPropsBase & { onClick: (field: { name: string }, value: FieldValue) => void; }
-export type DropdownSelectFieldProps = SelectFieldPropsBase & { onChange: (field: { name: string }, value: FieldValue) => void; formWasCleared: boolean; notifyError?: () => void }
+export type ButtonSelectFieldProps = SelectFieldPropsBase & { onClick: (field: Field, value: FieldValue) => void; }
+export type DropdownSelectFieldProps = SelectFieldPropsBase & { onChange: (field: Field, value: FieldValue) => void; formWasCleared: boolean; notifyError?: () => void }
 export type SelectFieldProps = ButtonSelectFieldProps & DropdownSelectFieldProps
 
 export interface InputFieldPropsBase {
+    field: Field,
     label: string,
     value: FieldValue,
     defaultValue: FieldValue,
     disabled: boolean,
-    field: { name: string },
     readonly: boolean,
     required: boolean,
     validators?: Validator[],
     notifyError?: () => void,
     type: string,
-    onChange: (field: {name: string}, value: FieldValue) => void,
+    onChange: (field: Field, value: FieldValue) => void,
 }
 
-export type DateInputFieldProps = InputFieldPropsBase & { resolution: string; formWasCleared: boolean }
+export type DateInputFieldProps = InputFieldPropsBase & { onChange: (field: Field, value: FieldValue) => void; resolution: string; formWasCleared: boolean }
 export type InputFieldProps = InputFieldPropsBase & { resolution?: string; formWasCleared: boolean }
 
 export interface TextareaProps {
     label: string,
-    value: FieldValue,
+    value: string,
     defaultValue: string,
-    field: { name: string },
+    field: Field,
     readonly: boolean,
     required: boolean,
     disabled: boolean,
