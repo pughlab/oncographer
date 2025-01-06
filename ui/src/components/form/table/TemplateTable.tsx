@@ -1,100 +1,68 @@
 import * as React from 'react'
 import { Accordion, Button, Divider, Header, Icon, List, Table } from 'semantic-ui-react'
-import { useMutation, useQuery } from '@apollo/client'
-import { toTitle, toDateString } from './utils'
+import { useMutation } from '@apollo/client'
+import { toTitle, toDateString } from '../../utils'
 import { LoadingSegment } from "../../common/LoadingSegment";
-import { FindTemplate, DeleteTemplate } from '../dynamic_form/queries/form'
+import { DeleteTemplate } from '../dynamic_form/queries/form'
 import { BasicErrorMessage } from '../../common/BasicErrorMessage';
+import { useFormOperations } from '../../layout/context/FormOperationsProvider';
+import { useFormLabels } from '../../../hooks/useLabels';
+import useTemplates from '../../../hooks/useTemplates';
+import { usePatientID } from '../../layout/context/PatientIDProvider';
 
-type TemplateSearchInfo = {
-  form_id: string,
-  patient_id: string,
-  secondary_ids?: string
-}
-
-export function TemplateTable({ 
-  formID,
-  patientIdentifier,
-  headers,
-  setLastTemplateUpdate,
-  clearForm,
-  fillForm,
-  setOpenModal,
-  setModalTitle,
-  setModalContent,
-  setModalError
-}) {
+export function TemplateTable({ formID, templateUpdates, modalOperations }: any) {
   const [active, setActive] = React.useState(true)
+  const { loading, error, data: templates, refetch } = useTemplates(formID)
+  React.useEffect(() => {
+    refetch()
+  }, [templateUpdates])
 
-  // attempt to find templates for the current form
-  const templateInfo: TemplateSearchInfo = { 
-    form_id: formID,
-    patient_id: JSON.stringify(patientIdentifier)
-  }
-
-  const { loading: templatesLoading, error: templatesError, data: templates } = useQuery(FindTemplate, {
-    variables: {
-      where: templateInfo
-    },
-    fetchPolicy: "network-only"
-  })
-
-  if (templatesLoading) {
+  if (loading) {
     return <LoadingSegment />
   }
 
-  if (templatesError) {
+  if (error) {
     return <BasicErrorMessage />
   }
 
-  return templates.formTemplates.length === 0 ? <></> : (
-    <>
-      <Divider hidden />
-      <Accordion>
-        <Accordion.Title active={active} onClick={() => setActive(!active)}>
-          <Icon name="dropdown" />
-          <Divider horizontal style={{ display: 'inline-block' }}>
-            <Header as="h4">
-              <Icon name="save" />
-              TEMPLATES
-            </Header>
-          </Divider>
-        </Accordion.Title>
-        <Accordion.Content active={active}>
-          <TemplateTableContents
-            templates={templates.formTemplates}
-            setLastTemplateUpdate={setLastTemplateUpdate}
-            headers={headers}
-            clearForm={clearForm}
-            fillForm={fillForm}
-            setOpenModal={setOpenModal}
-            setModalTitle={setModalTitle}
-            setModalContent={setModalContent}
-            setModalError={setModalError}
-          />
-        </Accordion.Content>
-      </Accordion>
-    </>
+  return templates.length === 0 ? <></> : (
+    <Accordion>
+      <Accordion.Title active={active} onClick={() => setActive(!active)}>
+        <Icon name="dropdown" />
+        <Divider horizontal style={{ display: 'inline-block' }}>
+          <Header as="h4">
+            <Icon name="save" />
+            TEMPLATES
+          </Header>
+        </Divider>
+      </Accordion.Title>
+      <Accordion.Content active={active}>
+        <TemplateTableContents
+          formID={formID}
+          templates={templates}
+          modalOperations={modalOperations}
+          refetch={refetch}
+        />
+      </Accordion.Content>
+    </Accordion>
   )
 }
 
-const TemplateTableContents = ({
-  templates,
-  headers,
-  setLastTemplateUpdate,
-  clearForm,
-  fillForm,
-  setOpenModal,
-  setModalTitle,
-  setModalContent,
-  setModalError
-}) => {
+function TemplateTableContents({ formID, templates, modalOperations, refetch }: any) {
 
   let table = null
+  const { setModalTitle, setModalContent, setModalError, setOpenModal } = modalOperations
 
+  const { data: headers } = useFormLabels(formID)
+  const { study } = usePatientID()
+  const { clearForm, fillForm, updateTemplateDate } = useFormOperations()
   const [deleteTemplate] = useMutation(DeleteTemplate)
 
-  const removeTemplate = (template) => {
+  if (!(clearForm && fillForm && updateTemplateDate)) {
+    return <></>
+  }
+
+  const removeTemplate = (template: any) => {
     deleteTemplate({
       variables: {
         where: {
@@ -102,12 +70,13 @@ const TemplateTableContents = ({
         }
       },
       onCompleted: () => {
+        refetch()
         console.log('Template deleted')
+        updateTemplateDate()
         setModalTitle('Success')
         setModalContent('The template has been deleted')
         setModalError(false)
         setOpenModal(true)
-        setLastTemplateUpdate()
       },
       onError: () => {
         console.log('Template not deleted')
@@ -129,12 +98,12 @@ const TemplateTableContents = ({
     table = (
       <div style={{overflowX: 'auto', maxHeight: '500px', resize: 'vertical'}}>
         <Table fixed selectable aria-labelledby="header" striped>
-
           <Table.Header>
             <Table.Row>
               {
                 Object.values(headers).map((header: any) => {
-                  return <Table.HeaderCell key={header}>{toTitle(header)}</Table.HeaderCell>
+                  const label = typeof header === 'object' ? header[study] ?? header.default : header
+                  return <Table.HeaderCell key={label}>{toTitle(label)}</Table.HeaderCell>
                 })
               }
               <Table.HeaderCell key="Delete" textAlign='center'>Delete</Table.HeaderCell>
@@ -142,10 +111,10 @@ const TemplateTableContents = ({
           </Table.Header>
           <Table.Body>
             {
-              templates.map((template) => {
+              templates.map((template: any) => {
                 const patientId = JSON.parse(template.patient_id)
                 const secondaryIds = JSON.parse(template.secondary_ids) || {}
-                const data = JSON.parse(template.data) // the data that is used to save the template
+                const data = JSON.parse(template.data)
                 const ids = {
                   ...patientId,
                   ...secondaryIds

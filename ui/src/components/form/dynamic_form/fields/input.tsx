@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, useEffect, useState } from "react";
+import React, { PropsWithChildren, useEffect, useMemo, useState } from "react";
 import DatePicker from "react-datepicker";
 import { Input, Radio } from "semantic-ui-react";
 import { v4 as uuid4 } from "uuid";
@@ -11,6 +11,7 @@ import {
 } from "../types";
 
 import "react-datepicker/dist/react-datepicker.css";
+import { createHash } from "crypto";
 
 const TextInputField: React.FC<PropsWithChildren<InputFieldPropsBase>> = ({
   field,
@@ -24,8 +25,20 @@ const TextInputField: React.FC<PropsWithChildren<InputFieldPropsBase>> = ({
   validators,
   notifyError,
   onChange,
+  isReset,
 }: InputFieldPropsBase) => {
   const [renderedValue, setRenderedValue] = useState(value ?? defaultValue);
+
+  useEffect(() => {
+    if (isReset) {
+      setRenderedValue("")
+    }
+  }, [isReset])
+
+  useEffect(() => {
+    setRenderedValue(value)
+  }, [value])
+
   return (
     <FormField
       field={field}
@@ -69,11 +82,18 @@ const DateInputField: React.FC<PropsWithChildren<DateInputFieldProps>> = ({
   resolution,
   notifyError,
   onChange,
-  formWasCleared,
+  isReset,
 }: DateInputFieldProps) => {
   const radioGroupName = uuid4();
   const [fieldResolution, setFieldResolution] = useState<string>(resolution);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  useEffect(() => {
+    if (isReset) {
+      setSelectedDate(null);
+      setFieldResolution('month')
+    }
+  }, [isReset]);
 
   useEffect(() => {
     if (typeof value === "string" && value.length > 0) {
@@ -86,13 +106,6 @@ const DateInputField: React.FC<PropsWithChildren<DateInputFieldProps>> = ({
       }
     }
   }, [value]);
-
-  useEffect(() => {
-    if (formWasCleared) {
-      setSelectedDate(null);
-      setFieldResolution('month')
-    }
-  }, [formWasCleared]);
 
   return (
     <FormField
@@ -182,16 +195,19 @@ export const InputField: React.FC<PropsWithChildren<InputFieldProps>> = ({
   validators,
   resolution,
   onChange,
-  formWasCleared,
+  isReset,
   notifyError,
   required,
 }: InputFieldProps) => {
   let component;
   const isDate = ["month", "date"].includes(type);
+  const key = useMemo(() => {
+    return createHash('sha256').update(field.name + value).digest('hex')
+  }, [field.name, value])
 
   component = isDate ? (
     <DateInputField
-      key={field.name}
+      key={key}
       label={label}
       value={value}
       defaultValue={defaultValue}
@@ -202,25 +218,26 @@ export const InputField: React.FC<PropsWithChildren<InputFieldProps>> = ({
       type={""}
       onChange={onChange}
       resolution={resolution ?? "month"}
-      formWasCleared={formWasCleared}
+      isReset={isReset}
       validators={validators}
       notifyError={notifyError}
-    />
-  ) : (
-    <TextInputField
-      key={field.name}
-      field={field}
-      label={label}
-      value={value}
-      defaultValue={defaultValue}
-      disabled={disabled}
-      readonly={readonly}
-      required={required}
-      validators={validators}
-      type={type}
-      onChange={onChange}
-      notifyError={notifyError}
-    />
+      />
+    ) : (
+      <TextInputField
+        key={key}
+        field={field}
+        type={type}
+        label={label}
+        value={value}
+        defaultValue={defaultValue}
+        disabled={disabled}
+        readonly={readonly}
+        required={required}
+        validators={validators}
+        isReset={isReset}
+        onChange={onChange}
+        notifyError={notifyError}
+      />
   );
 
   return component;

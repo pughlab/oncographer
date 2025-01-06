@@ -12,7 +12,7 @@ export const RootForm = gql`
 `;
 
 export const FormTree = gql`
-  query Forms($where: FormWhere = { form_name: "Donor" }, $study: String) {
+  query Forms($where: FormWhere = { name: "Donor" }, $study: String) {
     forms(where: $where) {
       ...FormID
       ...FormEdges
@@ -23,6 +23,7 @@ export const FormTree = gql`
     formID
     name
     label
+    id_fields
     required_fields
     mutex_fields
     studies
@@ -97,11 +98,34 @@ export const FormIDFields = gql`
   }
 `;
 
+export const PatientIDLabels = gql`
+  query PatientIDLabels {
+    forms(where: { name: "Donor" }) {
+      formID
+      name
+      fieldsConnection(where: { edge: { isID: true } }) {
+        edges {
+          node {
+            name
+            label
+          }
+        }
+      }
+    }
+  }
+`
+
+export const FormLabels = gql`
+  query FormLabels($id: String!, $study: String) {
+    GetFormFields(id: $id, study: $study) {
+      name
+      label
+    }
+  }
+`
+
 export const FieldData = gql`
   query GetFormFields($id: String!, $study: String) {
-    # using static query take the form id
-    # and get all connected fields metadata
-    # so it can populate the frontend
     GetFormFields(id: $id, study: $study) {
       component
       enablingConditions

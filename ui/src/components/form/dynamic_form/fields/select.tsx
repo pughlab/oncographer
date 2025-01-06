@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Form, SemanticWIDTHS } from "semantic-ui-react";
 import { FieldValue, ButtonSelectFieldProps, DropdownSelectFieldProps, SelectFieldProps } from "../types";
 import { FormField } from "./base";
+import { createHash } from "crypto";
 
 const SmallSelectField: React.FC<ButtonSelectFieldProps> = ({
   field,
@@ -13,8 +14,20 @@ const SmallSelectField: React.FC<ButtonSelectFieldProps> = ({
   required,
   options,
   onClick,
+  isReset
 }: ButtonSelectFieldProps) => {
   const [renderedValue, setRenderedValue] = useState(value ?? defaultValue)
+
+  useEffect(() => {
+    if(isReset) {
+      setRenderedValue("")
+    }
+  }, [isReset])
+
+  useEffect(() => {
+    setRenderedValue(value)
+  }, [value])
+
   return (
     <FormField
       field={field}
@@ -71,9 +84,20 @@ const MultipleSmallSelectField: React.FC<ButtonSelectFieldProps> = ({
   readonly,
   required,
   onClick,
-  options
+  options,
+  isReset
 }: ButtonSelectFieldProps) => {
-  const selectedOptions = React.useRef<string[]>([])
+  const [selectedOptions, setSelectedOptions] = React.useState<string[]>([])
+
+  useEffect(() => {
+    if (isReset) {
+      setSelectedOptions([])
+    }
+  }, [isReset])
+
+  useEffect(() => {
+    setSelectedOptions(value as string[])
+  }, [value])
 
   return (
     <FormField
@@ -91,7 +115,7 @@ const MultipleSmallSelectField: React.FC<ButtonSelectFieldProps> = ({
         <Form.Group widths={options?.length !== 1 ? (options?.length as SemanticWIDTHS) : "equal"}>
           {
             options?.map((option: string, index: number) => {
-              const isActive = selectedOptions.current.includes(option)
+              const isActive = selectedOptions.includes(option)
               const notEqual = (v: string) => option !== v
               return (
                 <Form.Button
@@ -103,10 +127,10 @@ const MultipleSmallSelectField: React.FC<ButtonSelectFieldProps> = ({
                   color={isActive ? "teal" : undefined}
                   onClick={() => {
                     if (onClick) {
-                      const options = selectedOptions.current.includes(option) 
-                        ? selectedOptions.current.filter(notEqual)
-                        : [...selectedOptions.current, option]
-                      selectedOptions.current = options
+                      const options = selectedOptions.includes(option) 
+                        ? selectedOptions.filter(notEqual)
+                        : [...selectedOptions, option]
+                      setSelectedOptions(options)
                       onClick(field, options)
                     }
                   }}
@@ -134,23 +158,39 @@ const LargeSelectField: React.FC<DropdownSelectFieldProps> = ({
   multiple,
   onChange,
   notifyError,
-  formWasCleared
+  isReset
 }: DropdownSelectFieldProps) => {
 
   const blankValue: FieldValue = multiple ? [] : ""
-  const selectedValue = React.useRef<FieldValue>(blankValue)
+  const [selectedValue, setSelectedValue] = useState<FieldValue>(blankValue)
 
   useEffect(() => {
     if (multiple && !Array.isArray(value)) {
-      selectedValue.current = [value]
+      setSelectedValue([value])
     }
   }, [])
 
-  React.useEffect(() => {
-    if (formWasCleared) {
-      selectedValue.current = blankValue
+  useEffect(() => {
+    if (isReset) {
+      setSelectedValue(blankValue)
     }
-  }, [formWasCleared])
+  }, [isReset])
+
+  useEffect(() => {
+    const strategies = {
+      'single': () => setSelectedValue(value),
+      'multiple': () => {
+        if (!Array.isArray(value)) {
+          setSelectedValue([value])
+        } else {
+          setSelectedValue(value)
+        }
+      }
+    }
+    const selectedStrategy = multiple ? 'multiple' : 'single'
+
+    strategies[selectedStrategy]()
+  }, [value])
 
   return (
     <FormField
@@ -178,10 +218,10 @@ const LargeSelectField: React.FC<DropdownSelectFieldProps> = ({
           multiple={multiple}
           clearable
           disabled={disabled}
-          value={selectedValue.current}
+          value={selectedValue}
           onChange={(_e, { value }) => {
             const newValue = multiple ? value as string[] : value as string
-            selectedValue.current = newValue
+            setSelectedValue(newValue)
             onChange(field, newValue)
           }}
         />
@@ -204,14 +244,17 @@ export const SelectField: React.FC<SelectFieldProps> = ({
   onChange,
   onClick,
   notifyError,
-  formWasCleared
+  isReset
 }: SelectFieldProps) => {
   let component 
   const isLarge = options.length > 4
+  const key = useMemo(() => {
+    return createHash('sha256').update(field.name + value).digest('hex')
+  }, [field.name, value])
 
   if (isLarge) {
     component = <LargeSelectField
-      key={field.name}
+      key={key}
       multiple={multiple}
       options={options}
       field={field}
@@ -224,11 +267,11 @@ export const SelectField: React.FC<SelectFieldProps> = ({
       onChange={onChange}
       notifyError={notifyError}
       validators={validators}
-      formWasCleared={formWasCleared}
+      isReset={isReset}
     />
   } else if (multiple) {
     component = <MultipleSmallSelectField
-      key={field.name}
+      key={key}
       multiple={true}
       options={options}
       field={field}
@@ -239,10 +282,11 @@ export const SelectField: React.FC<SelectFieldProps> = ({
       readonly={readonly}
       required={required}
       onClick={onClick}
+      isReset={isReset}
     />
   } else {
     component = <SmallSelectField
-      key={field.name}
+      key={key}
       multiple={false}
       options={options}
       field={field}
@@ -253,6 +297,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
       readonly={readonly}
       required={required}
       onClick={onClick}
+      isReset={isReset}
     />
   }
 

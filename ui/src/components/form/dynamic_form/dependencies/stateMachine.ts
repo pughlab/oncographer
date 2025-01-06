@@ -5,10 +5,9 @@ export const formStateMachine = createMachine({
   initial: 'loading',
   states: {
     loading: {
-      invoke: {
-        src: 'initializeForm',
-        onDone: { target: 'clean' },
-        onError: { target: 'error' }
+      on: {
+        DONE: { target: 'clean' },
+        ERROR: { target: 'error' }
       }
     },
     error: { type: 'final' },
@@ -79,7 +78,7 @@ export const formStateMachine = createMachine({
     },
     saving: {
       invoke: {
-        src: 'saveDraft',
+        src: 'executeSaveDraft',
         onDone: {
           target: 'clean'
         },

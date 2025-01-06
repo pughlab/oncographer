@@ -1,6 +1,12 @@
 import { ReactElement } from "react"
 import { EventObject } from "xstate"
 
+export interface PatientID {
+    submitter_donor_id: string;
+    program_id: string;
+    study: string;
+}
+
 export interface Action {
     type: string,
     payload?: any
@@ -9,6 +15,16 @@ export interface Action {
 export type Label = {
     default: string
     [key: string]: string
+}
+
+export type LabelObject = {
+    [key: string]: Label | undefined
+}
+
+export interface ActiveSubmission {
+    submission_id: string
+    fields: { key: string, value: FieldValue|FieldValue[] }[]
+    patient: PatientID
 }
 
 export interface Form {
@@ -52,15 +68,37 @@ export interface FormDraft {
 
 export interface FormReducer {
     fieldWidgets: Field[],
-    idFields: string[],
+    idFields?: string[],
     mutexFields: string[],
-    requiredFields: string[],
-    draftID: string|null,
-    lastDraftUpdate: Date|null,
-    lastTemplateUpdate: Date|null,
-    lastSubmissionUpdate: Date|null,
-    fieldValues: { [key: string]: FieldValue },
+    requiredFields?: string[],
+    draft?: {
+        id: string|null,
+        lastUpdate: Date|null,
+    }
+    draftID?: string|null,
+    lastDraftUpdate?: Date|null,
+    lastTemplateUpdate?: Date|null,
+    lastSubmissionUpdate?: Date|null,
+    fieldValues?: { [key: string]: FieldValue },
     validationErrors: ValidationError[],
+}
+
+export interface FormOperations {
+    clearForm?: () => void,
+    fillForm?: (values: { [key: string]: FieldValue; }) => void,
+    updateTemplateDate?: () => void,
+    updateSubmissionDate?: () => void,
+    updateDraftId?: (draftID: string) => void,
+    clearDraftId?: () => void,
+    updateDraftDate?: () => void,
+    clearDraftDate?: () => void,
+    clearTemplateDate?: () => void,
+    clearSubmissionDate?: () => void,
+    updateWidgets?: () => void,
+    updateExclusiveFields?: () => void,
+    updateRequiredFields?: () => void,
+    updateValidationErrors?: () => void,
+    clearValidationErrors?: () => void
 }
 
 export type FieldValue = string | string[]
@@ -106,10 +144,11 @@ export interface SelectFieldPropsBase {
     required: boolean;
     validators?: Validator[];
     options: string[];
+    isReset: boolean;
 }
 
 export type ButtonSelectFieldProps = SelectFieldPropsBase & { onClick: (field: Field, value: FieldValue) => void; }
-export type DropdownSelectFieldProps = SelectFieldPropsBase & { onChange: (field: Field, value: FieldValue) => void; formWasCleared: boolean; notifyError?: () => void }
+export type DropdownSelectFieldProps = SelectFieldPropsBase & { onChange: (field: Field, value: FieldValue) => void; notifyError?: () => void }
 export type SelectFieldProps = ButtonSelectFieldProps & DropdownSelectFieldProps
 
 export interface InputFieldPropsBase {
@@ -123,11 +162,12 @@ export interface InputFieldPropsBase {
     validators?: Validator[],
     notifyError?: () => void,
     type: string,
+    isReset: boolean,
     onChange: (field: Field, value: FieldValue) => void,
 }
 
-export type DateInputFieldProps = InputFieldPropsBase & { onChange: (field: Field, value: FieldValue) => void; resolution: string; formWasCleared: boolean }
-export type InputFieldProps = InputFieldPropsBase & { resolution?: string; formWasCleared: boolean }
+export type DateInputFieldProps = InputFieldPropsBase & { onChange: (field: Field, value: FieldValue) => void; resolution: string; }
+export type InputFieldProps = InputFieldPropsBase & { resolution?: string;}
 
 export interface TextareaProps {
     label: string,
@@ -137,12 +177,13 @@ export interface TextareaProps {
     readonly: boolean,
     required: boolean,
     disabled: boolean,
+    isReset: boolean,
     validators?: Validator[],
     notifyError?: () => void,
     onChange: (field: {name: string}, value: FieldValue) => void
 }
 
-export interface DynamicFormModalProps {
+export interface FormModalProps {
     open: boolean,
     onClose: () => void,
     title: string,

@@ -1,33 +1,18 @@
-import { Action, Field, FieldValue, FormReducer, ValidationError } from "../types";
+import { Action, Field, FormReducer, ValidationError } from "../types";
 
 export const initialState: FormReducer = {
   fieldWidgets: [],
   idFields: [],
   mutexFields: [],
   requiredFields: [],
-  draftID: null,
-  lastDraftUpdate: null,
+  draft: {
+    id: null,
+    lastUpdate: null
+  },
   lastTemplateUpdate: null,
   lastSubmissionUpdate: null,
-  fieldValues: {},
   validationErrors: [],
 };
-
-export function updateFieldValue(dispatch: React.Dispatch<Action>, field: Field, value: FieldValue) {
-  dispatch({
-    type: "UPDATE_FIELD_VALUES",
-    payload: {
-      [field.name]: value
-    }
-  })
-}
-
-export function fillForm(dispatch: React.Dispatch<Action>, values: unknown) {
-  dispatch({
-    type: "FILL_FORM",
-    payload: values
-  })
-}
 
 export function clearForm(dispatch: React.Dispatch<Action>) {
   dispatch({
@@ -122,33 +107,23 @@ export function clearValidationErrors(dispatch: React.Dispatch<Action>) {
 
 export const formReducer = (state: any, action: any) => {
   switch (action.type) {
-    case "UPDATE_FIELD_VALUES":
-      return {
-        ...state,
-        fieldValues: {
-          ...state.fieldValues,
-          ...action.payload,
-        },
-      };
-    case "FILL_FORM":
-      return {
-        ...state,
-        fieldValues: {
-          ...state.fieldValues,
-          ...action.payload,
-        },
-        draftID: null,
-        lastDraftUpdate: null,
-      };
     case "UPDATE_DRAFT_ID":
       return {
         ...state,
-        draftID: action.payload,
+        draft: {
+          ...state.draft,
+          id: action.payload,
+        }
       };
     case "CLEAR_FORM":
       return {
         ...state,
-        fieldValues: {},
+        draft: {
+          id: null,
+          lastUpdate: null
+        },
+        lastTemplateUpdate: null,
+        lastSubmissionUpdate: null,
         validationErrors: [],
       };
     case "UPDATE_WIDGETS":
@@ -159,12 +134,18 @@ export const formReducer = (state: any, action: any) => {
     case "UPDATE_DRAFT_DATE":
       return {
         ...state,
-        lastDraftUpdate: new Date(),
+        draft: {
+          ...state.draft,
+          lastUpdate: new Date(),
+        }
       };
     case "CLEAR_DRAFT_DATE":
       return {
         ...state,
-        lastDraftUpdate: null,
+        draft: {
+          ...state.draft,
+          lastUpdate: null,
+        }
       };
     case "UPDATE_TEMPLATE_DATE":
       return {
