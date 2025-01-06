@@ -80,6 +80,7 @@
     has_next_question: [Field] @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
     studies: [String]
     weight: FormValue
+    id_fields: [String]
     required_fields: Parser
     mutex_fields: Parser
     branch_fields: [String]
@@ -129,9 +130,13 @@
 
     GetFormFields(id: String!, study: String) : [Field]
     @cypher( statement: """ 
-    MATCH (:Form {form_id : $id})-[:HAS_NEXT_QUESTION*]->(f:Field)
-    WHERE single(x in f.studies WHERE x = $study)
-    RETURN f
+    MATCH (n:Field)-[:BELONGS_TO]->(f:Form {formID : $id})
+    WHERE single(x in n.studies WHERE x = $study)
+    RETURN n as fields
+    UNION
+    MATCH (f:Form {formID: $id})-[:HAS_NEXT_QUESTION*]->(n2:Field)
+    WHERE single(x in n2.studies WHERE x = $study)
+    RETURN n2 as fields
     """)
     GetRootForm(study: String!): Form @cypher(statement: """
     MATCH (f:Form)
