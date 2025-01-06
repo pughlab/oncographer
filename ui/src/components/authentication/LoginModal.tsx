@@ -1,6 +1,6 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 
-import {Embed, Header, Segment, Button, Grid, Modal, Label, Divider, Icon, Image, Popup, Message, Menu} from 'semantic-ui-react'
+import {Header, Segment, Button, Modal, Label, Icon, Popup, Menu} from 'semantic-ui-react'
 
 import { useKeycloak } from '@react-keycloak/web'
 import { useAppSelector } from '../../state/hooks';
@@ -10,10 +10,8 @@ import {Logo} from '../logos'
 import {LOGIN_MENU_ELEMENT_ID} from '../intros/PortalNavBarIntro'
 
 export default function LoginModal () {
-  // const {keycloakUser} = state
-  // const {name, email} = keycloakUser
   const [open, setOpen] = useState(false)
-  const { keycloak, initialized } = useKeycloak()
+  const { keycloak } = useKeycloak()
   const keycloakMe = useAppSelector(currentAppContextKeycloakMe, shallowEqual)
   if (!keycloakMe) {
     return (
@@ -24,8 +22,7 @@ export default function LoginModal () {
       />
     )
   }
-  // console.log(context)
-  // return null
+
   const {name, email} = keycloakMe
   return (
     <>
@@ -70,7 +67,7 @@ export default function LoginModal () {
             />
           </Segment>
         </Segment.Group>
-     </Modal.Content>
+      </Modal.Content>
     </Modal>
     </>
   )

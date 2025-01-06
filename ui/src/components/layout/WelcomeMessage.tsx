@@ -2,7 +2,7 @@ import React from 'react'
 import { Image, Message, Segment } from 'semantic-ui-react'
 import logo from '../logos/logo.png'
 
-export const WelcomeMessage = ({ withRoles }) => {
+export const WelcomeMessage = ({ withRoles }: { withRoles: boolean }) => {
     return (
         <Segment color={'teal'}>
         <Message positive={withRoles} warning={!withRoles}>

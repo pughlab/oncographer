@@ -3,7 +3,7 @@ import * as React from 'react'
 import logo from './logo.png'
 import { Image, Container, Segment, Header, Icon, Divider, Grid } from 'semantic-ui-react'
 
-export function Logo ({size='medium', ... props}) {
+export function Logo ({size='medium', ... props}: any) {
     return (
         <Image size={size} src={logo} {... props} />
     )
@@ -25,8 +25,6 @@ export function AboutPortal ({}) {
           <Divider horizontal>
             <Header as='h2' content='About Us' />
           </Divider>
-        </Segment>
-        <Segment>
         </Segment>
       </Container>
     )
