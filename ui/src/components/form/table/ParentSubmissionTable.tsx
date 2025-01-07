@@ -1,4 +1,4 @@
-import React, {  useEffect } from "react";
+import React from "react";
 import { LoadingSegment } from "../../common/LoadingSegment";
 import {
   Divider,
@@ -8,19 +8,13 @@ import {
   List,
   Accordion,
 } from "semantic-ui-react";
-import { useQuery } from "@apollo/client";
 
-import { toDateString } from "../../utils";
-import {
-  FindSubmissions,
-  ParentForm,
-  FieldData
-} from "../dynamic_form/queries/form";
+import { toDateString, toTitle } from "../../utils";
 import { BasicErrorMessage } from "../../common/BasicErrorMessage";
 
 import { usePatientIDLabels, useStudyLabels } from "../../../hooks/useLabels";
 import { useActiveSubmission, useUpdateActiveSubmission } from "../../layout/context/ActiveSubmissionProvider";
-import { usePatientID } from "../../layout/context/PatientIDProvider";
+import { useParentSubmissions } from "../../../hooks/useSubmissions";
 
 export function ParentSubmissionTable({
   formID,
@@ -28,81 +22,21 @@ export function ParentSubmissionTable({
   const [active, setActive] = React.useState(true);
   const activeSubmission = useActiveSubmission()
   const setActiveSubmission = useUpdateActiveSubmission()
-  const patientID = usePatientID();
   const labels = useStudyLabels()
   const { data: patientIDLabels } = usePatientIDLabels()
+  const { loading, error, data: parentSubmissions } = useParentSubmissions(formID)
 
-  const {
-    loading: parentLoading,
-    error: parentError,
-    data: parentForm,
-  } = useQuery(ParentForm, {
-    variables: {
-      id: formID,
-    },
-  });
-
-  const {
-    loading: fieldsLoading,
-    error: fieldsError,
-    data: fields,
-    refetch: refetchFields,
-  } = useQuery(FieldData, {
-    variables: {
-      id: parentForm?.ParentForm?.formID,
-      study: patientID.study,
-    },
-    skip: !parentForm?.parentForm,
-  });
-
-  const submissionSearchInfo = parentForm?.ParentForm
-    ? {
-        form_id: parentForm.ParentForm.formID,
-        patient: {
-          patient_id: patientID.submitter_donor_id,
-          program_id: patientID.program_id,
-          study: patientID.study,
-        },
-      }
-    : {};
-
-  const {
-    loading: submissionsLoading,
-    error: submissionsError,
-    data: submissionsInfo,
-    refetch: refetchSubmissions,
-  } = useQuery(FindSubmissions, {
-    variables: {
-      where: submissionSearchInfo,
-    },
-    skip: !parentForm?.ParentForm,
-  });
-
-  useEffect(() => {
-    if (parentForm?.ParentForm && !fieldsLoading) {
-      refetchFields();
-    }
-    if (parentForm?.ParentForm && !submissionsLoading) {
-      refetchSubmissions();
-    }
-  }, [
-    parentForm,
-    fieldsLoading,
-    submissionsLoading,
-    refetchFields,
-    refetchSubmissions,
-  ]);
-
-  if (parentLoading || submissionsLoading || fieldsLoading) {
+  if (loading) {
     return <LoadingSegment />;
   }
 
-  if (parentError || submissionsError || fieldsError) {
+  if (error) {
     return <BasicErrorMessage />;
   }
 
-  if (!parentForm || !fields || submissionsInfo.submissions.length === 0)
+  if (parentSubmissions.length === 0) {
     return <></>;
+  }
 
   // regex to determine a date in the YYYY-MM-DD format
   // It will also match anything after the YYYY-MM-DD match,
@@ -110,13 +44,15 @@ export function ParentSubmissionTable({
   const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m;
 
   // set names for the fields as table headers
-  // const excludedHeaders = ["__typename", "patient_id", "study"]; // prevent these fields from showing on the table
+  const excludedHeaders = ["patient_id", "study"]; // prevent these fields from showing on the table
   const headers: any = {};
   Object.keys(patientIDLabels).forEach((key: string) => {
-    headers[key] = labels[key]
+    headers[key] = labels[key] ?? toTitle(key, "_")
   })
-  submissionsInfo.submissions[0].fields.forEach((field: {key: string, value: string}) => {
-    headers[field.key] = labels[field.key]
+  parentSubmissions[0].fields.forEach((field: {key: string, value: string}) => {
+    if (!(field.key.startsWith('comments') || excludedHeaders.includes(field.key))) {
+      headers[field.key] = labels[field.key] ?? toTitle(field.key, "_")
+    }
   })
 
   return (
@@ -151,7 +87,7 @@ export function ParentSubmissionTable({
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {submissionsInfo.submissions.map((submission: any) => {
+                {parentSubmissions.map((submission: any) => {
                   const row: any = {};
                   const isActive: boolean = activeSubmission === submission;
                   submission.fields.forEach((field: any) => {

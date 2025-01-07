@@ -1,8 +1,9 @@
 import { useLazyQuery, useQuery } from "@apollo/client";
-import { FindSubmissions } from "../components/form/dynamic_form/queries/form";
+import { FindSubmissions, ParentForm } from "../components/form/dynamic_form/queries/form";
 import useRootForm from "./useRootForm";
 import { usePatientID } from "../components/layout/context/PatientIDProvider";
 import { useEffect, useState } from "react";
+import useParentForm from "./useParentForm";
 
 export function useSubmissions(formID: string) {
   const patientID = usePatientID();
@@ -61,4 +62,43 @@ export function useRootFormSubmissions() {
   }, [rootForm, getRootFormSubmissions])
 
   return { loading, error, data: rootSubmissions, refetch }
+}
+
+export function useParentSubmissions(formID: string) {
+  const patientID = usePatientID()
+  const [parentSubmissions, setParentSubmissions] = useState<any[]>([])
+  const { loading: parentLoading, error: parentError, data: parentForm } = useParentForm(formID)
+  const [getParentSubmissions, { loading: submissionsLoading, error: submissionsError, refetch }] = useLazyQuery(FindSubmissions, {
+    variables: {
+      where: {
+        form_id: parentForm?.ParentForm?.form_id,
+        patient: {
+          patient_id: patientID.submitter_donor_id,
+          program_id: patientID.program_id,
+          study: patientID.study,
+        }
+      }
+    },
+    fetchPolicy: "cache-first",
+    onCompleted(data) {
+      const filteredSubmissions: any[] = []
+      data.submissions.forEach((submission: any) => {
+        if (submission.form_id === parentForm?.ParentForm?.formID) {
+          filteredSubmissions.push(submission)
+        }
+      })
+      setParentSubmissions(filteredSubmissions)
+    },
+  })
+
+  const loading = parentLoading || submissionsLoading
+  const error = parentError || submissionsError
+
+  useEffect(() => {
+    if(parentForm) {
+      getParentSubmissions()
+    }
+  }, [parentForm, getParentSubmissions])
+
+  return { loading, error, data: parentSubmissions, refetch }
 }

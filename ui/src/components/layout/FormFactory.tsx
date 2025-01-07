@@ -219,7 +219,7 @@ export default function FormFactory() {
                 {activeForm && (
                   <>
                     <Divider hidden />
-                    <ParentSubmissionTable formID={activeForm.formID} />
+                    <ParentSubmissionTable formID={activeForm?.formID} />
                   </>
                 )}
                 {activeForm && validStudy && (

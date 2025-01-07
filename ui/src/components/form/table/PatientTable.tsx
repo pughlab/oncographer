@@ -33,7 +33,6 @@ export function PatientTable() {
     submissions[0]?.fields.forEach((field: {key: string, value: string}) => {
       rootLabels[field.key] = labels[field.key] ?? toTitle(field.key, "_")
     })
-    console.log(rootLabels)
   }, [submissions])
 
   function sortHeaders(unsortedHeaders: { [key: string]: any }) {
