@@ -19,6 +19,7 @@ import { useFormOperations } from "../../layout/context/FormOperationsProvider";
 import { useLabelsContext } from "../../layout/context/LabelsProvider";
 import { usePatientID } from "../../layout/context/PatientIDProvider";
 import { useUpdateActiveSubmission } from "../../layout/context/ActiveSubmissionProvider";
+import { usePatientIDLabels } from "../../../hooks/useLabels";
 
 export function SubmissionTable({
   formID,
@@ -78,6 +79,7 @@ const SubmissionTableContents = ({
   const headers: any = {}
   const labels = useLabelsContext()
   const { study } = usePatientID()
+  const { data: patientIDLabels } = usePatientIDLabels()
   const setActiveSubmission = useUpdateActiveSubmission();
   const { updateSubmissionDate, clearForm, fillForm } = useFormOperations()
   const [deleteSubmission] = useMutation(DeleteSubmission);
@@ -120,12 +122,29 @@ const SubmissionTableContents = ({
     });
   };
 
+  function sortHeaders(unsortedHeaders: { [key: string]: any }) {
+    const { submitter_donor_id, program_id, ...other } = unsortedHeaders
+
+    const sortedObject = {
+      submitter_donor_id,
+      program_id,
+      ...other
+    }
+
+    return sortedObject
+  }
+
   const excluded_headers = ['patient_id', 'study']
+  Object.keys(patientIDLabels).forEach((key: string) => {
+      headers[key] = labels[key] ?? toTitle(key, "_")
+    })
   submissions[0].fields.forEach((field: {key: string, value: string}) => {
     if (!(field.key.startsWith('comments') || excluded_headers.includes(field.key))) {
       headers[field.key] = labels[field.key] ?? toTitle(field.key, '_')
     }
   })
+
+  const sortedHeaders = sortHeaders(headers)
 
   // fill the table's row data from the submission data
   submissions.forEach((submission: any) => {
@@ -160,7 +179,7 @@ const SubmissionTableContents = ({
       >
         <Table.Header>
           <Table.Row>
-            {Object.values(headers).map((header: any) => {
+            {Object.values(sortedHeaders).map((header: any) => {
               const label = typeof header === 'object' ? header[study] ?? header.default : header
               return (
                 <Table.HeaderCell key={label}>
@@ -189,7 +208,7 @@ const SubmissionTableContents = ({
                   fillForm(filteredRow);
                 }}
               >
-                {Object.keys(headers).map((key) => {
+                {Object.keys(sortedHeaders).map((key) => {
                   let value = row.hasOwnProperty(key) ? row[key] : "";
 
                   const isDate = re.test(value);

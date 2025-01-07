@@ -19,6 +19,7 @@ import { PatientID } from "../dynamic_form/types";
 
 export function PatientTable() {
   const labels = useStudyLabels()
+  const rootLabels: { [key: string]: any } = {} 
   const [active, setActive] = React.useState(true);
   const patientID: PatientID = usePatientID();
   const { data: patientIDLabels } = usePatientIDLabels()
@@ -27,6 +28,25 @@ export function PatientTable() {
   useEffect(() => {
     refetch()
   }, [patientID])
+
+  useEffect(() => {
+    submissions[0]?.fields.forEach((field: {key: string, value: string}) => {
+      rootLabels[field.key] = labels[field.key] ?? toTitle(field.key, "_")
+    })
+    console.log(rootLabels)
+  }, [submissions])
+
+  function sortHeaders(unsortedHeaders: { [key: string]: any }) {
+    const { submitter_donor_id, program_id, ...other } = unsortedHeaders
+
+    const sortedObject = {
+      submitter_donor_id,
+      program_id,
+      ...other
+    }
+
+    return sortedObject
+  }
 
   if (loading) return <LoadingSegment />;
 
@@ -37,12 +57,17 @@ export function PatientTable() {
 
   const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m;
   const headers: any = {};
+  const excluded_headers = ['patient_id', 'study']
   Object.keys(patientIDLabels).forEach((key: string) => {
     headers[key] = labels[key] ?? toTitle(key, "_")
   })
   submissions[0].fields.forEach((field: {key: string, value: string}) => {
-    headers[field.key] = labels[field.key] ?? toTitle(field.key, "_")
+    if (!(field.key.startsWith('comments') || excluded_headers.includes(field.key))) {
+      headers[field.key] = labels[field.key] ?? toTitle(field.key, "_")
+    }
   })
+
+  const sortedHeaders = sortHeaders(headers)
 
   return (
     <Accordion>
@@ -70,7 +95,7 @@ export function PatientTable() {
           <Table fixed selectable aria-labelledby="header" striped>
             <Table.Header>
               <Table.Row>
-                {Object.values(headers).map((header: any) => (
+                {Object.values(sortedHeaders).map((header: any) => (
                   <Table.HeaderCell key={header}>
                     {String(header).includes("_")
                       ? toTitle(header, "_")
@@ -90,7 +115,7 @@ export function PatientTable() {
                 });
                 return (
                   <Table.Row key={submission.submission_id}>
-                    {Object.keys(headers).map((field) => {
+                    {Object.keys(sortedHeaders).map((field) => {
                       let value = row.hasOwnProperty(field) ? row[field] : "";
                       const isDate =
                         (value.resolution && re.test(value.value)) ??
