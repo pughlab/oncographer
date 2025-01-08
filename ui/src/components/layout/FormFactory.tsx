@@ -200,7 +200,7 @@ export default function FormFactory() {
       process.env.KEYCLOAK_SERVER_CLIENT ?? ""
     ]?.roles ?? []
   ).filter((role) => !adminRoles.includes(role));
-  let isRootForm = rootForm?.GetRootForm?.formID === activeForm?.formID;
+  const isRootForm = rootForm?.GetRootForm?.formID === activeForm?.formID;
 
   return validStudy && roles.length > 0 ? (
     <Segment>
@@ -216,7 +216,7 @@ export default function FormFactory() {
             {patientID && activeForm && !isRootForm ? <PatientTable /> : <></>}
             <ActiveSubmissionProvider>
               <FormOperationsProvider>
-                {activeForm && (
+                {activeForm && !isRootForm && (
                   <>
                     <Divider hidden />
                     <ParentSubmissionTable formID={activeForm?.formID} />

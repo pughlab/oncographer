@@ -1,5 +1,5 @@
 import { useLazyQuery, useQuery } from "@apollo/client";
-import { FindSubmissions, ParentForm } from "../components/form/dynamic_form/queries/form";
+import { FindSubmissions } from "../components/form/dynamic_form/queries/form";
 import useRootForm from "./useRootForm";
 import { usePatientID } from "../components/layout/context/PatientIDProvider";
 import { useEffect, useState } from "react";
@@ -34,7 +34,7 @@ export function useRootFormSubmissions() {
   const [getRootFormSubmissions, { loading: submissionsLoading, error: submissionsError, refetch }] = useLazyQuery(FindSubmissions, {
     variables: {
       where: {
-        form_id: rootForm?.GetRootForm?.form_id,
+        form_id: rootForm?.GetRootForm?.formID,
         patient: {
           patient_id: patientID.submitter_donor_id,
           program_id: patientID.program_id,
@@ -44,13 +44,7 @@ export function useRootFormSubmissions() {
     },
     fetchPolicy: "network-only",
     onCompleted(data) {
-      const filteredSubmissions: any[] = []
-      data.submissions.forEach((submission: any) => {
-        if (submission.form_id === rootForm.GetRootForm.formID) {
-          filteredSubmissions.push(submission)
-        }
-      })
-      setRootSubmissions(filteredSubmissions)
+      setRootSubmissions(data.submissions)
     },
   });
 
@@ -71,7 +65,7 @@ export function useParentSubmissions(formID: string) {
   const [getParentSubmissions, { loading: submissionsLoading, error: submissionsError, refetch }] = useLazyQuery(FindSubmissions, {
     variables: {
       where: {
-        form_id: parentForm?.ParentForm?.form_id,
+        form_id: parentForm?.ParentForm?.formID,
         patient: {
           patient_id: patientID.submitter_donor_id,
           program_id: patientID.program_id,
@@ -81,13 +75,7 @@ export function useParentSubmissions(formID: string) {
     },
     fetchPolicy: "cache-first",
     onCompleted(data) {
-      const filteredSubmissions: any[] = []
-      data.submissions.forEach((submission: any) => {
-        if (submission.form_id === parentForm?.ParentForm?.formID) {
-          filteredSubmissions.push(submission)
-        }
-      })
-      setParentSubmissions(filteredSubmissions)
+      setParentSubmissions(data.submissions)
     },
   })
 
