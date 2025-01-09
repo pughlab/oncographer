@@ -43,7 +43,7 @@ const PatientSearchForm = () => {
           study,
         });
       } else {
-        setPatientID({ submitter_donor_id: "", program_id: "", study });
+        setPatientID({ submitter_donor_id: debouncedSubmitterDonorId, program_id: debouncedProgramId, study });
       }
     },
   });
