@@ -1,4 +1,3 @@
-import {useReducer} from 'react'
 import {useNavigate, useLocation, matchPath} from 'react-router-dom'
 
 export default function useRouter() {
@@ -17,4 +16,3 @@ export default function useRouter() {
 
     return {navigate, location, isActivePath, isActiveSlug, isActivePathElement}
 }
-  

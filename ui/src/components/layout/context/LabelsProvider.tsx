@@ -28,7 +28,7 @@ export function useUpdateLabelsContext() {
   return setLabels;
 }
 
-export function LabelsProvider({ children }: { children: any }) {
+export function LabelsProvider({ children }: Readonly<{ children: any }>) {
   const [labels, setLabels] = useState<LabelObject>({})
 
   return (

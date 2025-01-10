@@ -1,11 +1,6 @@
 import { createMachine, assign } from 'xstate'
 import {useMachine} from '@xstate/react'
 import { useMemo } from 'react'
-import { gql } from '@apollo/client'
-import apolloClient from '../apolloClient'
-import * as R from 'remeda'
-
-
 
 export const SNAPSHOT_STATES = {
     IDLE: 'idle',
@@ -22,7 +17,6 @@ export const createSnapshotMachine = () => {
         id: 'snapshot',
         initial: SNAPSHOT_STATES.IDLE,
         context: {
-            // snapshotType, dataVariableIDs
         },
         states: {
             [SNAPSHOT_STATES.IDLE]: {

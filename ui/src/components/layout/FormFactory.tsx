@@ -71,8 +71,11 @@ function ListMenuItem({ item, activeItem, setActiveItem }: any) {
       <List.Icon name={iconName} color={iconColor} />
       <List.Content>
         <a
+          href="#content"
+          aria-label={node.label ? node.label[study] ?? node.label.default : node.name}
           style={isActive ? { color: "#02B5AE" } : {}}
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault()
             setActiveItem(node);
           }}
         >
@@ -211,7 +214,7 @@ export default function FormFactory() {
         {/* add divider to provide spacing between the menu and the main content */}
         <Divider vertical />
         {/* main content */}
-        <Grid.Column width={12}>
+        <Grid.Column width={12} id="content">
           <LabelsProvider>
             {patientID && activeForm && !isRootForm ? <PatientTable /> : <></>}
             <ActiveSubmissionProvider>

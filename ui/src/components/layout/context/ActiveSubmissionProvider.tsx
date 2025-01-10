@@ -33,7 +33,7 @@ export function useUpdateActiveSubmission() {
   return setActiveSubmission;
 }
 
-export function ActiveSubmissionProvider({ children }: { children: any }) {
+export function ActiveSubmissionProvider({ children }: Readonly<{ children: any }>) {
   const patientID = usePatientID();
   const [activeSubmission, setActiveSubmission] =
     React.useState<ActiveSubmission>({

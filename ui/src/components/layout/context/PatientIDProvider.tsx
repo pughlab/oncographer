@@ -28,7 +28,7 @@ export function useUpdatePatientID() {
   return setPatientID;
 }
 
-export function PatientIDProvider({ children }: { children: any }) {
+export function PatientIDProvider({ children }: Readonly<{ children: any }>) {
   const [patientID, setPatientID] = useState({
     submitter_donor_id: "",
     program_id: "",

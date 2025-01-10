@@ -1,7 +1,5 @@
 import { gql, useMutation } from "@apollo/client";
-import { useReducer, useCallback } from "react"
-
-import {useDropzone} from 'react-dropzone'
+import { useReducer } from "react"
 
 interface UploadState {
     file?: any;
@@ -11,9 +9,8 @@ interface UploadState {
 }
 
 type UploadAction =
- | { type: 'SET_FILE', file: any }
- | { type: 'SET_MINIO_UPLOAD', minioUpload: any }
-//  | { type: 'failure', error: string };
+    | { type: 'SET_FILE', file: any }
+    | { type: 'SET_MINIO_UPLOAD', minioUpload: any }
 
 const reducer = (state: UploadState, action: UploadAction): UploadState => {
     switch (action.type) {
@@ -21,8 +18,9 @@ const reducer = (state: UploadState, action: UploadAction): UploadState => {
             return {...state, file: action.file}
         case 'SET_MINIO_UPLOAD':
             return {...state, minioUpload: action.minioUpload}
+        default:
+            return state
     }
-    return state
 }
 const initialState = {
     file: undefined,
@@ -33,7 +31,7 @@ const initialState = {
 
 export default function useMinioUploadMutation() {
     const [state, dispatch] = useReducer(reducer, initialState)
-    const [minioUpload, {loading, error, data}] = useMutation(gql`
+    const [minioUpload] = useMutation(gql`
         mutation minioUpload(
             $bucketName: String!
             $file: Upload!
@@ -49,8 +47,7 @@ export default function useMinioUploadMutation() {
         }
     `, {
         onCompleted: (data) => {
-            if (!!data) {
-                console.log(data)
+            if (data) {
                 dispatch({type: 'SET_MINIO_UPLOAD', minioUpload: data.minioUpload})
             }
         }
@@ -60,5 +57,3 @@ export default function useMinioUploadMutation() {
     return {state, dispatch, mutation: minioUpload}
     
 }
-  
-  

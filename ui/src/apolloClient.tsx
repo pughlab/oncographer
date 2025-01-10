@@ -8,12 +8,9 @@ const authLink = setContext((_, { headers }) => {
   // get the authentication token from local storage if it exists
   const token = localStorage.getItem('keycloak_token');
   // return the headers to the context so httpLink can read them
-  // console.log('SETTING CONTEXT WITH KC TOKEN', token)
   return {
     headers: {
       ...headers,
-      // 'Access-Control-Allow-Origin': '*',
-      // 'Access-Control-Allow-Credentials': true,
       authorization: token ? `Bearer ${token}` : "",
     }
   }

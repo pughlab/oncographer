@@ -26,7 +26,7 @@ export function useUpdateFormOperations() {
   return setFormOperations
 }
 
-export function FormOperationsProvider({ children }: { children: any }) {
+export function FormOperationsProvider({ children }: Readonly<{ children: any }>) {
   const [formOperations, setFormOperations] = useState({})
 
   return (
