@@ -26,25 +26,13 @@ const PatientSearchForm = () => {
   const debouncedProgramId = useDebounce(programId, 500);
 
   const setPatientID = useUpdatePatientID();
-  const [findPatient] = useLazyQuery(FindPatients, {
+  const [findPatient, { data: patients }] = useLazyQuery(FindPatients, {
     variables: {
       where: {
         patient_id: debouncedSubmitterDonorId,
         program_id: debouncedProgramId,
         study: study,
       },
-    },
-    onCompleted: (data) => {
-      if (data.patients.length > 0) {
-        const { patient_id, program_id, study } = data.patients[0];
-        setPatientID({
-          submitter_donor_id: patient_id,
-          program_id,
-          study,
-        });
-      } else {
-        setPatientID({ submitter_donor_id: debouncedSubmitterDonorId, program_id: debouncedProgramId, study });
-      }
     },
   });
 
@@ -91,6 +79,19 @@ const PatientSearchForm = () => {
       findPatient();
     }
   }, [debouncedSubmitterDonorId, debouncedProgramId, study]); // find patients if all fields have been filled
+
+  useEffect(() => {
+    if (patients?.patients.length > 0) {
+      const { patient_id, program_id, study } = patients.patients[0];
+      setPatientID({
+        submitter_donor_id: patient_id,
+        program_id,
+        study,
+      });
+    } else {
+      setPatientID({ submitter_donor_id: debouncedSubmitterDonorId, program_id: debouncedProgramId, study });
+    }
+  }, [patients])
 
   return (
     <Segment color="teal">

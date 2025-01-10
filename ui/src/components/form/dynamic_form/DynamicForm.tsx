@@ -106,7 +106,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
     try {
       await saveTemplate(form, valuesRef.current, gqlClient, patientIdentifierRef.current, formOperations)
       setModalTitle('Success')
-      setModalContent('The form was submitted successfully')
+      setModalContent('Template successfully saved')
       setModalError(false)
       setOpenModal(true)
       updateTemplates()
