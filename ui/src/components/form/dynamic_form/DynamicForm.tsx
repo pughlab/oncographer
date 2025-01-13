@@ -236,11 +236,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
         <ActionsGroup
           send={send}
           saveTemplate={executeSaveTemplate}
-          disabled={
-            !patientIdentifierIsNotEmpty()
-            || state.matches('failure')
-            || state.matches('invalid')
-          }
+          disabled={!(patientIdentifierIsNotEmpty() && Object.keys(valuesRef.current).length > 0)}
         />
       </Form>
     )
