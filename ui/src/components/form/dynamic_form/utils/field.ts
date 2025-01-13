@@ -1,16 +1,15 @@
 import { Field, FieldValue } from "../types";
 
-export const isFalsy = (value: any) => {
+export function isFalsy(value: any) {
   return ["", [], {}, 0, NaN, null, undefined].includes(value)
 }
 
-export const fieldIsDisabled = (fieldValues: { [key: string]: FieldValue }, conditions: string[] = []) => {
-  // helper functions
-  const evaluateOperation = (field: string, operation: string, conditionValue: FieldValue) => {
-    let result = false;
+function evaluateOperation(fieldValues: { [key: string]: FieldValue }, field: string, operation: string, conditionValue: FieldValue) {
+  let result = false;
 
-    // check if the field should NOT be disabled
-    // this will be negated in the final return sentence
+  // check if the field should NOT be disabled
+  // this will be negated in the final return sentence
+  if (fieldValues.hasOwnProperty(field)) {
     switch (operation) {
       case "eq":
         result = fieldValues[field] === conditionValue;
@@ -33,58 +32,61 @@ export const fieldIsDisabled = (fieldValues: { [key: string]: FieldValue }, cond
         result = fieldValues[field] <= conditionValue;
         break;
       case "in":
-        result = typeof fieldValues[field] === 'string'
-          ? conditionValue.includes(fieldValues[field] as string)
-          : false;
+        result = Array.isArray(fieldValues[field])
+          ? false
+          : conditionValue.includes(fieldValues[field].toString())
         break;
       case "nin":
-        result = typeof fieldValues[field] === 'string'
-          ? !conditionValue.includes(fieldValues[field] as string)
-          : false;
+        result = Array.isArray(fieldValues[field])
+        ? false
+        : !conditionValue.includes(fieldValues[field].toString())
         break;
       case "any":
-        if (Array.isArray(fieldValues[field])) {
-          result = Array.from(fieldValues[field]).some((item) => conditionValue.includes(item));
-        } else {
-          result = fieldValues[field] === conditionValue;
-        }
+        result = Array.isArray(fieldValues[field])
+          ? Array.from(fieldValues[field]).some((item) => conditionValue.includes(item))
+          : fieldValues[field] === conditionValue;
         break;
       case "defined":
-        result = fieldValues.hasOwnProperty(field) && !isFalsy(fieldValues[field])
+        result = !isFalsy(fieldValues[field])
+        break;
+      case "notdefined":
+        result = isFalsy(fieldValues[field])
         break;
     }
+  }
 
-    return !result;
-  };
+  return !result;
+};
 
-  const evaluateCondition = (condition: string) => {
-    const parts = condition.split(" ");
-    const field = parts[0];
-    const operator = parts[1];
-    let evaluatedValue;
+function evaluateCondition(fieldValues: { [key: string]: FieldValue }, condition: string) {
+  const parts = condition.split(" ");
+  const field = parts[0];
+  const operator = parts[1];
+  let evaluatedValue;
 
-    try {
-      evaluatedValue = JSON.parse(parts.slice(2).join(" "));
-    } catch (error) {
-      evaluatedValue = parts.length > 2 ? parts.slice(2).join(" ") : null;
-    }
+  try {
+    evaluatedValue = JSON.parse(parts.slice(2).join(" "));
+  } catch (error) {
+    evaluatedValue = parts.length > 2 ? parts.slice(2).join(" ") : null;
+  }
 
-    return evaluateOperation(field, operator, evaluatedValue);
-  };
+  return evaluateOperation(fieldValues, field, operator, evaluatedValue);
+};
 
-  // main logic
+export function fieldIsDisabled(fieldValues: { [key: string]: FieldValue }, conditions: string[] = []) {
+  
   const checks: boolean[] = [];
 
   if (!conditions || conditions?.length === 0 || fieldValues === null) return false;
 
   conditions?.forEach((condition: string) => {
-    checks.push(evaluateCondition(condition));
+    checks.push(evaluateCondition(fieldValues, condition));
   });
 
   return checks.reduce((cond1, cond2) => cond1 && cond2, true);
 };
 
-export const findLabel = (field: Field, fieldValues: { [key: string]: FieldValue }, currentStudy: string|null) => {
+export function findLabel(field: Field, fieldValues: { [key: string]: FieldValue }, currentStudy: string|null) {
   let label = ""
 
   try {

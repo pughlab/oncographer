@@ -72,7 +72,6 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
 
   function updateField(field: Field, value: FieldValue) {
     valuesRef.current[field.name] = value
-    send('CHANGE')
   }
 
   function executeClearForm() { 
@@ -119,7 +118,9 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
 
   async function executeSaveDraft() {
     try {
-      await saveDraft(form, valuesRef.current, stateReducer.draft.lastUpdate, gqlClient, patientIdentifierRef.current, formOperations)
+      if (patientIdentifierIsNotEmpty() && Object.keys(valuesRef.current).length > 0) {
+        await saveDraft(form, valuesRef.current, stateReducer.draft.lastUpdate, gqlClient, patientIdentifierRef.current, formOperations)
+      }
     } catch (error: any) {
       console.error(`Error while saving the draft: ${error.message}`)
     }
