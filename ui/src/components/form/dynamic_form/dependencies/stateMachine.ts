@@ -19,7 +19,7 @@ export const formStateMachine = createMachine({
       after: {
         5000: { 
           target: 'saving'
-        } // save the draft 5 seconds (5000 milliseconds) after user has stopped typing
+        } // attempt to save the draft every 5 seconds (5000 milliseconds)
       },
       on: {
         SUBMIT: [

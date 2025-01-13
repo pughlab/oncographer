@@ -51,7 +51,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
   const [formWasCleared, setFormWasCleared] = React.useState(false)
   const patientID = usePatientID()
   const { error: fieldsError, data: fields } = useGetFieldData(form)
-  const patientIdentifierRef = React.useRef(patientID)
+  const draftSavedRef = React.useRef(true)
   const formOperations = {
     clearForm: executeClearForm,
     clearTemplateDate: () => reducer.clearTemplateDate(dispatch),
@@ -72,6 +72,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
 
   function updateField(field: Field, value: FieldValue) {
     valuesRef.current[field.name] = value
+    draftSavedRef.current = false
   }
 
   function executeClearForm() { 
@@ -89,7 +90,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
 
   async function executeSubmitForm() {
     try {
-      await submitForm(form, valuesRef.current, stateReducer.draft.id, gqlClient, patientIdentifierRef.current, formOperations)
+      await submitForm(form, valuesRef.current, stateReducer.draft.id, gqlClient, patientID, formOperations)
       updateSubmissions()
       setModalTitle('Success')
       setModalContent('The form was submitted successfully')
@@ -103,7 +104,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
 
   async function executeSaveTemplate() {
     try {
-      await saveTemplate(form, valuesRef.current, gqlClient, patientIdentifierRef.current, formOperations)
+      await saveTemplate(form, valuesRef.current, gqlClient, patientID, formOperations)
       setModalTitle('Success')
       setModalContent('Template successfully saved')
       setModalError(false)
@@ -118,8 +119,9 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
 
   async function executeSaveDraft() {
     try {
-      if (patientIdentifierIsNotEmpty() && Object.keys(valuesRef.current).length > 0) {
-        await saveDraft(form, valuesRef.current, stateReducer.draft.lastUpdate, gqlClient, patientIdentifierRef.current, formOperations)
+      if (!draftSavedRef.current) {
+        await saveDraft(form, valuesRef.current, stateReducer.draft.lastUpdate, gqlClient, patientID, formOperations)
+        draftSavedRef.current = true
       }
     } catch (error: any) {
       console.error(`Error while saving the draft: ${error.message}`)
@@ -127,7 +129,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
   }
 
   const patientIdentifierIsNotEmpty = () => {
-    return patientIdentifierRef.current.submitter_donor_id.trim() !== '' && patientIdentifierRef.current.program_id.trim() !== ''
+    return patientID.submitter_donor_id.trim() !== '' && patientID.program_id.trim() !== ''
   }
 
   // render control variables and effects
@@ -153,11 +155,13 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
     if (fields.length > 0) {
       reducer.updateWidgets(dispatch, fields.filter((field: Field) => !excluded_fields.includes(field.name)))
       if (form.required_fields) {
-        const requiredFields = patientIdentifierRef.current.study && form.required_fields ? form.required_fields[patientIdentifierRef.current.study] ?? [] : form.required_fields?.default ?? []
+        const requiredFields = patientID.study && form.required_fields ? form.required_fields[patientID.study] ?? [] : form.required_fields?.default ?? []
         reducer.updateRequiredFields(dispatch, requiredFields.filter((field: string) => !excluded_fields.includes(field)))
       }
       if (form.mutex_fields) {
-        const mutexFields = patientIdentifierRef.current.study && form.mutex_fields ? form.mutex_fields[patientIdentifierRef.current.study] ?? [] : form.mutex_fields?.default ?? []
+        const mutexFields = patientID.study && form.mutex_fields.hasOwnProperty(patientID.study)
+          ? form.mutex_fields[patientID.study] 
+          : form.mutex_fields?.default ?? []
         reducer.updateExclusiveFields(dispatch, mutexFields.filter((field: string) => !excluded_fields.includes(field)))
       }
       const fieldLabels = fields.reduce((labels: any, field: any) => {
@@ -173,13 +177,10 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
   }, [fields])
 
   React.useEffect(() => {
-    if (patientIdentifierRef.current !== patientID) {
       send('CLEAR')
-      patientIdentifierRef.current = patientID
       if (patientIdentifierIsNotEmpty()) {
-        loadDraft(form, gqlClient, patientIdentifierRef.current, formOperations)
+        loadDraft(form, gqlClient, patientID, formOperations)
       }
-    }
   }, [patientID])
 
   React.useEffect(() => {
