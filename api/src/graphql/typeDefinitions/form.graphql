@@ -111,7 +111,7 @@
     studies: [String]
     options: [String]
     format: FormValue
-    api: Parser
+    datalistName: String
     has_next_question: Field @relationship(type : "HAS_NEXT_QUESTION", direction : OUT)
     belongs_to(isID: Boolean): Form! @relationship(type: "BELONGS_TO", direction: OUT)
   }

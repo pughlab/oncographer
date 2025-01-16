@@ -12,6 +12,7 @@ import {
 
 import "react-datepicker/dist/react-datepicker.css";
 import { createHash } from "crypto";
+import { fetchOncotreeTissues } from "../utils/field";
 
 const TextInputField: React.FC<PropsWithChildren<InputFieldPropsBase>> = ({
   field,
@@ -28,6 +29,13 @@ const TextInputField: React.FC<PropsWithChildren<InputFieldPropsBase>> = ({
   isReset,
 }: InputFieldPropsBase) => {
   const [renderedValue, setRenderedValue] = useState(value ?? defaultValue);
+  const [dataList, setDataList] = useState([])
+
+  useEffect(() => {
+    if (field.datalistName === 'oncotree') {
+      fetchOncotreeTissues().then((data: any) => setDataList(data.sort()))
+    }
+  }, [])
 
   useEffect(() => {
     if (isReset) {
@@ -54,17 +62,27 @@ const TextInputField: React.FC<PropsWithChildren<InputFieldPropsBase>> = ({
       validators={validators}
     >
       {({ disabled, readonly, onChange }) => (
-        <Input
-          fluid
-          type={type}
-          readOnly={readonly}
-          disabled={disabled}
-          value={renderedValue}
-          onChange={(_e, { value }) => {
-            setRenderedValue(value);
-            onChange(field, value);
-          }}
-        />
+        <>
+          <Input
+            fluid
+            list={field.datalistName}
+            type={type}
+            readOnly={readonly}
+            disabled={disabled}
+            value={renderedValue}
+            onChange={(_e, { value }) => {
+              setRenderedValue(value);
+              onChange(field, value);
+            }}
+          />
+          {field.datalistName?.trim() !== '' && (
+            <datalist id={field.datalistName}>
+              {
+                dataList.map((item) => <option key={item} value={item}>{item}</option>)
+              }
+            </datalist>
+          )}
+        </>
       )}
     </FormField>
   );

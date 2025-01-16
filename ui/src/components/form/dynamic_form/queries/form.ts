@@ -91,6 +91,7 @@ export const FormIDFields = gql`
             type
             value
             studies
+            datalist
           }
         }
       }
@@ -139,6 +140,7 @@ export const FieldData = gql`
       type
       value
       studies
+      datalistName
     }
   }
 `;

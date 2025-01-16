@@ -124,3 +124,15 @@ export function getDisabledFields(widgets: Field[], valuesObject: {[key: string]
   })
   return disabledFields
 }
+
+export async function fetchOncotreeTissues() {
+  const tissues: string[] = []
+
+  const response = await fetch("https://oncotree.mskcc.org/api/tumorTypes/search/level/1")
+  const data = await response.json()
+  data.forEach((item: any) => {
+    tissues.push(item.tissue)
+  })
+  
+  return tissues
+}

@@ -57,6 +57,7 @@ export interface Field {
     maxValue?: number
     options?: string | string[]
     enablingConditions?: string[]
+    datalistName?: string
 }
 
 export interface FormDraft {
@@ -164,6 +165,7 @@ export interface InputFieldPropsBase {
     type: string,
     isReset: boolean,
     onChange: (field: Field, value: FieldValue) => void,
+    datalist?: string
 }
 
 export type DateInputFieldProps = InputFieldPropsBase & { onChange: (field: Field, value: FieldValue) => void; resolution: string; }
