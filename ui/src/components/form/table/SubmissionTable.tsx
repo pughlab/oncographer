@@ -201,7 +201,6 @@ const SubmissionTableContents = ({
                 key={`${row.id}-${index}`}
                 onClick={() => {
                   const { id, ...filteredRow } = row
-                  clearForm();
                   setActiveSubmission(
                     submissions.find((submission: any) => submission.submission_id === id)
                   );

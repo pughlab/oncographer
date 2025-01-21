@@ -6,19 +6,19 @@ export const formStateMachine = createMachine({
   states: {
     loading: {
       on: {
-        DONE: { target: 'clean' },
+        DONE: { target: 'idle' },
         ERROR: { target: 'error' }
       }
     },
     error: { type: 'final' },
     empty: {
       entry: 'executeClearForm',
-      always: { target: 'clean' }
+      always: { target: 'idle' }
     },
-    clean: {
+    idle: {
       after: {
         5000: { 
-          target: 'saving'
+          target: 'saving',
         } // attempt to save the draft every 5 seconds (5000 milliseconds)
       },
       on: {
@@ -29,9 +29,10 @@ export const formStateMachine = createMachine({
           },
           { target: 'invalid' }
         ],
+        UPDATE: { target: 'updating' },
         INVALID: { target: 'invalid' },
         CLEAR: { target: 'empty' },
-        SAVED: { target: 'clean' },
+        SAVED: { target: 'idle' },
         FAILED: { target: 'failure' },
         RELOAD: { target: 'loading' },
       }
@@ -42,6 +43,9 @@ export const formStateMachine = createMachine({
         onDone: { target: 'submitted' },
         onError: { target: 'failure' }
       }
+    },
+    updating: {
+      always: { target: 'idle' }
     },
     submitted: {
       always: 'empty' 
@@ -61,7 +65,7 @@ export const formStateMachine = createMachine({
       invoke: {
         src: 'executeSaveDraft',
         onDone: {
-          target: 'clean'
+          target: 'idle'
         },
         onError: { target: 'failure' }
       }
@@ -70,7 +74,7 @@ export const formStateMachine = createMachine({
       entry: 'showModal',
       on: {
         RETRY: { target: 'submitting' },
-        CANCEL: { target: 'clean' },
+        CANCEL: { target: 'idle' },
         RELOAD: { target: 'loading' },
       }
     }

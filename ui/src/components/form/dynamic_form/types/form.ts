@@ -122,13 +122,14 @@ export interface FormFieldPropsBase {
         disabled: boolean,
         readonly: boolean,
         onChange: (field: Field, value: FieldValue) => void,
-        onClick?: (field: Field, value: FieldValue) => void
+        onClick?: (field: Field, value: FieldValue) => void,
+        onBlur?: () => void,
     }) => ReactElement
 }
 
 export type FormFieldProps = 
-    | (FormFieldPropsBase & { onClick: (field: Field, value: FieldValue) => void, onChange?: never })
-    | (FormFieldPropsBase & { onClick?: never, onChange: (field: Field, value: FieldValue) => void })
+    | (FormFieldPropsBase & { onClick: (field: Field, value: FieldValue) => void, onChange?: never, onBlur?: never })
+    | (FormFieldPropsBase & { onClick?: never, onChange: (field: Field, value: FieldValue) => void, onBlur?: () => void })
 
 export type Validator = (value: FieldValue) => string | null
 
@@ -162,6 +163,7 @@ export interface InputFieldPropsBase {
     required: boolean,
     validators?: Validator[],
     notifyError?: () => void,
+    onBlur?: () => void,
     type: string,
     isReset: boolean,
     onChange: (field: Field, value: FieldValue) => void,

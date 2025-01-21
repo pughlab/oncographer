@@ -34,12 +34,12 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
   const [stateReducer, dispatch] = useReducer(reducer.formReducer, reducer.initialState);
   const [state, send] = useMachine(formStateMachine, {
     actions: {
-      executeClearForm,
+      executeClearForm: () => setFormWasCleared(true),
       showValidationErrors: () => showValidationErrors(stateReducer, dispatch, valuesRef.current),
     },
     services: {
       executeSubmitForm,
-      executeSaveDraft
+      executeSaveDraft,
     },
     guards: {
       isFormValid: () => isFormValid(stateReducer, dispatch, valuesRef.current),
@@ -49,11 +49,12 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
   // initialize auxiliary state, context or ref variables
   const gqlClient = useApolloClient();
   const [formWasCleared, setFormWasCleared] = React.useState(false)
+  const [formWasFilled, setFormWasFilled] = React.useState(false)
   const patientID = usePatientID()
   const { error: fieldsError, data: fields } = useGetFieldData(form)
   const draftSavedRef = React.useRef(true)
   const formOperations = {
-    clearForm: executeClearForm,
+    clearForm: () => setFormWasCleared(true),
     clearTemplateDate: () => reducer.clearTemplateDate(dispatch),
     clearSubmissionDate: () => reducer.clearSubmissionDate(dispatch),
     clearDraftId: () => reducer.clearDraftDate(dispatch),
@@ -62,7 +63,10 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
     updateDraftDate: () => reducer.updateDraftDate(dispatch),
     updateSubmissionDate: () => reducer.updateSubmissionDate(dispatch),
     updateTemplateDate: () => reducer.updateTemplateDate(dispatch),
-    fillForm: (values: { [key: string]: FieldValue; }) => valuesRef.current = values,
+    fillForm: (values: { [key: string]: FieldValue; }) => {
+      valuesRef.current = { ...values }
+      setFormWasFilled(true)
+    },
   }
   const setFormOperations = useUpdateFormOperations()
   const { setModalTitle, setModalContent, setModalError, setOpenModal } = modalOperations
@@ -73,19 +77,6 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
   function updateField(field: Field, value: FieldValue) {
     valuesRef.current[field.name] = value
     draftSavedRef.current = false
-  }
-
-  function executeClearForm() { 
-    valuesRef.current = {}
-    reducer.clearForm(dispatch)
-    reducer.clearDraftId(dispatch)
-    reducer.clearDraftDate(dispatch)
-    reducer.clearTemplateDate(dispatch)
-    reducer.clearSubmissionDate(dispatch)
-    setFormWasCleared(true)
-    setTimeout(() => {
-      setFormWasCleared(false)
-    }, 0) // ugly hack to restore the form cleared flag semi-synchronously
   }
 
   async function executeSubmitForm() {
@@ -119,7 +110,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
 
   async function executeSaveDraft() {
     try {
-      if (!draftSavedRef.current) {
+      if (!draftSavedRef.current && patientIdentifierIsNotEmpty()) {
         await saveDraft(form, valuesRef.current, stateReducer.draft.lastUpdate, gqlClient, patientID, formOperations)
         draftSavedRef.current = true
       }
@@ -187,6 +178,24 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
     send('RELOAD')
   }, [patientID.study])
 
+  React.useEffect(() => {
+    if (formWasCleared) {
+      valuesRef.current = {}
+      reducer.clearForm(dispatch)
+      reducer.clearDraftId(dispatch)
+      reducer.clearDraftDate(dispatch)
+      reducer.clearTemplateDate(dispatch)
+      reducer.clearSubmissionDate(dispatch)
+      setFormWasCleared(false)
+    }
+  }, [formWasCleared])
+
+  React.useEffect(() => {
+    if (formWasFilled) {
+      setFormWasFilled(false)
+    }
+  }, [formWasFilled])
+
   // final result
   let finalComponent = <></>
 
@@ -231,6 +240,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
               required={stateReducer.requiredFields.includes(field.name)}
               disabled={!idFields.includes(field) && fieldIsDisabled(valuesRef.current, field.enablingConditions)}
               notifyError={() => {send('INVALID')}}
+              updateForm={() => send('UPDATE')}
             />
           )
         }
@@ -260,9 +270,10 @@ function RenderedField({
   isReset,
   notifyError,
   values = {},
+  updateForm,
   study = null,
   required = false,
-  disabled = false
+  disabled = false,
 } : {
   field: Field,
   validators: Validator[],
@@ -270,9 +281,10 @@ function RenderedField({
   isReset: boolean,
   notifyError: () => void|undefined,
   values: { [key: string]: FieldValue },
+  updateForm: () => void,
   study: string|null,
   required: boolean,
-  disabled: boolean
+  disabled: boolean,
 }) {
   let component = <></>
   const label = findLabel(field, values, study)
@@ -308,6 +320,7 @@ function RenderedField({
           onChange={updateValue}
           notifyError={notifyError}
           isReset={isReset}
+          onBlur={updateForm}
         />
       }
       break
@@ -323,8 +336,8 @@ function RenderedField({
         readonly={false}
         required={required}
         validators={validators}
-        onClick={updateValue}
-        onChange={updateValue}
+        onClick={(field, value) => {updateValue(field, value); updateForm()}}
+        onChange={(field, value) => {updateValue(field, value); updateForm()}}
         notifyError={notifyError}
         isReset={isReset}
       />

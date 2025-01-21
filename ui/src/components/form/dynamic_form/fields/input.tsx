@@ -26,6 +26,7 @@ const TextInputField: React.FC<PropsWithChildren<InputFieldPropsBase>> = ({
   validators,
   notifyError,
   onChange,
+  onBlur,
   isReset,
 }: InputFieldPropsBase) => {
   const [renderedValue, setRenderedValue] = useState(value ?? defaultValue);
@@ -73,6 +74,11 @@ const TextInputField: React.FC<PropsWithChildren<InputFieldPropsBase>> = ({
             onChange={(_e, { value }) => {
               setRenderedValue(value);
               onChange(field, value);
+            }}
+            onBlur={() => {
+              if(onBlur) {
+                onBlur()
+              }
             }}
           />
           {field.datalistName?.trim() !== '' && (
@@ -213,6 +219,7 @@ export const InputField: React.FC<PropsWithChildren<InputFieldProps>> = ({
   validators,
   resolution,
   onChange,
+  onBlur,
   isReset,
   notifyError,
   required,
@@ -255,6 +262,7 @@ export const InputField: React.FC<PropsWithChildren<InputFieldProps>> = ({
         isReset={isReset}
         onChange={onChange}
         notifyError={notifyError}
+        onBlur={onBlur}
       />
   );
 

@@ -13,6 +13,7 @@ export const FormField: React.FC<FormFieldProps> = ({
   required,
   onChange,
   onClick,
+  onBlur,
   notifyError,
   children,
 }) => {
@@ -43,6 +44,12 @@ export const FormField: React.FC<FormFieldProps> = ({
       onClick(field, value);
     }
   };
+
+  const handleBlur = () => {
+    if (onBlur) {
+      onBlur();
+    }
+  }
 
   return (
     <Form.Field error={!!error}>
@@ -76,6 +83,7 @@ export const FormField: React.FC<FormFieldProps> = ({
         readonly,
         onChange: handleChange,
         onClick: handleClick,
+        onBlur: handleBlur
       })}
       {error && (
         <Label basic color="red" pointing>

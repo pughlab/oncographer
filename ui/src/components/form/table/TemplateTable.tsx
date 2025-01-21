@@ -130,7 +130,6 @@ function TemplateTableContents({ formID, templates, modalOperations, refetch }: 
 
                 return (
                   <Table.Row key={template.template_id} onClick={() => {
-                    clearForm()
                     fillForm(data)
                   }}>{
                       Object.keys(headers).map((key) => {
