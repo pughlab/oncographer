@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Icon, Form, Segment, Divider, Header } from "semantic-ui-react";
 import { useLazyQuery } from "@apollo/client";
 
-import { FindPatients } from "../form/queries/query";
+import { FindPatients } from "../form/dynamic_form/queries/form"
 
 import keycloak from "../../keycloak/keycloak";
 import { defaultStudy } from "../../App";
