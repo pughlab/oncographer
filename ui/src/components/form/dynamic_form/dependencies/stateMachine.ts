@@ -17,9 +17,10 @@ export const formStateMachine = createMachine({
     },
     idle: {
       after: {
-        5000: { 
+        10000: { 
           target: 'saving',
-        } // attempt to save the draft every 5 seconds (5000 milliseconds)
+          cond: 'canSave'
+        } 
       },
       on: {
         SUBMIT: [

@@ -43,6 +43,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
     },
     guards: {
       isFormValid: () => isFormValid(stateReducer, dispatch, valuesRef.current),
+      canSave: () => !draftSavedRef.current && patientIdentifierIsNotEmpty()
     }
   });
 
@@ -82,6 +83,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
   async function executeSubmitForm() {
     try {
       await submitForm(form, valuesRef.current, stateReducer.draft.id, gqlClient, patientID, formOperations)
+      draftSavedRef.current = true
       updateSubmissions()
       setModalTitle('Success')
       setModalContent('The form was submitted successfully')
@@ -96,6 +98,7 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
   async function executeSaveTemplate() {
     try {
       await saveTemplate(form, valuesRef.current, gqlClient, patientID, formOperations)
+      draftSavedRef.current = true
       setModalTitle('Success')
       setModalContent('Template successfully saved')
       setModalError(false)
