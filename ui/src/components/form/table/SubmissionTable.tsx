@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { LoadingSegment } from "../../common/LoadingSegment";
 import {
   Divider,
@@ -10,6 +10,7 @@ import {
   Accordion,
 } from "semantic-ui-react";
 import { gql, useMutation, useQuery } from "@apollo/client";
+import * as R from 'remeda';
 
 import { toTitle, toDateString } from "../../utils";
 import { DeleteSubmission } from "../dynamic_form/queries/form";
@@ -89,6 +90,8 @@ const SubmissionTableContents = ({
       isAdmin
     }
   `);
+  const [sortingColumn, setSortingColumn] = useState<string>('')
+  const [sortingDirection, setSortingDirection] = useState<'ascending'|'descending'|undefined>(undefined)
 
   if (!(updateSubmissionDate && clearForm && fillForm)) {
     return <></>
@@ -134,11 +137,24 @@ const SubmissionTableContents = ({
     return sortedObject
   }
 
-  const excluded_headers = ['patient_id', 'study']
+  function getValueForSorting(rowData: {[key: string]: string}, columnName: string) {
+    if (rowData[columnName].startsWith('{')) {
+      try {
+        const data = JSON.parse(rowData[columnName])
+        return data.hasOwnProperty('value') ? data['value'] : data
+      } catch (_error){
+        return rowData[columnName]
+      }
+    }
+    return rowData[columnName]
+  }
+
+  const excluded_headers = ['id', 'patient_id', 'study']
+  const mostCompleteSubmission = submissions.sort((a: any, b:any) => b.fields.length - a.fields.length)[0]
   Object.keys(patientIDLabels).forEach((key: string) => {
       headers[key] = labels[key] ?? toTitle(key, "_")
     })
-  submissions[0].fields.forEach((field: {key: string, value: string}) => {
+  mostCompleteSubmission.fields.forEach((field: {key: string, value: string}) => {
     if (!(field.key.startsWith('comments') || excluded_headers.includes(field.key))) {
       headers[field.key] = labels[field.key] ?? toTitle(field.key, '_')
     }
@@ -163,6 +179,8 @@ const SubmissionTableContents = ({
     rows.push(row);
   });
 
+  const sortedRows = sortingColumn ? R.sortBy(rows, [row => getValueForSorting(row, sortingColumn), sortingDirection === 'ascending' ? "asc" : "desc"]) : rows
+
   // regex to determine a date in the YYYY-MM-DD format
   // It will also match anything after the YYYY-MM-DD match,
   // so a date like "2023-02-01T05:00:00.000Z" (without the quotes) is a valid date
@@ -176,13 +194,21 @@ const SubmissionTableContents = ({
         aria-labelledby="header"
         striped
         key={rows.length}
+        sortable
       >
         <Table.Header>
           <Table.Row>
             {Object.values(sortedHeaders).map((header: any) => {
-              const label = typeof header === 'object' ? header[study] ?? header.default : header
+              const label: string = typeof header === 'object' ? header[study] ?? header.default : header
               return (
-                <Table.HeaderCell key={label}>
+                <Table.HeaderCell 
+                  key={label} 
+                  sorted={ sortingColumn === label ? sortingDirection : undefined }
+                  onClick={() => {
+                    setSortingColumn(label.toLowerCase().replaceAll(' ', '_'))
+                    setSortingDirection((prev) => prev === 'ascending' ? 'descending' : 'ascending')
+                  }}
+                >
                   {toTitle(label)}
                 </Table.HeaderCell>
               );
@@ -195,7 +221,7 @@ const SubmissionTableContents = ({
           </Table.Row>
         </Table.Header>
         <Table.Body>
-          {rows.map((row: any, index) => {
+          {sortedRows.map((row: any, index) => {
             return (
               <Table.Row
                 key={`${row.id}-${index}`}
