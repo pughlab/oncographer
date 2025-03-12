@@ -9,6 +9,7 @@ import { minioClient } from '../minio/minio'
 import express from 'express'
 import { graphqlUploadExpress } from 'graphql-upload'
 import { express as voyagerMiddleware } from 'graphql-voyager/middleware';
+import util from 'util'
 
 import dotenv from 'dotenv'
 dotenv.config()
@@ -31,6 +32,22 @@ export const createApolloServer = () => {
   const { keycloak } = configureKeycloak(app)
 
   app.use(graphqlUploadExpress())
+
+  app.use(graphqlPath, async (req, res, next) => {
+    const start = Date.now();
+    await new Promise(resolve => {
+      res.on('finish', resolve);
+      next();
+    });
+    const end = Date.now();
+    const executionTime = end - start;
+  
+    if (executionTime > 1000) {
+      const logEntry = `Query: ${req.body ? req.body.query : 'N/A'}, Variables: ${req.body ? util.inspect(req.body.variables) : 'N/A'}, Time: ${executionTime}ms\n`;
+      console.log(logEntry)
+      // fs.appendFileSync('slow_queries.log', logEntry);
+    }
+  })
 
   app.use(voyagerPath, voyagerMiddleware({ endpointUrl: graphqlPath }));
 

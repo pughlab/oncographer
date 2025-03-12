@@ -6,8 +6,8 @@ import useMinioUploadMutation from '../../../hooks/useMinioUploadMutation'
 import SegmentPlaceholder from '../SegmentPlaceholder'
 
 
-function MinioUploadModal({ bucketName }) {
-    const { state: uploadState, dispatch: uploadDispatch, mutation: uploadMutation } = useMinioUploadMutation()
+function MinioUploadModal({ bucketName }: Readonly<{bucketName: any}>) {
+    const { mutation: uploadMutation } = useMinioUploadMutation()
     const onDrop = useCallback((files: FileWithPath[]) => {
         uploadMutation({
             variables: {
@@ -16,7 +16,7 @@ function MinioUploadModal({ bucketName }) {
             }
         })
     }, [])
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
+    const { getRootProps, getInputProps } = useDropzone({ onDrop })
     return (
         <Modal
             trigger={<Button fluid icon='upload' />}
@@ -25,7 +25,7 @@ function MinioUploadModal({ bucketName }) {
                 <SegmentPlaceholder text='Click to upload a file' icon='upload'>
                     <div {...getRootProps()}>
                         <Button>
-                            Upload a file
+                            Upload a file{' '}
                             <input {...getInputProps()} />
                         </Button>
                     </div>
@@ -35,8 +35,8 @@ function MinioUploadModal({ bucketName }) {
     )
 }
 
-export default function MinioBucket({ bucketName }) {
-    const { data, loading, error } = useQuery(gql`
+export default function MinioBucket({ bucketName }: Readonly<{bucketName: any}>) {
+    const { data } = useQuery(gql`
         query MinioUploads($bucketName: ID!) {
             minioUploads(where: {bucketName: $bucketName}) {
                 bucketName
@@ -55,8 +55,9 @@ export default function MinioBucket({ bucketName }) {
             <Divider horizontal />
             {!minioUploads.length ? <SegmentPlaceholder text={'No uploads yet'} /> :
                 <List celled divided>
-                    {minioUploads.map(minioUpload => (
+                    {minioUploads.map((minioUpload: any) => (
                         <List.Item
+                            key={minioUpload.filename}
                             content={minioUpload.filename}
                             description={minioUpload.objectName}
                         />

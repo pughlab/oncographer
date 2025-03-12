@@ -15,7 +15,7 @@ services:
       - NEO4JLABS_PLUGINS=["apoc", "graph-data-science"]
       - NEO4J_apoc_import_file_use__neo4j__config=true
     volumes:
-      - mcoder2_neo4j_volume:/var/lib/neo4j/data
+      - oncographer_neo4j_volume:/var/lib/neo4j/data
 
   api:
     # For non-M1 machines: comment out arm64v8 and platform field
@@ -47,7 +47,7 @@ services:
     
     volumes:
       - .:/usr/src/service
-      - mcoder2_api_volume:/mcoder2_data
+      - oncographer_api_volume:/oncographer_data
 
   ui:
     # For non-M1 machines: comment out arm64v8 and platform field
@@ -80,7 +80,7 @@ services:
   #     - ${MINIO_API_PORT}:${MINIO_API_PORT}
   #     - ${MINIO_CONSOLE_PORT}:${MINIO_CONSOLE_PORT}
   #   volumes:
-  #     - mcoder2_minio_volume:/data
+  #     - oncographer_minio_volume:/data
   #     - /etc/localtime:/etc/localtime:ro
   #   environment:
   #     - MINIO_ROOT_USER=${MINIO_ROOT_USER}
@@ -99,7 +99,7 @@ services:
       - "8080:8080"
     volumes:
       - ./keycloak/realm-export.json:/opt/jboss/keycloak/realm-export.json
-      - mcoder2_keycloak_volume:/opt/jboss/keycloak/standalone/data
+      - oncographer_keycloak_volume:/opt/jboss/keycloak/standalone/data
       - ./nginx/certs/bundle.crt:/etc/x509/https/tls.crt
       - ./nginx/certs/bundle.key:/etc/x509/https/tls.key
     environment:
@@ -130,11 +130,11 @@ services:
       
 
 volumes:
-  mcoder2_minio_volume:
+  oncographer_minio_volume:
     external: true
-  mcoder2_keycloak_volume:
+  oncographer_keycloak_volume:
     external: true
-  mcoder2_api_volume:
+  oncographer_api_volume:
     external: true
-  mcoder2_neo4j_volume:
+  oncographer_neo4j_volume:
     external: true

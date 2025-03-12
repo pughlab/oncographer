@@ -1,6 +1,6 @@
 import React from 'react'
-import { Container, Header, Icon, Segment } from 'semantic-ui-react'
-export default function SegmentPlaceholder ({text='', icon='exclamation', children}:  {text: string | Element, icon: string, buttons?: [Element]}) {
+import { Container, Header, Icon, Segment, SemanticICONS } from 'semantic-ui-react'
+export default function SegmentPlaceholder ({text='', icon='exclamation', children}:  Readonly<{text: string | Element, icon?: SemanticICONS, buttons?: [Element], children?: any}>) {
     return (
         <Segment placeholder>
           <Header icon>
@@ -12,7 +12,7 @@ export default function SegmentPlaceholder ({text='', icon='exclamation', childr
     )
 }
 
-export function ContainerSegmentPlaceholder(props) {
+export function ContainerSegmentPlaceholder(props: any) {
   return (
     <Container>
       <SegmentPlaceholder {...props} />

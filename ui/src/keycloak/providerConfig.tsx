@@ -3,7 +3,6 @@ const eventLogger = (event: any, error: any) => {
 }
 
 const tokenLogger = (tokens: any) => {
-  // console.log('onKeycloakTokens', tokens)
   const {token} = tokens
   localStorage.setItem('keycloak_token', token)
 }

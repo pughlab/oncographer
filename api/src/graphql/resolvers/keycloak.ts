@@ -2,7 +2,16 @@ import { ApolloError } from 'apollo-server'
 
 export const resolvers = {
   Query: {
-
+    isAdmin: async (_parent, _args, context) => {
+      const { kauth } = context
+      const adminRoles : string[] = JSON.parse(process.env.KEYCLOAK_ADMIN_ROLES) || []
+      const clientName : string = process.env.KEYCLOAK_SERVER_CLIENT || ""
+      return (
+        kauth
+        ? adminRoles.some((role) => kauth.accessToken.content.resource_access[clientName].roles.includes(role))
+        : false
+      )
+    }
   },
   Mutation: {
     // TODO: use ogm models instead of session

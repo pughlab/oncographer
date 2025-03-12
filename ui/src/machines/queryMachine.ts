@@ -1,6 +1,5 @@
-import { createMachine, assign, send, DoneEventObject } from 'xstate'
+import { createMachine, assign, DoneEventObject } from 'xstate'
 
-// TODO: match types between initial context and state node configs
 interface QueryMachineContext {
     data: any,
     errors: any,
@@ -17,7 +16,6 @@ export const QUERY_STATES = {
 export const QUERY_EVENTS = {
     REFRESH: 'refresh',
     RETRY: 'retry',
-    // FETCH: 'fetch',
     DATA_CHANGED: 'data_changed',
     UPDATE_VARIABLES: 'update_variables'
 }
@@ -60,11 +58,6 @@ export const createQueryMachine = ({srcInvoker, initialVariables = {}}: {srcInvo
             [QUERY_STATES.LOADING]: {
                 invoke: queryInvoke(QUERY_STATES.LOADED),
             },
-            // [QUERY_STATES.IDLE]: {
-            //     on: {
-            //         [QUERY_EVENTS.DATA_CHANGED]: {target: QUERY_STATES.LOADED}
-            //     }
-            // },
             [QUERY_STATES.LOADED]: {
                 on: {
                     [QUERY_EVENTS.UPDATE_VARIABLES]: {

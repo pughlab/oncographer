@@ -1,5 +1,5 @@
 import { gql, useMutation } from "@apollo/client";
-import { useReducer, useCallback, useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useAppDispatch } from "../state/hooks";
 import { setKeycloakMe } from "../state/appContext";
 
@@ -16,18 +16,12 @@ export default function useKeycloakMeMutation(): [any] {
         }
     `, {
         onCompleted: (data) => {
-            console.log(data)
-            if (!!data) {
+            if (data) {
                 dispatch(setKeycloakMe({keycloakMe: data?.me}))
             }
         }
     })
-    const {loading, data, error} = mutationState
     useEffect(() => {meMutation()}, [])
-    // console.log(mutationState)
 
     return [mutationState]
-    
 }
-  
-  

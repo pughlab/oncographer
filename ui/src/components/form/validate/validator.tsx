@@ -24,15 +24,24 @@ import {z} from 'zod'
         case "number":
           schema = schema.number(); // x∈[-inf,inf]
           break;
+        case "date":
+          schema = schema.object({
+            value: schema.date({ message: "Must be a date" }),
+            resolution: z.string()
+          })
+          break
         case "month":
           schema = schema.date({message : "Must be a date"}); // new Date()
           break;
-        case "mutiple":
+        case "multiple":
         schema = schema.array(z.any()) // Array[any]
           break;
         case "textarea":
           schema = schema.string().min(1, { message: "Must be 1 or more characters long"}); // any string whith a min character length of 1
           break;
+        case "boolean":
+          schema = schema.boolean()
+          break
         default:
           throw new Error(`There is something wrong with the field schema type: ${field.type}\ndoes not exist...`)
     }

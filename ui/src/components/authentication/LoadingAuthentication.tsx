@@ -1,21 +1,21 @@
 import * as React from 'react'
 
-import {Segment, Card, Image, Icon} from 'semantic-ui-react'
+import {Segment, Card, Icon} from 'semantic-ui-react'
 import { Logo } from '../logos'
 
 
-export default function LoadingAuthentication ({}) {
+export default function LoadingAuthentication () {
     return (
     <Segment basic textAlign='center'>
       <Card.Group centered>
     <Card>
       <Logo />
       <Card.Content extra textAlign='center'>
-        <a>
+        <span>
           <Icon name='key' />
           {`Redirecting from Keycloak `}
           <Icon name='user' />
-        </a>
+        </span>
       </Card.Content>
     </Card>
     </Card.Group>

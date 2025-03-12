@@ -43,7 +43,6 @@ function vSet(value) {
 }
 
 function Parser(value) {
-  // console.log(typeof value)
   if (typeof value === "string") {
     return JSON.parse(value)
   } else if (typeof value === "object") {
@@ -153,6 +152,33 @@ export const resolvers = {
         return createDraft.records[0].get(0).properties
       } catch (error) {
         throw new Error(`Could not find or create draft. Caused by ${error}`)
+      } finally {
+        session.close()
+      }
+    },
+    deleteSubmissionAndFields: async (_obj, args, { driver, kauth }) => {
+      const { submission_id } = args.where
+      const session = driver.session()
+      const adminRoles : string[] = JSON.parse(process.env.KEYCLOAK_ADMIN_ROLES) || []
+      const clientName : string = process.env.KEYCLOAK_SERVER_CLIENT || ""
+      const isAdmin =  (
+        kauth
+        ? adminRoles.some((role) => kauth.accessToken?.content?.resource_access[clientName]?.roles?.includes(role))
+        : false
+      )
+
+      try {
+        if (isAdmin) {
+          let command = `MATCH (s:Submission { submission_id: $submission_id })-[r]->(x:FieldKeyValuePair) 
+          WITH x, r, s, COUNT(s) AS nodesDeleted, COUNT(r) AS relationshipsDeleted
+          DETACH DELETE x, s 
+          RETURN nodesDeleted, relationshipsDeleted`
+          await session.run(command, { submission_id })
+        } else {
+          throw new Error(`You are not authorised to do this operation`)
+        }
+      } catch (error) {
+        throw new Error(`Could not delete submission and/or related fields. Caused by ${error}`)
       } finally {
         session.close()
       }

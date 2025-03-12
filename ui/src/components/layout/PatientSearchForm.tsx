@@ -1,44 +1,103 @@
-import React, { useContext, useEffect } from 'react'
-import { Icon, Form, Segment, Divider, Header } from 'semantic-ui-react'
-import { PatientFoundContext, PatientIdentifierContext } from '../Portal'
-import { FindPatients } from '../form/queries/query'
-import { useLazyQuery } from '@apollo/client'
+import React, { useEffect, useState } from "react";
+import { Icon, Form, Segment, Divider, Header } from "semantic-ui-react";
+import { useLazyQuery } from "@apollo/client";
 
-const studies = [
-  { key: 'mohccn', text: 'MOHCCN', value: 'mohccn' },
-  { key: 'charm', text: 'CHARM', value: 'charm'},
-]
-const defaultStudy = 'mohccn'
+import { FindPatients } from "../form/dynamic_form/queries/form"
+
+import keycloak from "../../keycloak/keycloak";
+import { defaultStudy } from "../../App";
+import { useUpdatePatientID } from "../layout/context/PatientIDProvider"
+import useDebounce from "../../hooks/useDebounce";
+
+let studies: { key: string; text: string; value: string }[] = [
+  { key: "", text: "Please select a study", value: "" },
+];
 
 const PatientSearchForm = () => {
-  const { patientIdentifier, setPatientIdentifier } = useContext(PatientIdentifierContext)
-  const { setPatientFound } = useContext(PatientFoundContext)
-  const [findPatient] = useLazyQuery(FindPatients, {
+  const adminRoles = JSON.parse(process.env.KEYCLOAK_ADMIN_ROLES ?? "[]");
+
+  // each field in the form manages their own state
+  const [submitterDonorId, setSubmitterDonorId] = useState("");
+  const [programId, setProgramId] = useState("");
+  const [study, setStudy] = useState("");
+
+  // debounce the donor ID and program ID to avoid making too many queries to the DB
+  const debouncedSubmitterDonorId = useDebounce(submitterDonorId, 500);
+  const debouncedProgramId = useDebounce(programId, 500);
+
+  const setPatientID = useUpdatePatientID();
+  const [findPatient, { data: patients }] = useLazyQuery(FindPatients, {
     variables: {
-      where:  {
-        patient_id: patientIdentifier.submitter_donor_id,
-        program_id: patientIdentifier.program_id,
-        study: patientIdentifier.study
-      }
+      where: {
+        patient_id: debouncedSubmitterDonorId,
+        program_id: debouncedProgramId,
+        study: study,
+      },
     },
-    onCompleted: (data) => {
-      setPatientFound(data.patients.length > 0)
+  });
+
+  function mustFindPatient() {
+    return [debouncedSubmitterDonorId, debouncedProgramId, study].reduce(
+      (acc, value) => acc && value.trim() !== "",
+      true
+    );
+  }
+
+  // ignore the Enter key
+  function handleKeyDown(event: any) {
+    if (event.keyCode === 13) {
+      event.preventDefault();
     }
-  })
+  }
 
   useEffect(() => {
-    setPatientIdentifier((id) => ({ ...id, study: defaultStudy }))
-  }, []) // set the default study when first loading the form
+    const roles =
+      keycloak?.tokenParsed?.resource_access?.[
+        process.env.KEYCLOAK_SERVER_CLIENT ?? ""
+      ]?.roles || [];
+    if (roles?.length > 0) {
+      roles
+        .filter((role) => !adminRoles.includes(role))
+        .forEach((role: string) => {
+          studies.push({ key: role, text: role.toUpperCase(), value: role });
+        });
+    }
+  }, []); // fill out the study select with permitted roles
 
   useEffect(() => {
-    findPatient()
-  }, [patientIdentifier]) // search patients every time the patient's information changes
+    setSubmitterDonorId("");
+    setProgramId("");
+    setPatientID({
+      submitter_donor_id: "",
+      program_id: "",
+      study,
+    });
+  }, [study]); // reset the donor ID, program ID and composite patient ID when study changes
+
+  useEffect(() => {
+    if (mustFindPatient()) {
+      findPatient();
+    }
+  }, [debouncedSubmitterDonorId, debouncedProgramId, study]); // find patients if all fields have been filled
+
+  useEffect(() => {
+    if (patients?.patients.length > 0) {
+      const { patient_id, program_id, study } = patients.patients[0];
+      setPatientID({
+        submitter_donor_id: patient_id,
+        program_id,
+        study,
+      });
+    } else {
+      setPatientID({ submitter_donor_id: debouncedSubmitterDonorId, program_id: debouncedProgramId, study });
+    }
+  }, [patients])
 
   return (
-    <Segment color='teal'>
+    <Segment color="teal">
       <Divider horizontal>
-        <Header as='h4'>
-          <Icon name='search' />
+        <Header as="h4">
+          <Icon name="search" />
           SEARCH
         </Header>
       </Divider>
@@ -47,44 +106,63 @@ const PatientSearchForm = () => {
           <Form.Select
             width={4}
             options={studies}
-            placeholder='Study'
-            defaultValue={defaultStudy}
-            onChange={(_e, { value }) => { setPatientIdentifier((id) => ({ ...id, study: value })) }}
+            placeholder={"Study"}
+            value={study}
+            onChange={(_e, { value }) => {
+              setStudy(value as string);
+            }}
           />
           <Form.Input
             width={4}
-            value={patientIdentifier.submitter_donor_id}
-            icon='id card outline'
-            iconPosition='left'
-            type='text'
-            placeholder='Submitter Donor Id'
-            onChange={(e) => { setPatientIdentifier((f) => ({ ...f, submitter_donor_id: e.target.value })) }}
+            value={submitterDonorId}
+            icon="id card outline"
+            iconPosition="left"
+            type="text"
+            placeholder={
+              study !== defaultStudy && study.trim() !== ""
+                ? "Submitter Participant ID"
+                : "Submitter Donor ID"
+            }
+            onChange={(e) => {
+              setSubmitterDonorId(e.target.value);
+            }}
+            onKeyDown={handleKeyDown}
           />
           <Form.Input
             width={4}
-            value={patientIdentifier.program_id}
-            icon='id card outline'
-            iconPosition='left'
-            type='text'
-            placeholder='Program Id'
-            onChange={(e) => { setPatientIdentifier((f) => ({ ...f, program_id: e.target.value })) }}
+            value={programId}
+            icon="id card outline"
+            iconPosition="left"
+            type="text"
+            placeholder="Program ID"
+            onChange={(e) => {
+              setProgramId(e.target.value);
+            }}
+            onKeyDown={handleKeyDown}
           />
           <Form.Button
-            size='large' 
-            onClick={
-              () => { setPatientIdentifier({ submitter_donor_id: '', program_id: '', study: defaultStudy }) }
-            }
+            size="large"
+            onClick={() => {
+              setSubmitterDonorId("");
+              setProgramId("");
+              setStudy("");
+              setPatientID({
+                submitter_donor_id: "",
+                program_id: "",
+                study: "",
+              });
+            }}
             fluid
             inverted
-            icon='trash'
-            color='red'
-            content='CLEAR FORMS'
+            icon="trash"
+            color="red"
+            content="CLEAR SEARCH"
             width={2}
           />
         </Form.Group>
       </Form>
     </Segment>
-  )
-}
+  );
+};
 
-export default PatientSearchForm
+export default PatientSearchForm;
