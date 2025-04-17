@@ -17,7 +17,7 @@ export const formStateMachine = createMachine({
     },
     idle: {
       after: {
-        10000: { 
+        120000: { 
           target: 'saving',
           cond: 'canSave'
         } 

@@ -189,7 +189,7 @@ export async function saveDraft(
     const millisecondsDifference = date.getTime() - lastUpdate?.getTime() || 0;
     const secondsDifference = millisecondsDifference / 1000;
 
-    if (secondsDifference >= 10 || !lastUpdate) {
+    if (secondsDifference >= 120 || !lastUpdate) {
       const filledFields = getFilledFields(values)
       const draftData: {[key: string]: FieldValue} = {}
 
