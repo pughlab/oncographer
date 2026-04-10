@@ -24,7 +24,7 @@ export function getAutofillDataFromStudy(study: string): { program: string; pref
   const programs: { [key: string]: string } = {
     "charm": "CHARM-UHN",
     "charm-bc": "CHARM-BC",
-    "charm-jhg": "CHARM-JHG",
+    "charm-jgh": "CHARM-JGH",
     "charm-ab": "CHARM-AB",
     "charm-iwk": "CHARM-IWK",
     "charm-nl": "CHARM-NL",
@@ -33,7 +33,7 @@ export function getAutofillDataFromStudy(study: string): { program: string; pref
   const prefixes: { [key: string]: string } = {
     "charm": "CHM2-01",
     "charm-bc": "CHM2-02",
-    "charm-jhg": "CHM2-03",
+    "charm-jgh": "CHM2-03",
     "charm-ab": "CHM2-04",
     "charm-iwk": "CHM2-05",
     "charm-nl": "CHM2-06",
