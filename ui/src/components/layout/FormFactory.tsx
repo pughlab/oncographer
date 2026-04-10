@@ -48,7 +48,7 @@ function compareForms(a: any, b: any) {
 // components
 function ListMenuItem({ item, activeItem, setActiveItem }: any) {
   const { study } = usePatientID();
-  const node = item.node ? item.node : item;
+  const node = item?.node ?? item;
   const isActive = activeItem === node;
   const hasSubForms = node.next_formConnection.edges.length > 0;
   const isActiveAndHasSubForms = isActive && hasSubForms;
@@ -65,6 +65,7 @@ function ListMenuItem({ item, activeItem, setActiveItem }: any) {
     iconName = "file alternate";
     iconColor = "teal";
   }
+  const formName: string = node.label ? node.label[study] ?? node.label.default : node.name
 
   return itemBelongsToStudy ? (
     <List.Item active={isActive}>
@@ -72,18 +73,18 @@ function ListMenuItem({ item, activeItem, setActiveItem }: any) {
       <List.Content>
         <a
           href="#content"
-          aria-label={node.label ? node.label[study] ?? node.label.default : node.name}
+          aria-label={formName}
           style={isActive ? { color: "#02B5AE" } : {}}
           onClick={(e) => {
             e.preventDefault()
             setActiveItem(node);
           }}
         >
-          {node.label ? node.label[study] ?? node.label.default : node.name}
+          {formName}
         </a>
         <List.List>
           {subForms.map((subform) => {
-            const currentSubform = subform.node ? subform.node : subform;
+            const currentSubform = subform?.node ?? subform;
             return (
               <ListMenuItem
                 key={`${currentSubform.name}-${currentSubform.formID}`}
@@ -113,7 +114,7 @@ function ListMenu({ activeItem, setActiveItem }: any) {
   } = useFormTree();
 
   React.useEffect(() => {
-    if (data && !activeItem) {
+    if (data?.forms?.length > 0) {
       setActiveItem(data.forms[0]);
     }
   }, [data]);
@@ -131,7 +132,7 @@ function ListMenu({ activeItem, setActiveItem }: any) {
   }
 
   const root = data?.forms[0];
-  const node = root.node ? root.node : root;
+  const node = root.node ?? root;
 
   return (
     <Segment basic>
@@ -216,7 +217,7 @@ export default function FormFactory() {
         {/* main content */}
         <Grid.Column width={12} id="content">
           <LabelsProvider>
-            {patientID && activeForm && !isRootForm ? <PatientTable /> : <></>}
+            {patientID && activeForm && !isRootForm && <PatientTable />}
             <ActiveSubmissionProvider>
               <FormOperationsProvider>
                 {activeForm && !isRootForm && (
@@ -239,10 +240,6 @@ export default function FormFactory() {
                       modalOperations={modalOperations}
                       submissionUpdates={submissionUpdates}
                     />
-                  </>
-                )}
-                {activeForm && validStudy && (
-                  <>
                     <Divider hidden />
                     <DynamicForm
                       key={activeForm.name}
