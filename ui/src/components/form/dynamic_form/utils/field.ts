@@ -1,7 +1,7 @@
 import { Field, FieldValue } from "../types";
 
 export function isFalsy(value: any) {
-  return ["", [], {}, 0, NaN, null, undefined].includes(value)
+  return ["", [], {}, 0, Number.NaN, null, undefined].includes(value)
 }
 
 function evaluateOperation(fieldValues: { [key: string]: FieldValue }, field: string, operation: string, conditionValue: FieldValue) {
@@ -59,15 +59,13 @@ function evaluateOperation(fieldValues: { [key: string]: FieldValue }, field: st
 };
 
 function evaluateCondition(fieldValues: { [key: string]: FieldValue }, condition: string) {
-  const parts = condition.split(" ");
-  const field = parts[0];
-  const operator = parts[1];
+  const [field, operator, ...valueParts] = condition.split(" ");
   let evaluatedValue;
 
   try {
-    evaluatedValue = JSON.parse(parts.slice(2).join(" "));
-  } catch (error) {
-    evaluatedValue = parts.length > 2 ? parts.slice(2).join(" ") : null;
+    evaluatedValue = JSON.parse(valueParts.join(" "));
+  } catch {
+    evaluatedValue = valueParts.length > 0 ? valueParts.join(" ") : null;
   }
 
   return evaluateOperation(fieldValues, field, operator, evaluatedValue);

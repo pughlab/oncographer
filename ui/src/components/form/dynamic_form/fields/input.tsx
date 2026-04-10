@@ -115,7 +115,7 @@ const DateInputField: React.FC<PropsWithChildren<DateInputFieldProps>> = ({
   useEffect(() => {
     if (isReset) {
       setSelectedDate(null);
-      setFieldResolution('month')
+      setFieldResolution(process.env.DEFAULT_DATE_RESOLUTION || "day");
     }
   }, [isReset]);
 
@@ -242,7 +242,7 @@ export const InputField: React.FC<PropsWithChildren<InputFieldProps>> = ({
       required={required}
       type={""}
       onChange={onChange}
-      resolution={resolution ?? "month"}
+      resolution={resolution ?? (process.env.DEFAULT_DATE_RESOLUTION || "day")}
       isReset={isReset}
       validators={validators}
       notifyError={notifyError}
