@@ -23,7 +23,7 @@ export function toDateString(value: any) {
   if (typeof value === "string") {
     try {
       date = JSON.parse(`${value}`);
-    } catch (error) {
+    } catch {
       date = value;
     }
   }
@@ -57,7 +57,7 @@ export function findDescription(field: Field, study: string) {
     try {
       const descriptionObject = JSON.parse(field.description)
       description = descriptionObject[study]
-    } catch (_error) {
+    } catch {
       description = field.description
     }
   } else if (typeof field.description === "object") {

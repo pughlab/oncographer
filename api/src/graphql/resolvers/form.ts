@@ -61,9 +61,9 @@ export const resolvers = {
     parseLiteral(ast) {
       console.log(ast, Kind)
       if (ast.kind === Kind.INT) {
-        return parseInt(ast.value)
+        return Number.parseInt(ast.value)
       } else if (ast.kind === Kind.FLOAT) {
-        return parseFloat(ast.value)
+        return Number.parseFloat(ast.value)
       } else if (ast.kind === Kind.OBJECT) {
         // @ts-ignore
         return ast.value
@@ -80,9 +80,9 @@ export const resolvers = {
     serialize: vSet,
     parseLiteral(ast) {
       if (ast.kind === Kind.INT) {
-        return parseInt(ast.value)
+        return Number.parseInt(ast.value)
       } else if (ast.kind === Kind.FLOAT) {
-        return parseFloat(ast.value)
+        return Number.parseFloat(ast.value)
       } else if (ast.kind === Kind.OBJECT) {
         // @ts-ignore
         return ast.value
@@ -179,6 +179,49 @@ export const resolvers = {
         }
       } catch (error) {
         throw new Error(`Could not delete submission and/or related fields. Caused by ${error}`)
+      } finally {
+        session.close()
+      }
+    },
+    submitForm: async (_obj, args, { driver, kauth }) => {
+      const { submission_id, form_id, patient_id, program_id, study, fields } = args.input
+      const session = driver.session()
+
+      const finalSubmissionId = submission_id || uuidv4()
+      const keycloakUserID = kauth?.accessToken?.content?.sub
+      const email = kauth?.accessToken?.content?.email
+      const name = kauth?.accessToken?.content?.name
+
+      try {
+        const result = await session.writeTransaction(async tx => {
+          await tx.run(`
+            MERGE (p:Patient { patient_id: $patient_id, program_id: $program_id, study: $study })
+          `, { patient_id, program_id, study })
+
+          await tx.run(`
+            MERGE (s:Submission { submission_id: $submission_id })
+            ON CREATE SET 
+              s.form_id = $form_id,
+              s.created_at = datetime(),
+              s.editableUntil = datetime().plus({ hours: 1 })
+            ON MATCH SET
+              s.form_id = $form_id
+
+            WITH s
+            MATCH (p:Patient { patient_id: $patient_id, program_id: $program_id, study: $study })
+            MERGE (s)-[:DATA_FOR]->(p)
+          `, { submission_id: finalSubmissionId, form_id, patient_id, program_id, study })
+
+          if (fields) {
+            await tx.run(`
+              MATCH (s:Submission { submission_id: $submission_id })
+              OPTIONAL MATCH (s)-[r:HAS_VALUE]->(old:FieldKeyValuePair)
+              DELETE r, old
+            `, { submission_id: finalSubmissionId })
+          }
+        })
+      } catch (error) {
+        throw new Error(`Could not submit form. Caused by ${error}`)
       } finally {
         session.close()
       }

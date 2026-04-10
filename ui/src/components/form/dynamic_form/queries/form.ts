@@ -188,6 +188,11 @@ export const FindSubmissions = gql`
         program_id
         study
       }
+      submittedBy {
+        keycloakUserID
+      }
+      createdAt
+      editableUntil
     }
   }
 `;
@@ -197,6 +202,7 @@ export const ParentForm = gql`
     ParentForm(id: $id) {
       formID
       name
+      label
     }
   }
 `;
@@ -292,6 +298,21 @@ export const CreateSubmission = gql`
       }
     }
   }
+`;
+
+export const UpdateSubmission = gql`
+mutation UpdateSubmission($where: SubmissionWhere!, $update: SubmissionUpdateInput!) {
+  updateSubmissions(where: $where, update: $update) {
+    submissions {
+      submission_id
+      form_id
+      fields {
+        key
+        value
+      }
+    }
+  }
+}
 `;
 
 export const DeleteSubmission = gql`

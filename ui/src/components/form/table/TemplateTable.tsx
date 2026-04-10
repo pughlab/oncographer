@@ -133,7 +133,7 @@ function TemplateTableContents({ formID, templates, modalOperations, refetch }: 
                     fillForm(data)
                   }}>{
                       Object.keys(headers).map((key) => {
-                        let value = row.hasOwnProperty(key) ? row[key] : ""
+                        let value = row?.[key] ?? ""
 
                         const isDate = re.test(value)
 
@@ -156,7 +156,7 @@ function TemplateTableContents({ formID, templates, modalOperations, refetch }: 
                       })
                     }
                     <Table.Cell key={`${template.template_id}-delete`} textAlign="center">
-                      <Button negative icon='trash' onClick={() => { removeTemplate(template) }} />
+                      <Button negative icon='trash' fluid onClick={() => { removeTemplate(template) }} />
                     </Table.Cell>
                   </Table.Row>
                 )

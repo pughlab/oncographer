@@ -8,7 +8,7 @@ export const resolvers = {
             try {
                 const sourceFile = 'file:///data.csv'
 
-                const importDataFromCSVFile = await session.run(
+                await session.run(
                     `CALL apoc.load.csv("${sourceFile}", { sep:";", header: true }) YIELD map AS row
                     WITH row
                     MATCH (f:Form)

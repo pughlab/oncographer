@@ -1,5 +1,3 @@
-import { gql, useMutation } from '@apollo/client'
-import { useCallback } from 'react'
 import * as React from 'react'
 import { Button, Container, Grid, GridColumn, Segment } from 'semantic-ui-react'
 
@@ -12,25 +10,25 @@ export default function KeycloakAuthentication () {
       <div>
           <Grid>
             <GridColumn textAlign="center"> {/* Centering login button */}
-            {!keycloak.authenticated && (
-                   <Button fluid
-                     type="button"
-                     className="text-blue-800"
-                     onClick={() => keycloak.login()}
-                   >
-                     Login
-                   </Button>
-                 )}
-
-                 {!!keycloak.authenticated && (
-                   <Button fluid
-                     type="button"
-                     className="text-blue-800"
-                     onClick={() => keycloak.logout()}
-                   >
-                     Logout ({keycloak.tokenParsed.preferred_username})
-                   </Button>
-                 )}
+            { keycloak.authenticated 
+              ? (
+                <Button fluid
+                  type="button"
+                  className="text-blue-800"
+                  onClick={() => keycloak.logout()}
+                >
+                  Logout ({keycloak.tokenParsed.preferred_username})
+                </Button>
+              ) : (
+                <Button fluid
+                  type="button"
+                  className="text-blue-800"
+                  onClick={() => keycloak.login()}
+                >
+                  Login
+                </Button>
+              )
+            }
             </GridColumn>
           </Grid>
         </div>

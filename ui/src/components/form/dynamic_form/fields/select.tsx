@@ -43,9 +43,9 @@ const SmallSelectField: React.FC<ButtonSelectFieldProps> = ({
       {({ disabled, onClick }) => (
         <Form.Group
           widths={
-            options?.length !== 1
-              ? (options?.length as SemanticWIDTHS)
-              : "equal"
+            options?.length === 1
+              ? "equal"
+              : (options?.length as SemanticWIDTHS)
           }
         >
           {options?.map((option: string, index: number) => {
@@ -112,7 +112,7 @@ const MultipleSmallSelectField: React.FC<ButtonSelectFieldProps> = ({
       onClick={onClick}
     >
       {({disabled, onClick}) => (
-        <Form.Group widths={options?.length !== 1 ? (options?.length as SemanticWIDTHS) : "equal"}>
+        <Form.Group widths={options?.length === 1 ? "equal" : (options?.length as SemanticWIDTHS)}>
           {
             options?.map((option: string, index: number) => {
               const isActive = selectedOptions.includes(option)
@@ -180,10 +180,10 @@ const LargeSelectField: React.FC<DropdownSelectFieldProps> = ({
     const strategies = {
       'single': () => setSelectedValue(value),
       'multiple': () => {
-        if (!Array.isArray(value)) {
-          setSelectedValue([value])
-        } else {
+        if (Array.isArray(value)) {
           setSelectedValue(value)
+        } else {
+          setSelectedValue([value])
         }
       }
     }

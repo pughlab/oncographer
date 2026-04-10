@@ -14,10 +14,9 @@ export const resolvers = {
     }
   },
   Mutation: {
-    // TODO: use ogm models instead of session
-    me: async (obj, params, { driver, kauth }, resolveInfo) => {
+    me: async (_obj, _params, { driver, kauth }, _resolveInfo) => {
       try {
-        const { sub: keycloakUserID, email, name, ...kcAuth } = kauth.accessToken.content
+        const { sub: keycloakUserID, email, name } = kauth.accessToken.content
         const keycloakUser = { keycloakUserID, email, name }
 
         const session = driver.session()
@@ -26,19 +25,19 @@ export const resolvers = {
           { keycloakUserID }
         )
         // console.log('match result', existingUser)
-        if (!existingUser.records.length) {
+        if (existingUser.records.length) {
+          // console.log('existing user props', existingUser.records[0].get(0).properties)
+          return keycloakUser
+        } else {
           const createUser = await session.run(
             'CREATE (a:KeycloakUser {keycloakUserID: $keycloakUserID, name: $name, email: $email}) RETURN a',
             keycloakUser
           )
           // console.log('createUser result', createUser)
           return createUser.records[0].get(0).properties
-        } else {
-          // console.log('existing user props', existingUser.records[0].get(0).properties)
-          return keycloakUser
         }
       } catch (error) {
-        throw new ApolloError('mutation.me error')
+        throw new ApolloError('mutation.me error', error as string)
       }
     },
     assignKeycloakUserToSubmission: async (_obj, { submissionID }, { driver, kauth }) => {

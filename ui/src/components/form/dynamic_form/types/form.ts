@@ -102,6 +102,13 @@ export interface FormOperations {
     clearValidationErrors?: () => void
 }
 
+export interface ModalOperations {
+    setOpenModal: React.Dispatch<React.SetStateAction<boolean>>;
+    setModalTitle: React.Dispatch<React.SetStateAction<string>>;
+    setModalContent: React.Dispatch<React.SetStateAction<string>>;
+    setModalError: React.Dispatch<React.SetStateAction<boolean | undefined>>;
+}
+
 export type FieldValue = string | string[]
 
 export interface FormFieldPropsBase {

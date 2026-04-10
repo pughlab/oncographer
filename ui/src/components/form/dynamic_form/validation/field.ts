@@ -19,7 +19,7 @@ export const number: Validator = (value: any) => {
     if (Array.isArray(value)) {
         return null
     }
-    return isNaN(value) ? 'This field must be a number' : null
+    return Number.isNaN(value) ? 'This field must be a number' : null
 }
 
 export const integer: Validator = (value: FieldValue) => {
@@ -31,7 +31,7 @@ export const integer: Validator = (value: FieldValue) => {
 
 export const date = (value: FieldValue|Date): string | null => {
 
-    let result = null
+    let message = null
 
     if (typeof value === 'string' && value.length !== 0) {
         try {
@@ -39,14 +39,14 @@ export const date = (value: FieldValue|Date): string | null => {
             if (parsedValue?.value) {
                 const parsedDate = parseISO(parsedValue.value)
                 if (!isValid(parsedDate)) {
-                    result = 'This field must be a valid date'
+                    message = 'This field must be a valid date'
                 }
             }
-        } catch (_error) {
-            result = 'This field must be a valid date'
+        } catch {
+            message = 'This field must be a valid date'
         }
     }
-    return result
+    return message
 }
 
 export const min = (limit: number) => (value: FieldValue): string | null => {

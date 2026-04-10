@@ -1,0 +1,3 @@
+type Query {
+    exportDataToCSVFile(study: String!): String
+}

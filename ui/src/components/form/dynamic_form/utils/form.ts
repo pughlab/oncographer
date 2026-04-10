@@ -10,6 +10,16 @@ import {
 } from "../queries/form";
 import { ApolloClient } from "@apollo/client";
 import { getFilledFields } from "./field";
+import { getAutofillDataFromStudy } from "../../../layout/PatientSearchForm";
+
+export function isValidPatientID(patientID: PatientID) {
+  const { prefix } = getAutofillDataFromStudy(patientID.study);
+  return (
+    !["", null, undefined, `${prefix}-`].includes(patientID.submitter_donor_id.trim()) &&
+    patientID.program_id.trim() !== "" &&
+    patientID.study.trim() !== ""
+  );
+}
 
 export async function submitForm(
   form: Form,
@@ -19,14 +29,19 @@ export async function submitForm(
   patientID: PatientID,
   formOperations: FormOperations
 ) {
+  const ONE_HOUR_IN_MS = 60 * 60 * 1000;
   const valuesToSubmit = getFilledFields(values);
+  const { prefix } = getAutofillDataFromStudy(patientID.study);
+  const finalPatientID = prefix && !patientID.submitter_donor_id.startsWith(prefix) ? `${prefix}-${patientID.submitter_donor_id}` : patientID.submitter_donor_id;
+  const createdAt = new Date()
+  const editableUntil = new Date(createdAt.getTime() + ONE_HOUR_IN_MS)
   const submissionInput = {
     form_id: form.formID,
     patient: {
       connect: {
         where: {
           node: {
-            patient_id: patientID.submitter_donor_id,
+            patient_id: finalPatientID,
             program_id: patientID.program_id,
             study: patientID.study,
           },
@@ -43,6 +58,8 @@ export async function submitForm(
         };
       }),
     },
+    createdAt: createdAt.toISOString(),
+    editableUntil: editableUntil.toISOString(),
   };
   const { clearDraftDate, clearDraftId, updateSubmissionDate } = formOperations;
 
@@ -53,7 +70,7 @@ export async function submitForm(
   const patientMutation = await gqlClient.mutate({
     mutation: FindOrCreatePatient,
     variables: {
-      patient_id: patientID.submitter_donor_id,
+      patient_id: finalPatientID,
       program_id: patientID.program_id,
       study: patientID.study,
     },
@@ -80,8 +97,7 @@ export async function submitForm(
         },
       }),
       label: "DeleteDraft",
-    });
-    postCreateMutations.push({
+    }, {
       label: "ConnectUser",
       mutation: gqlClient.mutate({
         mutation: CreateUserSubmissionConnection,

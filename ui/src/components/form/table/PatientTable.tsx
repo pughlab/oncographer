@@ -17,6 +17,18 @@ import { useRootFormSubmissions } from "../../../hooks/useSubmissions";
 import { usePatientIDLabels, useStudyLabels } from "../../../hooks/useLabels";
 import { PatientID } from "../dynamic_form/types";
 
+function sortHeaders(unsortedHeaders: { [key: string]: any }) {
+  const { submitter_donor_id, program_id, ...other } = unsortedHeaders
+
+  const sortedObject = {
+    submitter_donor_id,
+    program_id,
+    ...other
+  }
+
+  return sortedObject
+}
+
 export function PatientTable() {
   const labels = useStudyLabels()
   const rootLabels: { [key: string]: any } = {} 
@@ -35,18 +47,6 @@ export function PatientTable() {
     })
   }, [submissions])
 
-  function sortHeaders(unsortedHeaders: { [key: string]: any }) {
-    const { submitter_donor_id, program_id, ...other } = unsortedHeaders
-
-    const sortedObject = {
-      submitter_donor_id,
-      program_id,
-      ...other
-    }
-
-    return sortedObject
-  }
-
   if (loading) return <LoadingSegment />;
 
   if (error) return <BasicErrorMessage />;
@@ -56,12 +56,12 @@ export function PatientTable() {
 
   const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m;
   const headers: any = {};
-  const excluded_headers = ['patient_id', 'study']
+  const excluded_headers = new Set(['patient_id', 'study'])
   Object.keys(patientIDLabels).forEach((key: string) => {
     headers[key] = labels[key] ?? toTitle(key, "_")
   })
   submissions[0].fields.forEach((field: {key: string, value: string}) => {
-    if (!(field.key.startsWith('comments') || excluded_headers.includes(field.key))) {
+    if (!(field.key.startsWith('comments') || excluded_headers.has(field.key))) {
       headers[field.key] = labels[field.key] ?? toTitle(field.key, "_")
     }
   })
@@ -76,8 +76,8 @@ export function PatientTable() {
           <Header as="h4">
             <Icon name="user circle" />
             {patientID.study.toLowerCase() === defaultStudy
-              ? "DONOR"
-              : "PARTICIPANT"}
+              ? "PARTICIPANT"
+              : "DONOR"}
             {" "}
             INFORMATION
           </Header>

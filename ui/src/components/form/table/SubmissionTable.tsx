@@ -21,6 +21,31 @@ import { useLabelsContext } from "../../layout/context/LabelsProvider";
 import { usePatientID } from "../../layout/context/PatientIDProvider";
 import { useUpdateActiveSubmission } from "../../layout/context/ActiveSubmissionProvider";
 import { usePatientIDLabels } from "../../../hooks/useLabels";
+import useKeycloakMeMutation from "../../../hooks/useKeycloakMeMutation";
+
+function sortHeaders(unsortedHeaders: { [key: string]: any }) {
+  const { submitter_donor_id, program_id, ...other } = unsortedHeaders
+
+  const sortedObject = {
+    submitter_donor_id,
+    program_id,
+    ...other
+  }
+
+  return sortedObject
+}
+
+function getValueForSorting(rowData: {[key: string]: string}, columnName: string) {
+  if (rowData[columnName].startsWith('{')) {
+    try {
+      const data = JSON.parse(rowData[columnName])
+      return data.hasOwnProperty('value') ? data['value'] : data
+    } catch {
+      return rowData[columnName]
+    }
+  }
+  return rowData[columnName]
+}
 
 export function SubmissionTable({
   formID,
@@ -29,20 +54,23 @@ export function SubmissionTable({
 } : any) {
   const [active, setActive] = React.useState(true);
   const { loading, error, data, refetch } = useSubmissions(formID);
+  const [me] = useKeycloakMeMutation()
 
   useEffect(() => {
     refetch()
   }, [submissionUpdates])
 
-  if (loading) {
+  if (loading || me.loading) {
     return <LoadingSegment />;
   }
 
-  if (error) {
+  if (error || me.error) {
     return <BasicErrorMessage />;
   }
 
-  if (data.submissions.length === 0) return <></>;
+  if (data.submissions.length === 0 || !me.data) return <></>;
+
+  const { keycloakUserID: userID } = me.data.me
 
   return (
     <>
@@ -62,6 +90,7 @@ export function SubmissionTable({
             submissions={data.submissions}
             refetch={refetch}
             modalOperations={modalOperations}
+            userID={userID}
           />
         </Accordion.Content>
       </Accordion>
@@ -72,7 +101,8 @@ export function SubmissionTable({
 const SubmissionTableContents = ({
   submissions,
   refetch,
-  modalOperations
+  modalOperations,
+  userID
 }: any) => {
   // storage for the table's contents
   let rows: any[] = [];
@@ -125,37 +155,13 @@ const SubmissionTableContents = ({
     });
   };
 
-  function sortHeaders(unsortedHeaders: { [key: string]: any }) {
-    const { submitter_donor_id, program_id, ...other } = unsortedHeaders
-
-    const sortedObject = {
-      submitter_donor_id,
-      program_id,
-      ...other
-    }
-
-    return sortedObject
-  }
-
-  function getValueForSorting(rowData: {[key: string]: string}, columnName: string) {
-    if (rowData[columnName].startsWith('{')) {
-      try {
-        const data = JSON.parse(rowData[columnName])
-        return data.hasOwnProperty('value') ? data['value'] : data
-      } catch (_error){
-        return rowData[columnName]
-      }
-    }
-    return rowData[columnName]
-  }
-
-  const excluded_headers = ['id', 'patient_id', 'study']
+  const excluded_headers = new Set(['id', 'patient_id', 'study'])
   const mostCompleteSubmission = submissions.sort((a: any, b:any) => b.fields.length - a.fields.length)[0]
   Object.keys(patientIDLabels).forEach((key: string) => {
-      headers[key] = labels[key] ?? toTitle(key, "_")
-    })
+    headers[key] = labels[key] ?? toTitle(key, "_")
+  })
   mostCompleteSubmission.fields.forEach((field: {key: string, value: string}) => {
-    if (!(field.key.startsWith('comments') || excluded_headers.includes(field.key))) {
+    if (!(field.key.startsWith('comments') || excluded_headers.has(field.key))) {
       headers[field.key] = labels[field.key] ?? toTitle(field.key, '_')
     }
   })
@@ -176,6 +182,7 @@ const SubmissionTableContents = ({
       .forEach((field: any) => {
         row[field["key"]] = field["value"];
       });
+    row.canDelete = data?.isAdmin || (submission.submittedBy.keycloakUserID === userID && new Date(submission.editableUntil) > new Date())
     rows.push(row);
   });
 
@@ -186,7 +193,7 @@ const SubmissionTableContents = ({
   // so a date like "2023-02-01T05:00:00.000Z" (without the quotes) is a valid date
   const re = /[12]\d{3}-((0[1-9])|(1[012]))-((0[1-9]|[12]\d)|(3[01]))\S*/m;
 
-  return data ? (
+  return data && (
     <div style={{ overflowX: "auto", maxHeight: "500px", resize: "vertical" }}>
       <Table
         fixed
@@ -213,11 +220,7 @@ const SubmissionTableContents = ({
                 </Table.HeaderCell>
               );
             })}
-            {data.isAdmin ? (
-              <Table.HeaderCell key="delete">Delete</Table.HeaderCell>
-            ) : (
-              <></>
-            )}
+            <Table.HeaderCell key="delete" textAlign='center'>Delete</Table.HeaderCell>
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -227,10 +230,13 @@ const SubmissionTableContents = ({
                 key={`${row.id}-${index}`}
                 onClick={() => {
                   const { id, ...filteredRow } = row
-                  setActiveSubmission(
-                    submissions.find((submission: any) => submission.submission_id === id)
-                  );
-                  fillForm(filteredRow);
+                  const submission = submissions.find((submission: any) => submission.submission_id === id)
+                  const isEditable = new Date(submission.editableUntil) > new Date()
+                  const isOwner = submission.submittedBy.keycloakUserID === userID
+                  if (data?.isAdmin || (isEditable && isOwner)) {
+                    setActiveSubmission(submission);
+                    fillForm(filteredRow);
+                  }
                 }}
               >
                 {Object.keys(sortedHeaders).map((key) => {
@@ -256,16 +262,14 @@ const SubmissionTableContents = ({
                     </Table.Cell>
                   );
                 })}
-                {data.isAdmin ? (
-                  <Table.Cell key={`delete-${row.id}`}>
+                {row.canDelete && (
+                  <Table.Cell key={`delete-${row.id}`} textAlign="center">
                     <Button
                       icon="trash"
                       color="red"
                       onClick={() => doDelete(row.id)}
                     />
                   </Table.Cell>
-                ) : (
-                  <></>
                 )}
               </Table.Row>
             );
@@ -273,7 +277,5 @@ const SubmissionTableContents = ({
         </Table.Body>
       </Table>
     </div>
-  ) : (
-    <></>
-  );
+  )
 };
