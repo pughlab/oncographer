@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Form, Message } from 'semantic-ui-react'
 
 import { DynamicFormProps, Field, ModalOperations } from "./types";
@@ -29,9 +29,8 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
     orderedFields
   } = useDynamicForm(form, modalOperations, updateTemplates, updateSubmissions, excluded_fields)
 
-  const renderedFields = useMemo(() => {
-    return orderedFields.map((field: Field) => {
-      const isIdField = form.id_fields?.includes(field.name) ?? false;
+  const renderedFields = orderedFields.map((field: Field) => {
+    const isIdField = form.id_fields?.includes(field.name) ?? false;
       return (
         <RenderedField
           key={field.name}
@@ -47,8 +46,8 @@ export const DynamicForm = ({ form, modalOperations, updateTemplates, updateSubm
           updateForm={() => send('UPDATE')}
         />
       );
-    });
-  }, [orderedFields, stateReducer.requiredFields, stateReducer.mutexFields, patientID.study, formWasCleared, formWasFilled, form.id_fields]);
+    }
+  );
 
   if (stateReducer?.fieldWidgets?.length === 0 && !state.matches('loading')) return <></>;
 

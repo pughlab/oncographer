@@ -112,24 +112,12 @@ export const resolvers = {
       const session = driver.session()
 
       try {
-        let command = study 
-          ? "MATCH (p:Patient { patient_id: $patient_id, program_id: $program_id, study: $study }) RETURN p"
-          : "MATCH (p:Patient { patient_id: $patient_id, program_id: $program_id }) RETURN p"
+        const command = study 
+          ? "MERGE (p:Patient { patient_id: $patient_id, program_id: $program_id, study: $study }) RETURN p"
+          : "MERGE (p:Patient { patient_id: $patient_id, program_id: $program_id }) RETURN p"
         const result = await session.run(command, study ? { patient_id, program_id, study } : { patient_id, program_id })
 
-        if (result.records.length > 0 ) {
-          return result.records[0].get('p').properties
-        }
-
-        command = study
-          ? "CREATE (p:Patient { patient_id: $patient_id, program_id: $program_id, study: $study }) return p"
-          : "CREATE (p:Patient { patient_id: $patient_id, program_id: $program_id }) return p"
-        const createPatient = await session.run(
-          command,
-          study ? { patient_id, program_id, study } : { patient_id, program_id }
-        )
-
-        return createPatient.records[0].get(0).properties
+        return result.records[0].get('p').properties
       } catch (error) {
         throw new Error(`Could not find or create Patient. Caused by ${error}`)
       } finally {
@@ -161,6 +149,7 @@ export const resolvers = {
       const session = driver.session()
       const adminRoles : string[] = JSON.parse(process.env.KEYCLOAK_ADMIN_ROLES) || []
       const clientName : string = process.env.KEYCLOAK_SERVER_CLIENT || ""
+      const userID = kauth?.accessToken?.content?.sub || null
       const isAdmin =  (
         kauth
         ? adminRoles.some((role) => kauth.accessToken?.content?.resource_access[clientName]?.roles?.includes(role))
@@ -174,6 +163,13 @@ export const resolvers = {
           DETACH DELETE x, s 
           RETURN nodesDeleted, relationshipsDeleted`
           await session.run(command, { submission_id })
+        } else if (userID) {
+          let command = `MATCH 
+            (k:KeycloakUser { keycloakUserID: $userID })<-[r1:SUBMITTED_BY]-(s:Submission { submission_id: $submission_id })-[r2:HAS_VALUE]->(x:FieldKeyValuePair) 
+            WITH x, r1, r2, s, COUNT(s) + COUNT(x) AS nodesDeleted, COUNT(r1) + COUNT(r2) AS relationshipsDeleted
+            DETACH DELETE x, s 
+            RETURN nodesDeleted, relationshipsDeleted`
+          await session.run(command, { submission_id, userID })
         } else {
           throw new Error(`You are not authorised to do this operation`)
         }
